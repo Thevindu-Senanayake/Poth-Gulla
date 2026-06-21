@@ -9,5 +9,24 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+    provider = "postgresql"
+}
+
+enum Role {
+    ADMIN
+    LIBRARY_STAFF
+    LECTURER
+    STUDENT
+}
+
+model User {
+    id           String   @id @default(uuid())
+    email        String   @unique
+    passwordHash String
+    name         String
+    role         Role     @default(STUDENT)
+    userPoints   Int      @default(500)
+    tier         Int?     @default(3)
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
 }

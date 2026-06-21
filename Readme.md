@@ -1,104 +1,173 @@
-# Poth Gulla - Smart Library Resource Management System
+# Poth Gulla — Smart Library Resource Management System
 
-**Team: SegFault | CIPHER 2.0 Prototype Submission**
+> Team: SegFault | CIPHER 2.0 | Scenario 04
 
-This repository contains the functional prototype for **Poth Gulla**, a decentralized library resource management system. The prototype demonstrates core allocation algorithms, tier-based waitlist sorting logic, and an automated QR-driven physical workflow.
-
-## 🏗️ Project Stack
-
-The project utilizes a hybrid containerized micro-environment:
-
-1. **Infrastructure (Docker):** PostgreSQL 15 (Database) & Redis (Cache).
-2. **Backend API (Docker):** NestJS + Prisma ORM. Handles the ELO-style User Point calculations, waitlist priority scoring, and conflict detection.
-3. **Admin Web Dashboard (Docker):** React + Vite + Tailwind CSS. High-density interface for staff to manage the waitlist queue and review audit logs.
-4. **Student Mobile App (Native WSL):** React Native (Expo SDK 54). Features the unified booking form and physical QR scanning capabilities.
+A decentralized library resource management system featuring ELO-style User Point tiers, fair waitlist scoring, QR-driven check-in/checkout, and real-time availability across book copies, devices, and study rooms.
 
 ---
 
-## ⚙️ Prerequisites
+## Project Structure
 
-- **Docker Desktop** (Configured with WSL2 integration)
-- **Node.js** (v20+)
-- **Expo Go App** (Installed on a physical iOS or Android device)
+```text
+Poth Gulla/
+├── server/              # NestJS API — PostgreSQL + Prisma + JWT auth
+├── admin-web-client/    # React + Vite + Tailwind — staff/admin dashboard
+├── client/              # React Native (Expo SDK 54) — student/lecturer mobile app
+├── scripts/dev.mjs      # Dev runner: auto-starts Docker infra, launches all apps
+├── docker-compose.yml   # Postgres + Redis containers
+└── .env                 # Root compose variables (not committed)
+```
+
+Monorepo managed with Yarn Workspaces and Turborepo. All three apps share one `yarn dev` command.
 
 ---
 
-## 🚀 Setup & Execution Guide
+## Prerequisites
 
-### Step 1: Global Environment Variables
+| Tool           | Version | Notes                                      |
+| -------------- | ------- | ------------------------------------------ |
+| Docker Desktop | Latest  | WSL2 backend on Windows                    |
+| Node.js        | v20+    |                                            |
+| Yarn           | v1.22+  | `npm install -g yarn`                      |
+| Expo Go        | Latest  | Installed on a physical iOS/Android device |
 
-In the **root** of the repository (alongside the `docker-compose.yml`), create a `.env` file to manage the Docker network secrets:
+---
 
-```env
-# Database Credentials
+## First-Time Setup
+
+### 1. Environment files
+
+**Root `.env`** (create alongside `docker-compose.yml`):
+
+```dotenv
+# Postgres container credentials
 POSTGRES_USER=admin
 POSTGRES_PASSWORD=password123
 POSTGRES_DB=poth_gulla
 
-# Docker Internal Network URLs (Used by the containers)
-DOCKER_DATABASE_URL="postgresql://admin:password123@postgres:5432/poth_gulla?schema=public"
-DOCKER_REDIS_URL="redis://redis:6379"
+# In-container URLs (used by the backend container)
+DOCKER_DATABASE_URL=postgresql://admin:password123@postgres:5432/poth_gulla?schema=public
+DOCKER_REDIS_URL=redis://redis:6379
 
-# Vite Frontend Admin Target
-VITE_API_URL="http://localhost:3000/api"
+# JWT
+JWT_SECRET=change-me-to-a-long-random-string
+JWT_EXPIRES_IN=7d
+
+# Admin web (baked into browser bundle)
+VITE_API_URL=http://localhost:3000/api
 ```
 
-In your **`/server`** folder, create a second `.env` file for local Prisma operations:
+**`server/.env`** (for Prisma CLI and native backend runs):
 
-```env
-# Localhost URL (Used for Prisma migrations from your terminal)
-DATABASE_URL="postgresql://admin:password123@localhost:5432/poth_gulla?schema=public"
+```dotenv
+# Use 127.0.0.1, NOT localhost — on Windows, localhost resolves to ::1 (IPv6)
+# but Docker only binds on 127.0.0.1 (IPv4).
+DATABASE_URL="postgresql://admin:password123@127.0.0.1:5432/poth_gulla?schema=public"
+
+JWT_SECRET=change-me-to-a-long-random-string
+JWT_EXPIRES_IN=7d
 ```
 
----
-
-### Step 2: Spin Up the Docker Ecosystem (DB, Cache, API, Admin)
-
-Open a terminal in the project root and build the containers:
+### 2. Install dependencies
 
 ```bash
-docker compose up --build
+yarn install
 ```
 
-- **NestJS Backend** is now live at: `http://localhost:3000`
-- **Vite Admin Web** is now live at: `http://localhost:5173`
+### 3. Create the database schema and seed demo accounts
 
----
-
-### Step 3: Database Migrations (Prisma)
-
-With the database container running, you need to push the schema tables. Open a new terminal tab, navigate to the backend, and run:
+Start the containers first (`yarn dev` in one terminal), then in a second terminal:
 
 ```bash
-cd poth-gulla-backend
-npx prisma db push
-npx prisma generate
-npx prisma db seed # (Optional: loads mock hackathon data)
+cd server
+yarn prisma db push       # creates tables
+yarn tsx prisma/seed.ts   # seeds 4 demo accounts
 ```
 
 ---
 
-### Step 4: The Mobile App & Network Bridge
+## Running the Project
 
-Because the API runs inside a local Docker network, a physical iPhone cannot reach `localhost`. We use a secure tunnel to expose the API.
+```bash
+# Starts postgres + redis in Docker, then launches all three apps under the Turbo TUI.
+# Ctrl+C stops all processes and tears down the containers automatically.
+yarn dev
+```
 
-1. **Open the Bridge:** In a new terminal tab, run:
-   ```bash
-   npx localtunnel --port 3000
-   ```
-2. **Update Mobile App:** Copy the generated URL (e.g., `https://random.loca.lt`) and paste it as the `BASE_URL` inside `/poth-gulla-app/services/api.ts`.
-3. **Start Mobile App:** In a final terminal tab, navigate to the mobile app and start Expo:
-   ```bash
-   cd poth-gulla-app
-   npm install
-   npx expo start --tunnel
-   ```
-4. **Test:** Open the **Expo Go** app on your phone and scan the QR code in the terminal.
+| Service         | URL                                   |
+| --------------- | ------------------------------------- |
+| API             | `http://localhost:3000/api`           |
+| Admin Dashboard | `http://localhost:5173`               |
+| Mobile (Expo)   | Scan QR code in terminal with Expo Go |
+
+### Mobile app — physical device access
+
+The mobile app needs to reach the API from your phone. Use a tunnel:
+
+```bash
+npx localtunnel --port 3000
+# Copy the https URL + /api and set it as API_BASE_URL in client/src/api/client.ts
+```
 
 ---
 
-## 🧪 Core Hackathon Logic to Test
+## API Reference
 
-1. **Concurrency Routing:** Attempt to book overlapping study room slots. Watch the system automatically route the secondary request to the waitlist queue.
-2. **Waitlist Priority Math:** Notice how users with higher tiers (calculated via `user_points`) dynamically float to the top of the queue.
-3. **QR Mutations:** Use the mobile camera to scan a book QR code. Watch the resource state update instantly on the Admin Dashboard and re-calculate the user's point standing.
+Base URL: `http://localhost:3000/api`
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/` | Public | Health check |
+| `POST` | `/auth/login` | Public (409 if valid token present) | Login, returns JWT |
+| `POST` | `/auth/register` | ADMIN | Create a new user account |
+| `GET` | `/auth/me` | JWT | Validate token + get current user |
+
+**Auth flow:**
+
+1. Login as `admin@iit.ac.lk` with password `Password123`
+2. Copy the `accessToken` from the response
+3. Pass it as `Authorization: Bearer <token>` on protected routes
+
+**Demo accounts** (seeded, password `Password123`):
+
+| Email                | Role          |
+| -------------------- | ------------- |
+| `admin@iit.ac.lk`    | ADMIN         |
+| `staff@iit.ac.lk`    | LIBRARY_STAFF |
+| `lecturer@iit.ac.lk` | LECTURER      |
+| `student@iit.ac.lk`  | STUDENT       |
+
+---
+
+## Tech Stack
+
+| Package            | Stack                                                                       |
+| ------------------ | --------------------------------------------------------------------------- |
+| `server`           | NestJS 11, Prisma 7 (`prisma-client` generator), PostgreSQL 15, JWT, bcrypt |
+| `admin-web-client` | React 19, Vite, Tailwind CSS v4, react-router-dom, axios                    |
+| `client`           | Expo SDK 54, expo-router, expo-secure-store, axios                          |
+
+**Package manager:** Yarn (all packages). Never use `npm`.
+
+---
+
+## Useful Commands
+
+```bash
+# Monorepo root
+yarn dev                          # start everything
+
+# server/
+yarn start:dev                    # backend only (watch mode)
+yarn prisma db push               # sync schema to DB
+yarn tsx prisma/seed.ts           # reseed demo accounts
+yarn prisma studio                # visual DB browser
+yarn prisma generate              # regenerate Prisma client after schema changes
+yarn build                        # compile to dist/
+
+# admin-web-client/
+yarn dev                          # Vite dev server
+
+# client/
+npx expo start                    # Expo Metro bundler
+```
