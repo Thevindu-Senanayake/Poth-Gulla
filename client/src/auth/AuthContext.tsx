@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { api } from '../api/client';
+import { api, setForceLogoutHandler } from '../api/client';
 
 type User = {
     id: string;
@@ -24,6 +24,12 @@ const MOBILE_ROLES = ['STUDENT', 'LECTURER'];
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        // Register the handler so the axios interceptor can clear user state on a 401.
+        // Setting user to null triggers RootLayoutNav to navigate to the login screen.
+        setForceLogoutHandler(() => setUser(null));
+    }, []);
 
     useEffect(() => {
         (async () => {

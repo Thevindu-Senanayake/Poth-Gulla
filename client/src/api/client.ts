@@ -9,6 +9,12 @@ export const api = axios.create({
     headers: { 'Bypass-Tunnel-Reminder': 'true' },
 });
 
+// Registered by AuthContext so the interceptor can clear user state without a circular import.
+let _forceLogout: (() => void) | null = null;
+export function setForceLogoutHandler(fn: () => void) {
+    _forceLogout = fn;
+}
+
 api.interceptors.request.use(async (config) => {
     const token = await SecureStore.getItemAsync('accessToken');
     if (token) {
@@ -20,8 +26,11 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
     (res) => res,
     async (error) => {
-        if (error.response?.status === 401) {
+        // Only force logout when a Bearer token was sent and the server rejected it.
+        // This avoids triggering on 401s from the login endpoint itself (invalid credentials).
+        if (error.response?.status === 401 && error.config?.headers?.Authorization) {
             await SecureStore.deleteItemAsync('accessToken');
+            _forceLogout?.();
         }
         return Promise.reject(error);
     }
