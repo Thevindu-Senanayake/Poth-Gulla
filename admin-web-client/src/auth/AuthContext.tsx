@@ -35,6 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .finally(() => setIsLoading(false));
     }, []);
 
+    useEffect(() => {
+        const handler = () => setUser(null);
+        window.addEventListener('auth:force-logout', handler);
+        return () => window.removeEventListener('auth:force-logout', handler);
+    }, []);
+
     const login = async (email: string, password: string) => {
         const { data } = await api.post('/auth/login', { email, password });
         if (!STAFF_ROLES.includes(data.user.role)) {

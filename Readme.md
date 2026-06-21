@@ -121,6 +121,11 @@ Base URL: `http://localhost:3000/api`
 | `POST` | `/auth/login` | Public (409 if valid token present) | Login, returns JWT |
 | `POST` | `/auth/register` | ADMIN | Create a new user account |
 | `GET` | `/auth/me` | JWT | Validate token + get current user |
+| `GET` | `/users` | ADMIN, LIBRARY_STAFF | List users — supports `?page`, `?limit`, `?role`, `?tier`, `?isActive`, `?search` (name/email) |
+| `GET` | `/users/:id` | ADMIN, LIBRARY_STAFF | Get a single user by ID |
+| `PATCH` | `/users/:id` | ADMIN | Update name, role, userPoints, or tier |
+| `PATCH` | `/users/:id/disable` | ADMIN | Disable a user account (blocks their JWT) |
+| `PATCH` | `/users/:id/enable` | ADMIN | Re-enable a disabled user account |
 
 **Auth flow:**
 
