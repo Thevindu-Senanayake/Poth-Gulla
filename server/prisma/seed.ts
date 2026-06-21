@@ -10,8 +10,8 @@ async function main() {
     const passwordHash = await bcrypt.hash('Password123', 10);
 
     const users = [
-        { email: 'admin@iit.ac.lk', name: 'System Admin', role: Role.ADMIN, tier: null },
-        { email: 'staff@iit.ac.lk', name: 'Library Staff', role: Role.LIBRARY_STAFF, tier: null },
+        { email: 'admin@iit.ac.lk', name: 'System Admin', role: Role.ADMIN, tier: 1 },
+        { email: 'staff@iit.ac.lk', name: 'Library Staff', role: Role.LIBRARY_STAFF, tier: 1 },
         { email: 'lecturer@iit.ac.lk', name: 'Dr. Lecturer', role: Role.LECTURER, tier: 3 },
         { email: 'student@iit.ac.lk', name: 'Test Student', role: Role.STUDENT, tier: 3 },
     ];
@@ -19,7 +19,7 @@ async function main() {
     for (const u of users) {
         await prisma.user.upsert({
             where: { email: u.email },
-            update: {},
+            update: { tier: u.tier },
             create: { ...u, userPoints: 500, passwordHash },
         });
     }

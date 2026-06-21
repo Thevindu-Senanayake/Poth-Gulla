@@ -15,8 +15,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (res) => res,
     (error) => {
-        if (error.response?.status === 401) {
+        // Only force logout when a Bearer token was sent and the server rejected it.
+        // This avoids triggering on 401s from the login endpoint itself (invalid credentials).
+        if (error.response?.status === 401 && error.config?.headers?.Authorization) {
             localStorage.removeItem('accessToken');
+            window.dispatchEvent(new CustomEvent('auth:force-logout'));
         }
         return Promise.reject(error);
     }

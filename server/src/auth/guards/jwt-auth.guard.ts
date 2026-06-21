@@ -7,6 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { UsersService } from '../../users/users.service.js';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
 
 @Injectable()
@@ -14,7 +15,8 @@ export class JwtAuthGuard implements CanActivate {
     constructor(
         private reflector: Reflector,
         private jwtService: JwtService,
-        private config: ConfigService
+        private config: ConfigService,
+        private users: UsersService,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -34,9 +36,14 @@ export class JwtAuthGuard implements CanActivate {
             const payload = await this.jwtService.verifyAsync(header.slice(7), {
                 secret: this.config.get<string>('JWT_SECRET'),
             });
+            const user = await this.users.findById(payload.sub);
+            if (!user?.isActive) {
+                throw new UnauthorizedException('Account is disabled');
+            }
             request.user = { userId: payload.sub, email: payload.email, role: payload.role };
             return true;
-        } catch {
+        } catch (e) {
+            if (e instanceof UnauthorizedException) throw e;
             throw new UnauthorizedException('Invalid or expired token');
         }
     }
