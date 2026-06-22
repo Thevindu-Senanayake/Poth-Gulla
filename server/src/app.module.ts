@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BookingModule } from './booking/booking.module.js';
 import { CatalogueModule } from './catalogue/catalogue.module.js';
@@ -18,6 +17,6 @@ import { WaitlistModule } from './waitlist/waitlist.module.js';
         CatalogueModule,
     ],
     controllers: [AppController],
-    providers: [AppService],
+    providers: [],
 })
 export class AppModule {}
