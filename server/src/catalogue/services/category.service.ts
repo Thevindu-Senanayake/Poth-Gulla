@@ -1,13 +1,21 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Category, CategoryType } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
 export class CreateCategoryDto {
+    @IsString()
+    @IsNotEmpty()
     name!: string;
+
+    @IsEnum(CategoryType)
     type!: CategoryType;
 }
 
 export class UpdateCategoryDto {
+    @IsString()
+    @IsNotEmpty()
+    @IsOptional()
     name?: string;
 }
 
