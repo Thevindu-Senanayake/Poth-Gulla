@@ -7,7 +7,9 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { EventLoggerInterceptor } from './common/interceptors/event-logger.interceptor.js';
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+    // bodyParser: false prevents NestJS from registering its own parsers first,
+    // which would make our explicit limit below a no-op (body-parser skips re-parse).
+    const app = await NestFactory.create(AppModule, { bodyParser: false });
     app.use(helmet());
     app.use(express.json({ limit: '5mb' }));
     app.use(express.urlencoded({ limit: '5mb', extended: true }));

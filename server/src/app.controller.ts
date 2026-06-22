@@ -29,7 +29,7 @@ export class AppController {
         try {
             await this.prisma.$queryRaw`SELECT 1`;
             base.database = 'connected';
-        } catch (err) {
+        } catch {
             base.database = 'disconnected';
             base.status = 'degraded';
         }
