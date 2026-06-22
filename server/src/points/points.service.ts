@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PointEvent, User } from '../../generated/prisma/client.js';
+import { Prisma, PointEvent, User } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { tierFromPoints } from '../users/tier.utils.js';
 import { POINT_DELTA, PointAction } from './point-events.js';
@@ -16,7 +16,7 @@ export class PointsService {
         userId: string,
         action: PointAction,
         delta: number,
-        metadata?: Record<string, unknown>,
+        metadata?: Prisma.InputJsonObject,
     ): Promise<User> {
         const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
         const newPoints = Math.max(0, user.userPoints + delta);
@@ -39,7 +39,7 @@ export class PointsService {
     applyFixed(
         userId: string,
         action: Exclude<PointAction, 'BOOK_LATE_2_7D'>,
-        metadata?: Record<string, unknown>,
+        metadata?: Prisma.InputJsonObject,
     ): Promise<User> {
         return this.apply(userId, action, POINT_DELTA[action], metadata);
     }
