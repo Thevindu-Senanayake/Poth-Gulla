@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { PrismaService } from './prisma/prisma.service.js';
 import { CurrentUser } from './auth/decorators/current-user.decorator.js';
 import { Public } from './auth/decorators/public.decorator.js';
 
@@ -10,9 +11,11 @@ interface AuthUser {
 
 @Controller()
 export class AppController {
+    constructor(private prisma: PrismaService) {}
+
     @Public()
     @Get()
-    health(@CurrentUser() user?: AuthUser): Record<string, unknown> {
+    async health(@CurrentUser() user?: AuthUser): Promise<Record<string, unknown>> {
         const base: Record<string, unknown> = {
             status: 'ok',
             name: 'Poth Gulla API',
@@ -21,6 +24,15 @@ export class AppController {
             timestamp: new Date().toISOString(),
             uptime: Math.floor(process.uptime()),
         };
+
+        // Check database connectivity
+        try {
+            await this.prisma.$queryRaw`SELECT 1`;
+            base.database = 'connected';
+        } catch (err) {
+            base.database = 'disconnected';
+            base.status = 'degraded';
+        }
 
         if (user) {
             base.auth = { userId: user.userId, role: user.role };
