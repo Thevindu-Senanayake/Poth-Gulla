@@ -24,6 +24,9 @@ export class JwtAuthGuard implements CanActivate {
             context.getHandler(),
             context.getClass(),
         ]);
+
+        const request = context.switchToHttp().getRequest();
+
         if (isPublic) {
             // Best-effort: attach user even on public routes so they can personalise responses
             try {
@@ -43,7 +46,6 @@ export class JwtAuthGuard implements CanActivate {
             return true;
         }
 
-        const request = context.switchToHttp().getRequest();
         const header: string | undefined = request.headers.authorization;
         if (!header || !header.startsWith('Bearer ')) {
             throw new UnauthorizedException('Missing or invalid Authorization header');
