@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -12,6 +7,8 @@ datasource db {
     provider = "postgresql"
 }
 
+// ---- Enums ----
+
 enum Role {
     ADMIN
     LIBRARY_STAFF
@@ -19,15 +16,252 @@ enum Role {
     STUDENT
 }
 
+enum ResourceType {
+    BOOK
+    DEVICE
+    ROOM
+}
+
+enum BookingStatus {
+    PENDING
+    APPROVED
+    WAITLIST
+    REJECTED
+    CANCELLED
+    COMPLETED
+}
+
+enum WaitlistStatus {
+    PENDING
+    PROMOTED
+    DISMISSED
+}
+
+enum ItemStatus {
+    AVAILABLE
+    BORROWED
+    UNDER_MAINTENANCE
+    RETIRED
+}
+
+enum BorrowingStatus {
+    ACTIVE
+    RETURNED
+    OVERDUE
+}
+
+enum ItemCondition {
+    GOOD
+    DAMAGED
+}
+
+enum CategoryType {
+    BOOK
+    DEVICE
+}
+
+// ---- Models ----
+
 model User {
+    id            String         @id @default(uuid())
+    email         String         @unique
+    passwordHash  String
+    name          String
+    role          Role           @default(STUDENT)
+    userPoints    Int            @default(500)
+    tier          Int?           @default(3)
+    isActive      Boolean        @default(true)
+    createdAt     DateTime       @default(now())
+    updatedAt     DateTime       @updatedAt
+
+    bookings      Booking[]
+    borrowings    Borrowing[]
+    reviews       Review[]
+    pointEvents   PointEvent[]
+    notifications Notification[]
+    logs          Log[]          @relation("ActorLogs")
+}
+
+model Category {
+    id         String       @id @default(uuid())
+    name       String
+    type       CategoryType
+    bookTitles BookTitle[]
+    devices    Device[]
+
+    @@unique([name, type])
+}
+
+model BookTitle {
+    id          String     @id @default(uuid())
+    title       String
+    author      String
+    isbn        String?    @unique
+    language    String?
+    tags        String[]
+    description String?
+    categoryId  String?
+    category    Category?  @relation(fields: [categoryId], references: [id])
+    copies      BookCopy[]
+    reviews     Review[]
+    bookings    Booking[]
+    createdAt   DateTime   @default(now())
+    updatedAt   DateTime   @updatedAt
+
+    @@index([title])
+    @@index([author])
+}
+
+model BookCopy {
+    id          String      @id @default(uuid())
+    bookTitleId String
+    bookTitle   BookTitle   @relation(fields: [bookTitleId], references: [id])
+    assetTag    String      @unique
+    status      ItemStatus  @default(AVAILABLE)
+    borrowings  Borrowing[]
+    createdAt   DateTime    @default(now())
+
+    @@index([bookTitleId, status])
+}
+
+model Device {
+    id         String      @id @default(uuid())
+    name       String
+    deviceTier Int         @default(1)
+    categoryId String?
+    category   Category?   @relation(fields: [categoryId], references: [id])
+    assetTag   String      @unique
+    status     ItemStatus  @default(AVAILABLE)
+    borrowings Borrowing[]
+    bookings   Booking[]
+    createdAt  DateTime    @default(now())
+
+    @@index([status])
+}
+
+model StudyRoom {
+    id        String     @id @default(uuid())
+    name      String     @unique
+    capacity  Int
+    features  String[]
+    roomQr    String     @unique
+    status    ItemStatus @default(AVAILABLE)
+    bookings  Booking[]
+    createdAt DateTime   @default(now())
+}
+
+model Booking {
+    id            String         @id @default(uuid())
+    userId        String
+    user          User           @relation(fields: [userId], references: [id])
+    resourceType  ResourceType
+    bookTitleId   String?
+    bookTitle     BookTitle?     @relation(fields: [bookTitleId], references: [id])
+    deviceId      String?
+    device        Device?        @relation(fields: [deviceId], references: [id])
+    studyRoomId   String?
+    studyRoom     StudyRoom?     @relation(fields: [studyRoomId], references: [id])
+    bookCopyId    String?
+    startAt       DateTime
+    endAt         DateTime
+    status        BookingStatus  @default(PENDING)
+    message       String?
+    qrToken       String?        @unique
+    waitlistEntry WaitlistEntry?
+    borrowing     Borrowing?
+    createdAt     DateTime       @default(now())
+    updatedAt     DateTime       @updatedAt
+
+    @@index([resourceType, status])
+    @@index([studyRoomId, status, startAt, endAt])
+    @@index([userId, status])
+}
+
+model WaitlistEntry {
+    id            String         @id @default(uuid())
+    bookingId     String         @unique
+    booking       Booking        @relation(fields: [bookingId], references: [id])
+    resourceType  ResourceType
+    resourceKey   String
+    priorityScore Float
+    hasMessage    Boolean        @default(false)
+    status        WaitlistStatus @default(PENDING)
+    staffNotes    String?
+    createdAt     DateTime       @default(now())
+
+    @@index([resourceType, resourceKey, status])
+}
+
+model Borrowing {
+    id         String          @id @default(uuid())
+    bookingId  String          @unique
+    booking    Booking         @relation(fields: [bookingId], references: [id])
+    userId     String
+    user       User            @relation(fields: [userId], references: [id])
+    bookCopyId String?
+    bookCopy   BookCopy?       @relation(fields: [bookCopyId], references: [id])
+    deviceId   String?
+    device     Device?         @relation(fields: [deviceId], references: [id])
+    checkoutAt DateTime        @default(now())
+    dueAt      DateTime
+    returnedAt DateTime?
+    status     BorrowingStatus @default(ACTIVE)
+    condition  ItemCondition?
+    recallFlag Boolean         @default(false)
+    createdAt  DateTime        @default(now())
+
+    @@index([status, dueAt])
+    @@index([userId, status])
+}
+
+model Review {
+    id          String    @id @default(uuid())
+    userId      String
+    user        User      @relation(fields: [userId], references: [id])
+    bookTitleId String
+    bookTitle   BookTitle @relation(fields: [bookTitleId], references: [id])
+    rating      Int?
+    text        String
+    createdAt   DateTime  @default(now())
+
+    @@unique([userId, bookTitleId])
+}
+
+model PointEvent {
     id           String   @id @default(uuid())
-    email        String   @unique
-    passwordHash String
-    name         String
-    role         Role     @default(STUDENT)
-    userPoints   Int      @default(500)
-    tier         Int?     @default(3)
-    isActive     Boolean  @default(true)
+    userId       String
+    user         User     @relation(fields: [userId], references: [id])
+    action       String
+    delta        Int
+    balanceAfter Int
+    metadata     Json?
     createdAt    DateTime @default(now())
-    updatedAt    DateTime @updatedAt
+
+    @@index([userId, createdAt])
+}
+
+model Log {
+    id         String   @id @default(uuid())
+    actorId    String?
+    actor      User?    @relation("ActorLogs", fields: [actorId], references: [id])
+    action     String
+    targetType String
+    targetId   String?
+    metadata   Json?
+    createdAt  DateTime @default(now())
+
+    @@index([createdAt])
+    @@index([actorId, createdAt])
+}
+
+model Notification {
+    id        String   @id @default(uuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id])
+    type      String
+    message   String
+    read      Boolean  @default(false)
+    createdAt DateTime @default(now())
+
+    @@index([userId, read])
 }
