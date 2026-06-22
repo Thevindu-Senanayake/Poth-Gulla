@@ -182,6 +182,53 @@ Base URL: `http://localhost:3000/api`
 
 **Queue order:** `hasMessage DESC, priorityScore DESC` where `priorityScore = tier × 0.6 + roleWeight × 0.4` (Lecturer weight 5, Student weight 3). Message-free queues auto-promote on a free event; any message pauses auto-promotion for staff review.
 
+### Catalogue
+
+All read endpoints are public (any authenticated user). Write endpoints require `ADMIN` or `LIBRARY_STAFF`.
+
+#### Categories
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/catalogue/categories` | JWT | List categories — `?type=BOOK\|DEVICE` |
+| `POST` | `/catalogue/categories` | ADMIN, STAFF | Create category |
+| `PATCH` | `/catalogue/categories/:id` | ADMIN, STAFF | Rename category |
+| `DELETE` | `/catalogue/categories/:id` | ADMIN, STAFF | Delete category |
+
+#### Books
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/catalogue/books` | JWT | List titles — `?search`, `?categoryId`, `?page`, `?limit`. Response includes `_count.copies` (available) |
+| `GET` | `/catalogue/books/:id` | JWT | Title + full `copies[]` array with `assetTag` and `status` |
+| `POST` | `/catalogue/books` | ADMIN, STAFF | Create book title |
+| `PATCH` | `/catalogue/books/:id` | ADMIN, STAFF | Update title metadata |
+| `DELETE` | `/catalogue/books/:id` | ADMIN, STAFF | Delete title |
+| `POST` | `/catalogue/books/:id/copies` | ADMIN, STAFF | Add physical copy `{ assetTag }` |
+| `DELETE` | `/catalogue/copies/:id` | ADMIN, STAFF | Soft-retire copy (`RETIRED`); blocked if `BORROWED` |
+
+#### Devices
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/catalogue/devices` | JWT | List devices — `?search`, `?tier`, `?categoryId`, `?status`, `?page`, `?limit` |
+| `GET` | `/catalogue/devices/:id` | JWT | Single device |
+| `POST` | `/catalogue/devices` | ADMIN, STAFF | Create device `{ name, assetTag, deviceTier, categoryId? }` |
+| `PATCH` | `/catalogue/devices/:id` | ADMIN, STAFF | Update device |
+| `DELETE` | `/catalogue/devices/:id` | ADMIN, STAFF | Delete device (blocked if `BORROWED`) |
+| `PATCH` | `/catalogue/devices/:id/maintenance` | ADMIN, STAFF | `{ underMaintenance: true\|false }` |
+
+#### Study Rooms
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/catalogue/rooms` | JWT | List rooms. Pass `?startAt` + `?endAt` (ISO 8601) to add `available` flag per room |
+| `GET` | `/catalogue/rooms/:id` | JWT | Single room |
+| `POST` | `/catalogue/rooms` | ADMIN, STAFF | Create room `{ name, capacity, features?, roomQr }` |
+| `PATCH` | `/catalogue/rooms/:id` | ADMIN, STAFF | Update room |
+| `DELETE` | `/catalogue/rooms/:id` | ADMIN, STAFF | Delete room |
+| `PATCH` | `/catalogue/rooms/:id/maintenance` | ADMIN, STAFF | `{ underMaintenance: true\|false }` |
+
 **Auth flow:**
 
 1. Login as `admin@iit.ac.lk` with password `Password123`
