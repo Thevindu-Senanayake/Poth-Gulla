@@ -207,6 +207,38 @@
               "raw": "{\n  \"email\": \"newuser@iit.ac.lk\",\n  \"password\": \"Password123\",\n  \"name\": \"New User\",\n  \"role\": \"STUDENT\"\n}"
             }
           }
+        },
+        {
+          "name": "Validation error demo (expect 400 with errors by field)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "const res = pm.response.json();",
+                  "pm.test('message is Validation failed', () => pm.expect(res.message).to.equal('Validation failed'));",
+                  "pm.test('errors object present', () => pm.expect(res).to.have.property('errors'));",
+                  "pm.test('email errors keyed by field', () => pm.expect(res.errors).to.have.property('email'));",
+                  "pm.test('X-Request-ID header set', () => pm.expect(pm.response.headers.get('X-Request-ID')).to.match(/^[0-9a-f\\-]{36}$/));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"not-an-email\",\n  \"password\": \"x\"\n}"
+            }
+          }
         }
       ]
     },
@@ -1542,9 +1574,80 @@
       "name": "Health",
       "item": [
         {
-          "name": "Root ping",
+          "name": "Health check (public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('status is ok or degraded', () => pm.expect(['ok','degraded']).to.include(res.status));",
+                  "pm.test('has uptime field', () => pm.expect(res.uptime).to.be.a('number'));",
+                  "pm.test('database field present', () => pm.expect(res.database).to.be.oneOf(['connected','disconnected']));",
+                  "pm.test('X-Request-ID header set', () => pm.expect(pm.response.headers.get('X-Request-ID')).to.match(/^[0-9a-f\\-]{36}$/));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
+            "header": [],
+            "url": "{{base_url}}"
+          }
+        },
+        {
+          "name": "Health check — authenticated (shows auth field)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('auth field with userId present', () => pm.expect(res.auth).to.have.property('userId'));",
+                  "pm.test('auth field with role present', () => pm.expect(res.auth).to.have.property('role'));",
+                  "pm.test('X-Request-ID header set', () => pm.expect(pm.response.headers.get('X-Request-ID')).to.match(/^[0-9a-f\\-]{36}$/));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{base_url}}"
+          }
+        },
+        {
+          "name": "Health check — as Admin (shows system info)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('system block present for ADMIN', () => pm.expect(res).to.have.property('system'));",
+                  "pm.test('memory.heapUsed present', () => pm.expect(res.system.memory).to.have.property('heapUsed'));",
+                  "pm.test('pid present', () => pm.expect(res.system.pid).to.be.a('number'));"
+                ]
+              }
+            }
+          ],
+          "description": "Login as admin@iit.ac.lk first (Auth → Login), then run this to see the system block.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": "{{base_url}}"
           }
         }
