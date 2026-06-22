@@ -2,16 +2,17 @@ import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/co
 import { JwtService } from '@nestjs/jwt';
 import { Role, User } from '../../generated/prisma/client.js';
 import * as bcrypt from 'bcrypt';
+import { PointsService } from '../points/points.service.js';
 import { UsersService } from '../users/users.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
-import { TIER_FLOORS } from '../users/tier.utils.js';
 
 @Injectable()
 export class AuthService {
     constructor(
         private users: UsersService,
-        private jwt: JwtService
+        private jwt: JwtService,
+        private points: PointsService,
     ) {}
 
     async register(dto: RegisterDto) {
@@ -23,14 +24,15 @@ export class AuthService {
         const role = dto.role ?? Role.STUDENT;
         const passwordHash = await bcrypt.hash(dto.password, 10);
 
-        // New accounts start at 500 points; tier is derived from the thresholds (→ Tier 3).
+        // Create at 0 pts; ACCOUNT_CREATED event applies the +500 and sets Tier 3.
         const user = await this.users.create({
             email: dto.email,
             name: dto.name,
             passwordHash,
             role,
-            userPoints: TIER_FLOORS[3],
+            userPoints: 0,
         });
+        await this.points.applyFixed(user.id, 'ACCOUNT_CREATED');
 
         return this.buildAuthResponse(user);
     }
