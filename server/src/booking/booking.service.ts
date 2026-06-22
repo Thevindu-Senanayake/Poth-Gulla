@@ -11,9 +11,12 @@ import {
     HIGH_TIER_DEVICE_MIN,
     TIER_LIMITS,
 } from '../common/domain.constants.js';
+import { PointsService } from '../points/points.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WaitlistService } from '../waitlist/waitlist.service.js';
 import { CreateBookingDto } from './dto/create-booking.dto.js';
+
+const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 
 export type BookingListParams = {
     page: number;
@@ -28,6 +31,7 @@ export class BookingService {
     constructor(
         private prisma: PrismaService,
         private waitlist: WaitlistService,
+        private points: PointsService,
     ) {}
 
     async create(userId: string, dto: CreateBookingDto): Promise<Booking> {
@@ -174,13 +178,30 @@ export class BookingService {
             data: { status: BookingStatus.CANCELLED },
         });
 
-        // If slot was live (APPROVED), free it and promote next message-free entry
+        // If slot was live (APPROVED), apply cancellation charges and free the slot
         if (booking.status === BookingStatus.APPROVED) {
+            await this.applyCancelPoints(booking);
             const resourceKey = (booking.bookTitleId ?? booking.deviceId ?? booking.studyRoomId)!;
             await this.waitlist.onResourceFreed(booking.resourceType, resourceKey);
         }
 
         return updated;
+    }
+
+    private async applyCancelPoints(booking: Booking): Promise<void> {
+        const meta = { bookingId: booking.id };
+        if (booking.resourceType === ResourceType.ROOM) {
+            // Room: charge based on notice period
+            const notice = booking.startAt.getTime() - Date.now();
+            if (notice >= TWO_HOURS_MS) {
+                await this.points.applyFixed(booking.userId, 'ROOM_CANCEL_EARLY', meta);
+            } else {
+                await this.points.applyFixed(booking.userId, 'ROOM_CANCEL_LATE', meta);
+            }
+        } else {
+            // Book / Device: flat -25
+            await this.points.applyFixed(booking.userId, 'BOOKING_CANCELLED', meta);
+        }
     }
 
     findById(id: string): Promise<Booking | null> {
