@@ -3,13 +3,13 @@ import { Role } from '../../../generated/prisma/client.js';
 
 export class RegisterDto {
     @IsEmail()
-    email: string;
+    email!: string;
 
     @MinLength(8)
-    password: string;
+    password!: string;
 
     @IsString()
-    name: string;
+    name!: string;
 
     @IsOptional()
     @IsEnum(Role)
