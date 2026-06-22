@@ -74,15 +74,24 @@ JWT_EXPIRES_IN=7d
 yarn install
 ```
 
-### 3. Create the database schema and seed demo accounts
+### 3. Create the database schema and seed demo data
 
 Start the containers first (`yarn dev` in one terminal), then in a second terminal:
 
 ```bash
 cd server
-yarn prisma db push       # creates tables
-yarn tsx prisma/seed.ts   # seeds 4 demo accounts
+yarn prisma db push       # creates tables from schema
+yarn prisma generate      # regenerate Prisma client
+yarn tsx prisma/seed.ts   # seeds demo accounts + catalogue data
 ```
+
+The seed inserts:
+
+- 4 demo user accounts (admin, staff, lecturer, student)
+- 5 categories (3 book, 2 device)
+- 6 book titles with 14 physical copies
+- 9 devices across tiers 2–5
+- 4 study rooms
 
 ---
 
@@ -115,17 +124,63 @@ npx localtunnel --port 3000
 
 Base URL: `http://localhost:3000/api`
 
+### Auth
+
 | Method | Route | Auth | Description |
 | --- | --- | --- | --- |
 | `GET` | `/` | Public | Health check |
-| `POST` | `/auth/login` | Public (409 if valid token present) | Login, returns JWT |
+| `POST` | `/auth/login` | Public (409 if token present) | Login, returns JWT |
 | `POST` | `/auth/register` | ADMIN | Create a new user account |
+| `POST` | `/auth/logout` | JWT | Acknowledge logout (client clears token) |
 | `GET` | `/auth/me` | JWT | Validate token + get current user |
-| `GET` | `/users` | ADMIN, LIBRARY_STAFF | List users — supports `?page`, `?limit`, `?role`, `?tier`, `?isActive`, `?search` (name/email) |
-| `GET` | `/users/:id` | ADMIN, LIBRARY_STAFF | Get a single user by ID |
-| `PATCH` | `/users/:id` | ADMIN | Update name, role, userPoints, or tier |
-| `PATCH` | `/users/:id/disable` | ADMIN | Disable a user account (blocks their JWT) |
-| `PATCH` | `/users/:id/enable` | ADMIN | Re-enable a disabled user account |
+
+### Users
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/users` | ADMIN, STAFF | List users — `?page`, `?limit`, `?role`, `?tier`, `?isActive`, `?search` |
+| `GET` | `/users/:id` | ADMIN, STAFF | Get user by ID |
+| `PATCH` | `/users/:id` | ADMIN | Update name, role, userPoints, or tier (tier↔points are coupled) |
+| `PATCH` | `/users/:id/disable` | ADMIN | Disable account (blocks JWT) |
+| `PATCH` | `/users/:id/enable` | ADMIN | Re-enable account |
+
+### Bookings
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `POST` | `/bookings` | JWT | Create booking — routes to `APPROVED`, `PENDING`, or `WAITLIST` |
+| `GET` | `/bookings/me` | JWT | Own bookings — `?status`, `?resourceType`, `?page`, `?limit` |
+| `GET` | `/bookings` | ADMIN, STAFF | All bookings — `?userId`, `?resourceType`, `?status`, `?page`, `?limit` |
+| `GET` | `/bookings/:id` | JWT (owner or ADMIN/STAFF) | Get single booking |
+| `PATCH` | `/bookings/:id/approve` | ADMIN, STAFF | Approve a `PENDING` device booking |
+| `PATCH` | `/bookings/:id/reject` | ADMIN, STAFF | Reject a `PENDING` booking |
+| `POST` | `/bookings/:id/cancel` | JWT (owner) | Cancel own booking; frees slot + promotes waitlist |
+| `POST` | `/bookings/:id/cancel-any` | ADMIN, STAFF | Cancel any booking |
+
+**Booking body:**
+
+```json
+{
+  "resourceType": "BOOK | DEVICE | ROOM",
+  "resourceId": "<bookTitleId | deviceId | studyRoomId>",
+  "startAt": "2026-06-22T09:00:00.000Z",
+  "endAt":   "2026-06-29T09:00:00.000Z",
+  "message": "(optional) reason, floats entry to top of staff review queue"
+}
+```
+
+**Routing logic:** BOOK → free copy available? `APPROVED` : `WAITLIST`. DEVICE tier 1–3 → available? `APPROVED` : `WAITLIST`. DEVICE tier 4–5 → available? `PENDING` (staff must approve) : `WAITLIST`. ROOM → no time overlap? `APPROVED` : `WAITLIST`.
+
+### Waitlist
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/waitlist/me` | JWT | Own pending waitlist entries |
+| `GET` | `/waitlist/:resourceType/:resourceKey` | ADMIN, STAFF | Full ordered queue for a resource |
+| `POST` | `/waitlist/:id/promote` | ADMIN, STAFF | Promote entry → booking becomes `APPROVED` + gets `qrToken` |
+| `POST` | `/waitlist/:id/dismiss` | ADMIN, STAFF | Dismiss entry |
+
+**Queue order:** `hasMessage DESC, priorityScore DESC` where `priorityScore = tier × 0.6 + roleWeight × 0.4` (Lecturer weight 5, Student weight 3). Message-free queues auto-promote on a free event; any message pauses auto-promotion for staff review.
 
 **Auth flow:**
 
