@@ -7,11 +7,6 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-interface ValidationError {
-    field: string;
-    message: string[];
-}
-
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
     catch(exception: unknown, host: ArgumentsHost): void {
