@@ -4,20 +4,47 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
+import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 import { Device, ItemStatus } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
 export class CreateDeviceDto {
+    @IsString()
+    @IsNotEmpty()
     name!: string;
+
+    @IsString()
+    @IsNotEmpty()
     assetTag!: string;
+
+    @IsInt()
+    @Min(1)
+    @Max(5)
     deviceTier!: number;
+
+    @IsUUID()
+    @IsOptional()
     categoryId?: string;
 }
 
 export class UpdateDeviceDto {
+    @IsString()
+    @IsNotEmpty()
+    @IsOptional()
     name?: string;
+
+    @IsInt()
+    @Min(1)
+    @Max(5)
+    @IsOptional()
     deviceTier?: number;
+
+    @IsUUID()
+    @IsOptional()
     categoryId?: string;
+
+    @IsEnum(ItemStatus)
+    @IsOptional()
     status?: ItemStatus;
 }
 
