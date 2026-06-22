@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
+import { TIER_FLOORS } from '../users/tier.utils.js';
 
 @Injectable()
 export class AuthService {
@@ -22,13 +23,13 @@ export class AuthService {
         const role = dto.role ?? Role.STUDENT;
         const passwordHash = await bcrypt.hash(dto.password, 10);
 
+        // New accounts start at 500 points; tier is derived from the thresholds (→ Tier 3).
         const user = await this.users.create({
             email: dto.email,
             name: dto.name,
             passwordHash,
             role,
-            userPoints: 500,
-            tier: 3,
+            userPoints: TIER_FLOORS[3],
         });
 
         return this.buildAuthResponse(user);
