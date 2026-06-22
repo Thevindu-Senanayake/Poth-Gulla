@@ -4,26 +4,71 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
+import { IsArray, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import { BookCopy, BookTitle, ItemStatus } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
 export class CreateBookTitleDto {
+    @IsString()
+    @IsNotEmpty()
     title!: string;
+
+    @IsString()
+    @IsNotEmpty()
     author!: string;
+
+    @IsString()
+    @IsOptional()
     isbn?: string;
+
+    @IsString()
+    @IsOptional()
     language?: string;
+
+    @IsString()
+    @IsOptional()
     description?: string;
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
     tags?: string[];
+
+    @IsUUID()
+    @IsOptional()
     categoryId?: string;
 }
 
 export class UpdateBookTitleDto {
+    @IsString()
+    @IsNotEmpty()
+    @IsOptional()
     title?: string;
+
+    @IsString()
+    @IsNotEmpty()
+    @IsOptional()
     author?: string;
+
+    @IsString()
+    @IsOptional()
     isbn?: string;
+
+    @IsString()
+    @IsOptional()
     language?: string;
+
+    @IsString()
+    @IsOptional()
     description?: string;
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
     tags?: string[];
+
+    @IsUUID()
+    @IsOptional()
     categoryId?: string;
 }
 
@@ -103,6 +148,23 @@ export class BookService {
 
     async remove(id: string): Promise<BookTitle> {
         await this.findOrThrow(id);
+        const [copies, bookings, reviews] = await Promise.all([
+            this.prisma.bookCopy.count({ where: { bookTitleId: id } }),
+            this.prisma.booking.count({ where: { bookTitleId: id } }),
+            this.prisma.review.count({ where: { bookTitleId: id } }),
+        ]);
+        if (copies > 0)
+            throw new BadRequestException(
+                `Retire all ${copies} cop${copies === 1 ? 'y' : 'ies'} before deleting the title`,
+            );
+        if (bookings > 0)
+            throw new BadRequestException(
+                `Cannot delete a title with ${bookings} booking record${bookings === 1 ? '' : 's'}`,
+            );
+        if (reviews > 0)
+            throw new BadRequestException(
+                `Cannot delete a title with ${reviews} review${reviews === 1 ? '' : 's'}`,
+            );
         return this.prisma.bookTitle.delete({ where: { id } });
     }
 
