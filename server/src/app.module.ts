@@ -4,6 +4,7 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BookingModule } from './booking/booking.module.js';
+import { CatalogueModule } from './catalogue/catalogue.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { WaitlistModule } from './waitlist/waitlist.module.js';
 
@@ -14,6 +15,7 @@ import { WaitlistModule } from './waitlist/waitlist.module.js';
         AuthModule,
         BookingModule,
         WaitlistModule,
+        CatalogueModule,
     ],
     controllers: [AppController],
     providers: [AppService],
