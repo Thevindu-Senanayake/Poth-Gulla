@@ -4,7 +4,11 @@ import { AppController } from './app.controller.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BookingModule } from './booking/booking.module.js';
 import { CatalogueModule } from './catalogue/catalogue.module.js';
+import { OverdueModule } from './overdue/overdue.module.js';
+import { PointsModule } from './points/points.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { ReviewModule } from './review/review.module.js';
+import { ScanModule } from './scan/scan.module.js';
 import { WaitlistModule } from './waitlist/waitlist.module.js';
 
 @Module({
@@ -15,6 +19,10 @@ import { WaitlistModule } from './waitlist/waitlist.module.js';
         BookingModule,
         WaitlistModule,
         CatalogueModule,
+        PointsModule,
+        ScanModule,
+        OverdueModule,
+        ReviewModule,
     ],
     controllers: [AppController],
     providers: [],
