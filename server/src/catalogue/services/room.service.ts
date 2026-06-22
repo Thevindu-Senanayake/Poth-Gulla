@@ -4,21 +4,51 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
+import { IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 import { BookingStatus, ItemStatus, StudyRoom } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
 export class CreateRoomDto {
+    @IsString()
+    @IsNotEmpty()
     name!: string;
+
+    @IsInt()
+    @Min(1)
     capacity!: number;
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
     features?: string[];
+
+    @IsString()
+    @IsNotEmpty()
     roomQr!: string;
 }
 
 export class UpdateRoomDto {
+    @IsString()
+    @IsNotEmpty()
+    @IsOptional()
     name?: string;
+
+    @IsInt()
+    @Min(1)
+    @IsOptional()
     capacity?: number;
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
     features?: string[];
+
+    @IsString()
+    @IsOptional()
     roomQr?: string;
+
+    @IsEnum(ItemStatus)
+    @IsOptional()
     status?: ItemStatus;
 }
 
