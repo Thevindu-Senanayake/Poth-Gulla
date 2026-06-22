@@ -44,6 +44,7 @@ export class EventLoggerInterceptor implements NestInterceptor {
 
         const requestId = randomUUID();
         req.requestId = requestId;
+        res.setHeader('X-Request-ID', requestId);
         const startMs = Date.now();
 
         const query = req.query && Object.keys(req.query).length ? req.query : undefined;
