@@ -6,7 +6,10 @@
   "variable": [
     { "key": "base_url", "value": "http://localhost:3000/api" },
     { "key": "token", "value": "" },
-    { "key": "user_id", "value": "" }
+    { "key": "user_id", "value": "" },
+    { "key": "booking_id", "value": "" },
+    { "key": "waitlist_entry_id", "value": "" },
+    { "key": "resource_id", "value": "PASTE_ID_FROM_SEED_HERE" }
   ],
   "item": [
     {
@@ -37,6 +40,54 @@
           }
         },
         {
+          "name": "Login as Lecturer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.accessToken) pm.collectionVariables.set('token', res.accessToken);",
+                  "if (res.user?.id) pm.collectionVariables.set('user_id', res.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"lecturer@iit.ac.lk\",\n  \"password\": \"Password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login as Student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.accessToken) pm.collectionVariables.set('token', res.accessToken);",
+                  "if (res.user?.id) pm.collectionVariables.set('user_id', res.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@iit.ac.lk\",\n  \"password\": \"Password123\"\n}"
+            }
+          }
+        },
+        {
           "name": "Login — already authenticated (expect 409)",
           "request": {
             "method": "POST",
@@ -57,6 +108,14 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{base_url}}/auth/me"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/auth/logout"
           }
         },
         {
@@ -184,7 +243,22 @@
             "url": "{{base_url}}/users/{{user_id}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"role\": \"LECTURER\",\n  \"userPoints\": 750,\n  \"tier\": 2\n}"
+              "raw": "{\n  \"role\": \"LECTURER\",\n  \"userPoints\": 750\n}"
+            }
+          }
+        },
+        {
+          "name": "Promote user to tier (admin only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/users/{{user_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tier\": 4\n}"
             }
           }
         },
@@ -202,6 +276,311 @@
             "method": "PATCH",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{base_url}}/users/{{user_id}}/enable"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create booking — BOOK",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) pm.collectionVariables.set('booking_id', res.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/bookings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceType\": \"BOOK\",\n  \"resourceId\": \"{{resource_id}}\",\n  \"startAt\": \"2026-06-23T09:00:00.000Z\",\n  \"endAt\": \"2026-07-07T09:00:00.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create booking — DEVICE (tier 1-3, auto-APPROVED)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) pm.collectionVariables.set('booking_id', res.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/bookings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceType\": \"DEVICE\",\n  \"resourceId\": \"{{resource_id}}\",\n  \"startAt\": \"2026-06-23T09:00:00.000Z\",\n  \"endAt\": \"2026-06-30T09:00:00.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create booking — DEVICE (tier 4-5, expect PENDING)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) pm.collectionVariables.set('booking_id', res.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/bookings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceType\": \"DEVICE\",\n  \"resourceId\": \"{{resource_id}}\",\n  \"startAt\": \"2026-06-23T09:00:00.000Z\",\n  \"endAt\": \"2026-06-30T09:00:00.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create booking — ROOM",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) pm.collectionVariables.set('booking_id', res.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/bookings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceType\": \"ROOM\",\n  \"resourceId\": \"{{resource_id}}\",\n  \"startAt\": \"2026-06-23T10:00:00.000Z\",\n  \"endAt\": \"2026-06-23T12:00:00.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create booking — with waitlist message",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) pm.collectionVariables.set('booking_id', res.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/bookings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceType\": \"BOOK\",\n  \"resourceId\": \"{{resource_id}}\",\n  \"startAt\": \"2026-06-23T09:00:00.000Z\",\n  \"endAt\": \"2026-07-07T09:00:00.000Z\",\n  \"message\": \"I need this urgently for my thesis submission.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create booking — exceeds duration cap (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/bookings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceType\": \"BOOK\",\n  \"resourceId\": \"{{resource_id}}\",\n  \"startAt\": \"2026-06-23T09:00:00.000Z\",\n  \"endAt\": \"2026-07-10T09:00:00.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "My bookings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/bookings/me?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "me"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "APPROVED", "disabled": true },
+                { "key": "resourceType", "value": "BOOK", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "All bookings (admin/staff)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/bookings?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["bookings"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "PENDING", "disabled": true },
+                { "key": "resourceType", "value": "DEVICE", "disabled": true },
+                { "key": "userId", "value": "{{user_id}}", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get booking by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/bookings/{{booking_id}}"
+          }
+        },
+        {
+          "name": "Approve booking (admin/staff)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/bookings/{{booking_id}}/approve"
+          }
+        },
+        {
+          "name": "Reject booking (admin/staff)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/bookings/{{booking_id}}/reject"
+          }
+        },
+        {
+          "name": "Cancel own booking",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/bookings/{{booking_id}}/cancel"
+          }
+        },
+        {
+          "name": "Cancel any booking (admin/staff)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/bookings/{{booking_id}}/cancel-any"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Waitlist",
+      "item": [
+        {
+          "name": "My waitlist entries",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (Array.isArray(res) && res[0]?.id) pm.collectionVariables.set('waitlist_entry_id', res[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/waitlist/me"
+          }
+        },
+        {
+          "name": "Queue for a book title (admin/staff)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/waitlist/BOOK/{{resource_id}}"
+          }
+        },
+        {
+          "name": "Queue for a device (admin/staff)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/waitlist/DEVICE/{{resource_id}}"
+          }
+        },
+        {
+          "name": "Queue for a room (admin/staff)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/waitlist/ROOM/{{resource_id}}"
+          }
+        },
+        {
+          "name": "Promote waitlist entry (admin/staff)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/waitlist/{{waitlist_entry_id}}/promote",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"staffNotes\": \"Approved based on urgency message.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Dismiss waitlist entry (admin/staff)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/waitlist/{{waitlist_entry_id}}/dismiss",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"staffNotes\": \"Request does not meet the criteria.\"\n}"
+            }
           }
         }
       ]
