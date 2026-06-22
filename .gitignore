@@ -4,3 +4,6 @@
 /node_modules
 .claude/
 .turbo/
+
+# API event logs (replay-able JSONL, not committed)
+server/logs/
