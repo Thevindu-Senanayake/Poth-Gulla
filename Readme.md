@@ -128,7 +128,7 @@ Base URL: `http://localhost:3000/api`
 
 | Method | Route | Auth | Description |
 | --- | --- | --- | --- |
-| `GET` | `/` | Public | Health check |
+| `GET` | `/` | Public | Health check — returns `{ status, name, version, environment, uptime, timestamp, database }`. Authenticated callers get `auth: { userId, role }`. ADMIN callers also get `system: { pid, nodeVersion, memory }`. Status becomes `"degraded"` if the DB is unreachable. |
 | `POST` | `/auth/login` | Public (409 if token present) | Login, returns JWT |
 | `POST` | `/auth/register` | ADMIN | Create a new user account |
 | `POST` | `/auth/logout` | JWT | Acknowledge logout (client clears token) |
@@ -243,6 +243,27 @@ All read endpoints are public (any authenticated user). Write endpoints require 
 | `staff@iit.ac.lk`    | LIBRARY_STAFF |
 | `lecturer@iit.ac.lk` | LECTURER      |
 | `student@iit.ac.lk`  | STUDENT       |
+
+### Response conventions
+
+Every response includes an `X-Request-ID` header (UUID) that links to the corresponding line in `server/logs/events.jsonl` for tracing.
+
+Error responses always follow:
+
+```json
+{
+  "statusCode": 400,
+  "timestamp": "2026-06-23T…",
+  "path": "/api/…",
+  "message": "Validation failed",
+  "error": "Bad Request",
+  "errors": { "email": ["email must be an email"] }
+}
+```
+
+`errors` is only present on validation failures and groups messages by field name. In development (`NODE_ENV != production`) a `stack` field is also included on every error.
+
+**Limits:** JSON and URL-encoded request bodies are capped at 5 MB. Requests that do not complete within 30 seconds are aborted.
 
 ---
 
