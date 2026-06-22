@@ -24,7 +24,24 @@ export class JwtAuthGuard implements CanActivate {
             context.getHandler(),
             context.getClass(),
         ]);
-        if (isPublic) return true;
+        if (isPublic) {
+            // Best-effort: attach user even on public routes so they can personalise responses
+            try {
+                const header: string | undefined = request.headers.authorization;
+                if (header?.startsWith('Bearer ')) {
+                    const payload = await this.jwtService.verifyAsync(header.slice(7), {
+                        secret: this.config.get<string>('JWT_SECRET'),
+                    });
+                    const user = await this.users.findById(payload.sub);
+                    if (user?.isActive) {
+                        request.user = { userId: payload.sub, email: payload.email, role: payload.role };
+                    }
+                }
+            } catch {
+                // silently ignore — public route, caller stays unauthenticated
+            }
+            return true;
+        }
 
         const request = context.switchToHttp().getRequest();
         const header: string | undefined = request.headers.authorization;
