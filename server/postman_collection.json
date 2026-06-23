@@ -47,6 +47,22 @@
     {
       "key": "category_id",
       "value": ""
+    },
+    {
+      "key": "booking_qr",
+      "value": ""
+    },
+    {
+      "key": "asset_tag",
+      "value": ""
+    },
+    {
+      "key": "room_qr",
+      "value": ""
+    },
+    {
+      "key": "review_id",
+      "value": ""
     }
   ],
   "item": [
@@ -1567,6 +1583,421 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Points",
+      "item": [
+        {
+          "name": "My point history",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('data is array', () => pm.expect(res.data).to.be.an('array'));",
+                  "pm.test('total present', () => pm.expect(res.total).to.be.a('number'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/points/me?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["points", "me"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Point history for user (admin/staff)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/points/{{user_id}}?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["points", "{{user_id}}"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scan",
+      "item": [
+        {
+          "name": "Checkout — bind asset to booking QR (admin/staff)",
+          "description": "Staff scan: booking QR from qrToken field + physical asset tag on the item.\nSet booking_qr to the qrToken value from an APPROVED booking.\nSet asset_tag to the assetTag of the matching copy or device.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "const res = pm.response.json();",
+                  "pm.test('booking status is COMPLETED', () => pm.expect(res.status).to.equal('COMPLETED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/scan/checkout",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingQr\": \"{{booking_qr}}\",\n  \"assetTag\": \"{{asset_tag}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Room check-in — user scans door QR",
+          "description": "User scans the room's door QR during their active booking window.\nSet room_qr to the roomQr value from the StudyRoom record.\nRequires an APPROVED booking whose startAt <= now <= endAt.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "const res = pm.response.json();",
+                  "pm.test('booking status is COMPLETED', () => pm.expect(res.status).to.equal('COMPLETED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/scan/room-checkin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomQr\": \"{{room_qr}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Return — good condition (admin/staff)",
+          "description": "Staff scan asset tag on return. condition: GOOD | DAMAGED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/scan/return",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assetTag\": \"{{asset_tag}}\",\n  \"condition\": \"GOOD\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Return — damaged (admin/staff, expect extra -300 pts)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/scan/return",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assetTag\": \"{{asset_tag}}\",\n  \"condition\": \"DAMAGED\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Return — invalid asset tag (expect 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/scan/return",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assetTag\": \"DOES-NOT-EXIST\",\n  \"condition\": \"GOOD\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Overdue & Notifications",
+      "item": [
+        {
+          "name": "Run overdue sweep (admin/staff)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "const res = pm.response.json();",
+                  "pm.test('borrowingsProcessed present', () => pm.expect(res.borrowingsProcessed).to.be.a('number'));",
+                  "pm.test('noShowsProcessed present', () => pm.expect(res.noShowsProcessed).to.be.a('number'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/overdue/run"
+          }
+        },
+        {
+          "name": "My notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('data is array', () => pm.expect(res.data).to.be.an('array'));",
+                  "pm.test('meta.total present', () => pm.expect(res.meta.total).to.be.a('number'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/me?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "me"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "unreadOnly", "value": "true", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My notifications — unread only",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/me?unreadOnly=true&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "me"],
+              "query": [
+                { "key": "unreadOnly", "value": "true" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark all notifications read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/notifications/read-all"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "List reviews for a book",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('data is array', () => pm.expect(res.data).to.be.an('array'));",
+                  "if (res.data[0]?.id) pm.collectionVariables.set('review_id', res.data[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reviews/book/{{book_title_id}}?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "book", "{{book_title_id}}"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create review (requires completed borrowing)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "const res = pm.response.json();",
+                  "if (res.id) pm.collectionVariables.set('review_id', res.id);",
+                  "pm.test('review has text', () => pm.expect(res.text).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/reviews/book/{{book_title_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Excellent resource, very well written and insightful.\",\n  \"rating\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "Create review — duplicate (expect 409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 conflict', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/reviews/book/{{book_title_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Second review attempt — should be rejected.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create review — no borrowing (expect 400)",
+          "description": "Attempt to review a book the user has never borrowed. Expects 400.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/reviews/book/00000000-0000-0000-0000-000000000000",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Should fail — never borrowed this book.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete review (owner or admin/staff)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/reviews/{{review_id}}"
+          }
         }
       ]
     },
