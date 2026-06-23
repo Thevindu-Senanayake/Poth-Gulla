@@ -9,6 +9,7 @@ import {
     Post,
     Query,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { BookingStatus, ResourceType, Role } from '../../generated/prisma/client.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -23,16 +24,19 @@ interface JwtUser {
 
 const STAFF_ROLES: Role[] = [Role.ADMIN, Role.LIBRARY_STAFF];
 
+@ApiTags('Bookings')
+@ApiBearerAuth('JWT')
 @Controller('bookings')
 export class BookingController {
     constructor(private readonly bookings: BookingService) {}
 
+    @ApiOperation({ summary: 'Create a booking for a book, device, or room' })
     @Post()
     create(@CurrentUser() user: JwtUser, @Body() dto: CreateBookingDto) {
         return this.bookings.create(user.userId, dto);
     }
 
-    /** Own bookings — must be declared before /:id to avoid route conflict. */
+    @ApiOperation({ summary: 'Get own bookings (paginated, filterable by status and resource type)' })
     @Get('me')
     findMine(
         @CurrentUser() user: JwtUser,
@@ -51,6 +55,7 @@ export class BookingController {
             .then(([data, total]) => ({ data, total, page: parseInt(page, 10) }));
     }
 
+    @ApiOperation({ summary: 'List all bookings system-wide (Admin/Staff)' })
     @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
     @Get()
     findAll(
@@ -71,6 +76,7 @@ export class BookingController {
             .then(([data, total]) => ({ data, total, page: parseInt(page, 10) }));
     }
 
+    @ApiOperation({ summary: 'Get a single booking by ID' })
     @Get(':id')
     async findOne(@Param('id') id: string, @CurrentUser() user: JwtUser) {
         const booking = await this.bookings.findById(id);
@@ -81,23 +87,27 @@ export class BookingController {
         return booking;
     }
 
+    @ApiOperation({ summary: 'Approve a PENDING booking (Admin/Staff)' })
     @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
     @Patch(':id/approve')
     approve(@Param('id') id: string) {
         return this.bookings.approve(id);
     }
 
+    @ApiOperation({ summary: 'Reject a PENDING booking (Admin/Staff)' })
     @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
     @Patch(':id/reject')
     reject(@Param('id') id: string) {
         return this.bookings.reject(id);
     }
 
+    @ApiOperation({ summary: 'Cancel own booking (−25 pts if approved and non-emergency)' })
     @Post(':id/cancel')
     cancel(@Param('id') id: string, @CurrentUser() user: JwtUser) {
         return this.bookings.cancel(user.userId, id, false);
     }
 
+    @ApiOperation({ summary: 'Cancel any booking (Admin/Staff)' })
     @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
     @Post(':id/cancel-any')
     cancelAny(@Param('id') id: string, @CurrentUser() user: JwtUser) {
