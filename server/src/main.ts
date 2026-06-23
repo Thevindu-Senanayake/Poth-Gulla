@@ -35,7 +35,9 @@ async function bootstrap() {
             .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'JWT')
             .build();
         const document = SwaggerModule.createDocument(app, config);
-        SwaggerModule.setup('docs', app, document, {
+        // Mount at /api/docs (the global prefix is NOT applied to Swagger's path,
+        // so it must be included explicitly). UI: /api/docs · JSON: /api/docs-json.
+        SwaggerModule.setup('api/docs', app, document, {
             swaggerOptions: { persistAuthorization: true },
         });
     }
