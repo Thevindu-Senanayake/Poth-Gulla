@@ -26,7 +26,12 @@ services:
       - "6379:6379"
 
   # ---- Backend: NestJS API ----
+  # Behind the "full" profile so it does NOT start with a plain `docker compose up`.
+  # In normal dev (`yarn dev`) the backend runs natively via Turbo on port 3000;
+  # starting this container too would collide on that port. Run the fully
+  # containerized stack with: `docker compose --profile full up`.
   backend:
+    profiles: ["full"]
     build:
       context: ./server
       dockerfile: Dockerfile
@@ -50,7 +55,9 @@ services:
       - /app/generated
 
   # ---- Frontend: Vite Admin Dashboard ----
+  # Also "full" profile — the admin web runs natively via Turbo in normal dev.
   admin:
+    profiles: ["full"]
     build:
       context: ./admin-web-client
       dockerfile: Dockerfile
@@ -77,8 +84,6 @@ services:
     volumes:
       - ./infra/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
-    depends_on:
-      - backend
 
   # ---- Observability: Grafana ----
   grafana:
