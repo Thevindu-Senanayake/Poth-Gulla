@@ -1,12 +1,16 @@
 import { Controller, Get, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '../../generated/prisma/client.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { AuditService } from './audit.service.js';
 
+@ApiTags('Audit Log')
+@ApiBearerAuth('JWT')
 @Controller('audit')
 export class AuditController {
     constructor(private audit: AuditService) {}
 
+    @ApiOperation({ summary: 'Query the system-wide audit log (Admin only)' })
     @Get('logs')
     @Roles(Role.ADMIN)
     findMany(

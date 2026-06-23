@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '../../generated/prisma/client.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -7,6 +8,7 @@ import { OverdueService } from './overdue.service.js';
 
 interface AuthUser { userId: string; role: Role; }
 
+@ApiBearerAuth('JWT')
 @Controller()
 export class OverdueController {
     constructor(
@@ -14,12 +16,16 @@ export class OverdueController {
         private prisma: PrismaService,
     ) {}
 
+    @ApiTags('Overdue')
+    @ApiOperation({ summary: 'Manually trigger the overdue sweep (Admin/Staff)' })
     @Post('overdue/run')
     @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
     runSweep() {
         return this.overdue.runSweep();
     }
 
+    @ApiTags('Notifications')
+    @ApiOperation({ summary: 'Get own notifications (paginated, optional unread filter)' })
     @Get('notifications/me')
     async myNotifications(
         @CurrentUser() user: AuthUser,
@@ -45,6 +51,8 @@ export class OverdueController {
         return { data: items, meta: { page: p, limit: l, total, pages: Math.ceil(total / l) } };
     }
 
+    @ApiTags('Notifications')
+    @ApiOperation({ summary: 'Mark all own notifications as read' })
     @Post('notifications/read-all')
     markAllRead(@CurrentUser() user: AuthUser) {
         return this.prisma.notification.updateMany({
