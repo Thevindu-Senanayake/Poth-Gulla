@@ -4,6 +4,10 @@ global:
 
 scrape_configs:
   - job_name: 'poth-gulla-api'
+    # host.docker.internal reaches the host machine, so this works for BOTH:
+    #   - normal dev (`yarn dev`): the backend runs natively on the host at :3000
+    #   - full stack (`docker compose --profile full up`): the backend container
+    #     publishes :3000 on the host, so it's reachable the same way.
     static_configs:
-      - targets: ['backend:3000']
+      - targets: ['host.docker.internal:3000']
     metrics_path: '/api/metrics'

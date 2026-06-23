@@ -81,6 +81,11 @@ services:
     restart: unless-stopped
     ports:
       - "9090:9090"
+    # Lets the container reach the host's published ports (the natively-run
+    # backend) via host.docker.internal. Automatic on Docker Desktop; this
+    # mapping makes it work on Linux too.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./infra/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
