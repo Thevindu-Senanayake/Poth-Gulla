@@ -180,7 +180,7 @@ export class ScanService {
         // Find an active borrowing by assetTag on either a book copy or device
         const borrowing = await this.prisma.borrowing.findFirst({
             where: {
-                status: BorrowingStatus.ACTIVE,
+                status: { in: [BorrowingStatus.ACTIVE, BorrowingStatus.OVERDUE] },
                 OR: [
                     { bookCopy: { assetTag: dto.assetTag } },
                     { device: { assetTag: dto.assetTag } },
@@ -247,11 +247,16 @@ export class ScanService {
             if (daysLate <= 7) return { action: 'BOOK_LATE_2_7D', delta: -20 * daysLate };
             return { action: 'BOOK_LATE_7D_PLUS', delta: -220 };
         }
-        // Device — positive rewards only if in good condition
-        if (daysLate < 0 && condition === ItemCondition.GOOD)
-            return { action: 'DEVICE_RETURNED_EARLY', delta: 40 };
-        if (daysLate <= 0 && condition === ItemCondition.GOOD)
-            return { action: 'DEVICE_RETURNED_ON_TIME', delta: 30 };
+        // Device — positive rewards only apply for GOOD condition.
+        // For early/on-time DAMAGED returns the timing delta is 0; DEVICE_DAMAGED is charged separately.
+        if (daysLate < 0)
+            return condition === ItemCondition.GOOD
+                ? { action: 'DEVICE_RETURNED_EARLY', delta: 40 }
+                : { action: 'DEVICE_RETURNED_EARLY', delta: 0 };
+        if (daysLate <= 0)
+            return condition === ItemCondition.GOOD
+                ? { action: 'DEVICE_RETURNED_ON_TIME', delta: 30 }
+                : { action: 'DEVICE_RETURNED_ON_TIME', delta: 0 };
         if (daysLate <= 3) return { action: 'DEVICE_LATE_1_3D', delta: -80 };
         return { action: 'DEVICE_LATE_3D_PLUS', delta: -160 };
     }
