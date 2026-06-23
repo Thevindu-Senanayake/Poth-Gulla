@@ -28,7 +28,7 @@ Monorepo managed with Yarn Workspaces and Turborepo. All three apps share one `y
 | Tool           | Version | Notes                                      |
 | -------------- | ------- | ------------------------------------------ |
 | Docker Desktop | Latest  | WSL2 backend on Windows                    |
-| Node.js        | v20+    |                                            |
+| Node.js        | v22+    | Required by Prisma 7                       |
 | Yarn           | v1.22+  | `npm install -g yarn`                      |
 | Expo Go        | Latest  | Installed on a physical iOS/Android device |
 
@@ -66,7 +66,8 @@ GRAFANA_ADMIN_PASSWORD=admin
 ```dotenv
 # Use 127.0.0.1, NOT localhost — on Windows, localhost resolves to ::1 (IPv6)
 # but Docker only binds on 127.0.0.1 (IPv4).
-DATABASE_URL="postgresql://admin:password123@127.0.0.1:5432/poth_gulla?schema=public"
+# Host port is 5433 (→ container 5432), so a native Postgres on 5432 doesn't clash.
+DATABASE_URL="postgresql://admin:password123@127.0.0.1:5433/poth_gulla?schema=public"
 
 JWT_SECRET=change-me-to-a-long-random-string
 JWT_EXPIRES_IN=7d
