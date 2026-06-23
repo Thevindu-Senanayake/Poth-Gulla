@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { useApp } from '../../App';
 import { useFetch } from '../../hooks/useFetch';
 import { myBookings } from '../../api/bookings';
 import { myWaitlist } from '../../api/waitlist';
 
 export default function Profile() {
-  const { user, showToast } = useApp();
+  const { user } = useApp();
+  const [contactOpen, setContactOpen] = useState(false);
   const { data } = useFetch(
     () => Promise.all([myBookings(), myWaitlist()]).then(([b, w]) => ({ bookings: b.items, waitlist: w })),
     []
@@ -59,7 +61,7 @@ export default function Profile() {
           </div>
         </div>
         <button
-          onClick={() => showToast('Profile saved!')}
+          onClick={() => setContactOpen(true)}
           style={{
             padding: '9px 18px', borderRadius: 10,
             background: 'linear-gradient(135deg,#16a34a,#22c55e)',
@@ -70,6 +72,53 @@ export default function Profile() {
           Edit Profile
         </button>
       </div>
+
+      {/* Profile fields are administrator-managed (account CRUD is Admin/Staff only). */}
+      {contactOpen && (
+        <div
+          onClick={() => setContactOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(6,24,15,0.58)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff', borderRadius: 16, width: 420, maxWidth: '92vw',
+              padding: '26px 26px 22px', boxShadow: '0 24px 60px rgba(6,24,15,0.22)',
+            }}
+          >
+            <div style={{
+              width: 44, height: 44, borderRadius: 12, marginBottom: 14,
+              background: '#f0fdf4', color: '#16a34a',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 16v-4M12 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+              </svg>
+            </div>
+            <h2 style={{ fontFamily: "'Spectral', serif", fontSize: 19, fontWeight: 700, color: '#16231b', margin: '0 0 8px' }}>
+              Contact an administrator
+            </h2>
+            <p style={{ fontSize: 13, color: '#5c5e72', lineHeight: 1.55, margin: '0 0 20px' }}>
+              Profile details — your name, email, role and tier — are managed by library
+              staff. To request a change, please contact an administrator at{' '}
+              <a href="mailto:admin@iit.ac.lk" style={{ color: '#16a34a', fontWeight: 600 }}>admin@iit.ac.lk</a>.
+            </p>
+            <button
+              onClick={() => setContactOpen(false)}
+              style={{
+                width: '100%', padding: '11px', borderRadius: 9, border: 'none',
+                background: '#16a34a', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              }}
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 20 }}>
