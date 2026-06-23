@@ -102,13 +102,18 @@ export default function App() {
   }
 
   function openBooking(resource) {
+    // Default the pickers to today / today+14d (still editable in the modal) instead
+    // of a hardcoded date, so startAt reflects when the booking is actually made.
+    const ymd = (ms) => new Date(ms).toISOString().slice(0, 10);
+    const bookDate = ymd(Date.now());
+    const bookReturn = ymd(Date.now() + 14 * 24 * 60 * 60 * 1000);
     const available = (resource.available ?? 0) > 0;
     if (!available) {
-      setBookingModal({ open: true, stage: 'waitlist', resource, bookDate: '2026-07-02', bookReturn: '2026-07-16', msg: '' });
+      setBookingModal({ open: true, stage: 'waitlist', resource, bookDate, bookReturn, msg: '' });
     } else if (resource.type === 'device' && (resource.tier ?? 0) >= 4) {
-      setBookingModal({ open: true, stage: 'approval', resource, bookDate: '2026-07-02', bookReturn: '2026-07-16', msg: '' });
+      setBookingModal({ open: true, stage: 'approval', resource, bookDate, bookReturn, msg: '' });
     } else {
-      setBookingModal({ open: true, stage: 'booking', resource, bookDate: '2026-07-02', bookReturn: '2026-07-16', msg: '' });
+      setBookingModal({ open: true, stage: 'booking', resource, bookDate, bookReturn, msg: '' });
     }
   }
 
