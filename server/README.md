@@ -16,7 +16,7 @@ Manages shared library resources — book copies, devices, and study rooms — w
 | Admin web (Vite) | `http://localhost:5173` | React + Tailwind |
 | Prometheus | `http://localhost:9090` | Scrapes API every 15 s |
 | Grafana | `http://localhost:3001` | admin / admin · dashboard auto-provisioned |
-| PostgreSQL | `localhost:5432` | Dockerized |
+| PostgreSQL | `localhost:5433` | Dockerized (host 5433 → container 5432) |
 | Redis | `localhost:6379` | Dockerized |
 
 ---
@@ -57,7 +57,14 @@ cd admin-web-client && yarn dev
 # Mobile
 cd client && npx expo start
 npx localtunnel --port 3000   # expose API for physical device
+
+# Fully containerized stack (backend + admin in Docker too, on the Docker network)
+docker compose --profile full up --build
 ```
+
+> A plain `docker compose up` (and `yarn dev`) starts **infra only** — `backend` and
+> `admin` sit behind the `full` profile so the native dev servers can own ports 3000/5173.
+> Use `--profile full` to run everything in containers instead.
 
 ---
 
@@ -226,7 +233,9 @@ Three QR types in the system:
 ### `server/.env` (host-side Prisma CLI)
 
 ```dotenv
-DATABASE_URL="postgresql://admin:password123@127.0.0.1:5432/poth_gulla?schema=public"
+# Host port 5433 → container 5432 (avoids clashing with a native Postgres on 5432)
+DATABASE_URL="postgresql://admin:password123@127.0.0.1:5433/poth_gulla?schema=public"
+REDIS_URL="redis://127.0.0.1:6379"
 JWT_SECRET=change-me-to-a-long-random-string
 JWT_EXPIRES_IN=7d
 ```
