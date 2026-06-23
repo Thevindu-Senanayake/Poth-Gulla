@@ -19,6 +19,12 @@ export class WaitlistController {
         return this.waitlist.myEntries(user.userId);
     }
 
+    @Get('position/:bookingId')
+    async position(@Param('bookingId') bookingId: string) {
+        const position = await this.waitlist.positionFor(bookingId);
+        return { position };
+    }
+
     @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
     @Get(':resourceType/:resourceKey')
     queue(
