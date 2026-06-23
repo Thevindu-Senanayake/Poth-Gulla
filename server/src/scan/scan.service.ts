@@ -147,7 +147,13 @@ export class ScanService {
     // ── Room check-in ─────────────────────────────────────────────────────
 
     async roomCheckin(userId: string, dto: RoomCheckinDto): Promise<Booking> {
-        const room = await this.prisma.studyRoom.findUnique({ where: { roomQr: dto.roomQr } });
+        // QR scanners frequently append a trailing newline/whitespace, and a door QR
+        // may encode either the permanent `roomQr` string or the room's `id`. Accept
+        // both (trimmed) so a check-in resolves to the same room regardless.
+        const code = dto.roomQr.trim();
+        const room = await this.prisma.studyRoom.findFirst({
+            where: { OR: [{ roomQr: code }, { id: code }] },
+        });
         if (!room) throw new NotFoundException('No study room matches this QR code');
 
         const now = new Date();
