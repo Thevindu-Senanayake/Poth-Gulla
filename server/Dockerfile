@@ -1,4 +1,6 @@
-FROM node:20-alpine
+# Node 22+ is required: Prisma 7 pulls in deps (e.g. @prisma/streams-local)
+# that declare "engines.node": ">=22". node:20 fails `yarn install`.
+FROM node:22-alpine
 
 WORKDIR /app
 
