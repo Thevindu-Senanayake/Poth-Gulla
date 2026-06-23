@@ -10,11 +10,12 @@ A decentralized library resource management system featuring ELO-style User Poin
 
 ```text
 Poth Gulla/
-├── server/              # NestJS API — PostgreSQL + Prisma + JWT auth
+├── server/              # NestJS API — PostgreSQL + Prisma + JWT + Redis + Prometheus
 ├── admin-web-client/    # React + Vite + Tailwind — staff/admin dashboard
 ├── client/              # React Native (Expo SDK 54) — student/lecturer mobile app
+├── infra/               # Prometheus scrape config + Grafana provisioning + dashboard
 ├── scripts/dev.mjs      # Dev runner: auto-starts Docker infra, launches all apps
-├── docker-compose.yml   # Postgres + Redis containers
+├── docker-compose.yml   # Postgres + Redis + Prometheus + Grafana containers
 └── .env                 # Root compose variables (not committed)
 ```
 
@@ -55,6 +56,9 @@ JWT_EXPIRES_IN=7d
 
 # Admin web (baked into browser bundle)
 VITE_API_URL=http://localhost:3000/api
+
+# Grafana admin password (defaults to "admin" if omitted)
+GRAFANA_ADMIN_PASSWORD=admin
 ```
 
 **`server/.env`** (for Prisma CLI and native backend runs):
@@ -106,8 +110,14 @@ yarn dev
 | Service         | URL                                   |
 | --------------- | ------------------------------------- |
 | API             | `http://localhost:3000/api`           |
+| Swagger UI      | `http://localhost:3000/api/docs`      |
+| API metrics     | `http://localhost:3000/api/metrics`   |
 | Admin Dashboard | `http://localhost:5173`               |
+| Prometheus      | `http://localhost:9090`               |
+| Grafana         | `http://localhost:3001` (admin/admin) |
 | Mobile (Expo)   | Scan QR code in terminal with Expo Go |
+
+`yarn dev` now also starts the Prometheus and Grafana containers alongside Postgres and Redis.
 
 ### Mobile app — physical device access
 
@@ -273,6 +283,24 @@ The overdue sweep handles two cases:
 | `POST` | `/reviews/book/:bookTitleId` | JWT | Write a review. Body: `{ text, rating? (1–5) }`. Requires a `COMPLETED` booking for that book. One review per user per title. Awards `+15` pts. |
 | `DELETE` | `/reviews/:id` | JWT (owner or ADMIN/STAFF) | Delete a review |
 
+### Recommendations
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/recommendations/me` | LECTURER, STUDENT | Personalised book recommendations from borrowing-history tags — `?limit` (1–50, default 10). Falls back to newest unread titles for users with no history. **Redis-cached 5 min per user.** |
+
+### Audit Log
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/audit/logs` | ADMIN | System-wide action log — `?page`, `?limit` (max 200), `?actorId`, `?action` (case-insensitive contains), `?targetType`. Returns `{ data, meta }` with `actor: { id, name, role }`. |
+
+### Metrics
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/metrics` | Public | Prometheus exposition format (`text/plain`). Scraped by the Prometheus container. |
+
 ---
 
 **Auth flow:**
@@ -313,13 +341,87 @@ Error responses always follow:
 
 ---
 
+## API Documentation (Swagger)
+
+Interactive OpenAPI docs are served at **`http://localhost:3000/api/docs`** whenever `NODE_ENV` is not `production`.
+
+Every controller is annotated with `@ApiTags`, `@ApiOperation`, and `@ApiBearerAuth`, so the UI groups all routes by feature (Auth, Users, Bookings, Waitlist, Catalogue, Scan, Points, Overdue, Notifications, Reviews, Recommendations, Audit Log).
+
+To call protected routes from the browser:
+
+1. Open `/api/docs`.
+2. `POST /auth/login` with a demo account, copy the `accessToken`.
+3. Click **Authorize** (top right), paste the token, and execute any endpoint — the bearer token persists across requests.
+
+The raw OpenAPI JSON is available at `http://localhost:3000/api/docs-json`.
+
+---
+
+## Caching (Redis)
+
+Catalogue and recommendation reads are cached in Redis as a read-through layer. Mutations invalidate the relevant key patterns (`SCAN` + `DEL`), and a Redis outage degrades gracefully — the API always falls back to Postgres.
+
+| Endpoint | TTL | Invalidated by |
+| --- | --- | --- |
+| `GET /catalogue/books` | 30 s | any book / copy mutation |
+| `GET /catalogue/books/:id` | 60 s | book update / delete / copy change |
+| `GET /catalogue/devices` | 30 s | any device mutation |
+| `GET /catalogue/devices/:id` | 60 s | device update / delete |
+| `GET /catalogue/rooms` (no slot filter) | 20 s | any room mutation |
+| `GET /catalogue/rooms/:id` | 60 s | room update / delete |
+| `GET /recommendations/me` | 5 min | natural expiry (per-user key) |
+
+Room availability queries (`?startAt` + `?endAt`) are never cached, since they depend on live booking overlap.
+
+---
+
+## Observability (Prometheus + Grafana)
+
+The API exposes Prometheus metrics at **`GET /api/metrics`** (public, so Prometheus can scrape without auth). A global interceptor records every request.
+
+| Metric | Type | Labels |
+| --- | --- | --- |
+| `http_requests_total` | Counter | `method`, `route`, `status_code` |
+| `http_request_duration_seconds` | Histogram | `method`, `route`, `status_code` |
+| `library_bookings_created_total` | Counter | `resource_type`, `status` |
+| `library_active_borrowings` | Gauge | — |
+| Node.js process/runtime metrics | default | — |
+
+**Prometheus** (`http://localhost:9090`) scrapes the API every 15 s — config in `infra/prometheus.yml`.
+
+**Grafana** (`http://localhost:3001`, login `admin` / `admin`) auto-provisions the Prometheus datasource and a **Poth Gulla — API Overview** dashboard on first start (request rate, P50/P95/P99 latency, total requests, active borrowings, error rate %, bookings by resource type). Provisioning files live in `infra/grafana/provisioning/`.
+
+To change the Grafana password, set `GRAFANA_ADMIN_PASSWORD` in the root `.env`.
+
+---
+
+## Testing
+
+The backend has Jest unit tests for every route handler plus an end-to-end smoke suite. Jest runs in ESM mode (the server is `"type": "module"`), wired up via `cross-env NODE_OPTIONS=--experimental-vm-modules`.
+
+```bash
+cd server
+
+yarn test            # unit tests — every controller route (mocked services)
+yarn test:watch      # unit tests in watch mode
+yarn test:cov        # unit tests with coverage report (→ server/coverage/)
+yarn test:e2e        # e2e smoke suite — boots AppModule with Prisma/Redis faked
+```
+
+- **Unit tests** (`src/**/*.spec.ts`) cover every controller: delegation, query-param parsing/clamping, ownership/forbidden logic, and not-found paths. No database required.
+- **E2E smoke suite** (`test/app.e2e-spec.ts`) boots the real `AppModule` — exercising the global JWT guard (401), role guard (403), `ValidationPipe` (400), and the `/api` prefix — across the critical auth → booking → scan surface, with Prisma and Redis replaced by in-memory fakes.
+
+---
+
 ## Tech Stack
 
-| Package            | Stack                                                                       |
-| ------------------ | --------------------------------------------------------------------------- |
-| `server`           | NestJS 11, Prisma 7 (`prisma-client` generator), PostgreSQL 15, JWT, bcrypt |
-| `admin-web-client` | React 19, Vite, Tailwind CSS v4, react-router-dom, axios                    |
-| `client`           | Expo SDK 54, expo-router, expo-secure-store, axios                          |
+| Package            | Stack                                                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `server`           | NestJS 11, Prisma 7 (`prisma-client` generator), PostgreSQL 15, Redis (ioredis), JWT, bcrypt, Swagger, prom-client |
+| `admin-web-client` | React 19, Vite, Tailwind CSS v4, react-router-dom, axios                                                     |
+| `client`           | Expo SDK 54, expo-router, expo-secure-store, axios                                                           |
+| Observability      | Prometheus + Grafana (Docker)                                                                                |
+| Testing            | Jest 30 (ESM) + Supertest                                                                                    |
 
 **Package manager:** Yarn (all packages). Never use `npm`.
 
@@ -338,6 +440,8 @@ yarn tsx prisma/seed.ts           # reseed demo accounts
 yarn prisma studio                # visual DB browser
 yarn prisma generate              # regenerate Prisma client after schema changes
 yarn build                        # compile to dist/
+yarn test                         # unit tests (every route)
+yarn test:e2e                     # e2e smoke suite
 
 # admin-web-client/
 yarn dev                          # Vite dev server
