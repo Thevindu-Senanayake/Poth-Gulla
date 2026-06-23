@@ -3,7 +3,7 @@
     "private": true,
     "packageManager": "yarn@1.22.22",
     "workspaces": {
-        "packages": ["server", "admin-web-client", "client"],
+        "packages": ["server", "web-client", "client"],
         "nohoist": [
             "**/react-native",
             "**/react-native/**",

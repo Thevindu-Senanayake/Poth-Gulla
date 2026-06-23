@@ -52,7 +52,7 @@ docker compose stop postgres redis prometheus grafana
 cd server && yarn start:dev
 
 # Admin web only
-cd admin-web-client && yarn dev
+cd web-client && yarn dev
 
 # Mobile
 cd client && npx expo start
@@ -271,7 +271,7 @@ yarn prisma db push               # sync schema → DB
 yarn tsx prisma/seed.ts           # seed demo data
 yarn prisma studio                # DB browser at localhost:5555
 
-# admin-web-client/
+# web-client/
 yarn dev --host                   # Vite dev server
 
 # client/
