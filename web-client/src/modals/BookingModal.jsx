@@ -69,6 +69,35 @@ function CoverIcon({ resource }) {
   );
 }
 
+// Module-scope so its component identity is STABLE across BookingModal re-renders.
+// (Defined inside the component, every keystroke created a new type and React
+// remounted the whole subtree — the justification textarea lost focus each char.)
+const Overlay = ({ children, onClose }) => (
+  <div
+    onClick={onClose}
+    style={{
+      position: 'fixed', inset: 0,
+      background: 'rgba(6,24,15,0.58)',
+      backdropFilter: 'blur(6px)',
+      zIndex: 1000,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
+    <div onClick={e => e.stopPropagation()} style={{
+      background: '#fff',
+      borderRadius: 18,
+      width: 480,
+      maxWidth: '96vw',
+      maxHeight: '90vh',
+      overflowY: 'auto',
+      boxShadow: '0 24px 60px rgba(6,24,15,0.22)',
+    }}>
+      {children}
+    </div>
+  </div>
+);
+
 export default function BookingModal() {
   const { bookingModal, setBookingModal, setPage, qrCells, showToast, refresh } = useApp();
   const { stage, resource, bookDate, bookReturn, msg = '', loanToken, busy } = bookingModal;
@@ -127,32 +156,6 @@ export default function BookingModal() {
     }
   }
 
-  const Overlay = ({ children }) => (
-    <div
-      onClick={close}
-      style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(6,24,15,0.58)',
-        backdropFilter: 'blur(6px)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: '#fff',
-        borderRadius: 18,
-        width: 480,
-        maxWidth: '96vw',
-        maxHeight: '90vh',
-        overflowY: 'auto',
-        boxShadow: '0 24px 60px rgba(6,24,15,0.22)',
-      }}>
-        {children}
-      </div>
-    </div>
-  );
-
   const ModalHeader = ({ title, onClose }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px 16px', borderBottom: '1px solid #f0f0f6' }}>
       <h2 style={{ fontFamily: "'Spectral', serif", fontSize: 18, fontWeight: 700, color: '#1a1b2e', margin: 0 }}>{title}</h2>
@@ -204,7 +207,7 @@ export default function BookingModal() {
 
   /* ── Stage: booking ── */
   if (stage === 'booking') return (
-    <Overlay>
+    <Overlay onClose={close}>
       <ModalHeader title="Book resource" />
       <div style={{ padding: '18px 24px' }}>
         <div style={{ display: 'flex', gap: 14, marginBottom: 20 }}>
@@ -269,7 +272,7 @@ export default function BookingModal() {
 
   /* ── Stage: approval ── */
   if (stage === 'approval') return (
-    <Overlay>
+    <Overlay onClose={close}>
       <ModalHeader title="Submit for approval" />
       <div style={{ padding: '18px 24px' }}>
         <div style={{
@@ -328,7 +331,7 @@ export default function BookingModal() {
 
   /* ── Stage: waitlist ── */
   if (stage === 'waitlist') return (
-    <Overlay>
+    <Overlay onClose={close}>
       <ModalHeader title="Join waitlist" />
       <div style={{ padding: '18px 24px' }}>
         <div style={{
@@ -406,7 +409,7 @@ export default function BookingModal() {
 
   /* ── Stage: qr ── */
   if (stage === 'qr') return (
-    <Overlay>
+    <Overlay onClose={close}>
       <ModalHeader title="Booking confirmed" />
       <div style={{ padding: '18px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{
@@ -487,7 +490,7 @@ export default function BookingModal() {
 
   /* ── Stage: pending ── */
   if (stage === 'pending') return (
-    <Overlay>
+    <Overlay onClose={close}>
       <ModalHeader title="Sent for approval" />
       <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
         <div style={{
@@ -529,7 +532,7 @@ export default function BookingModal() {
 
   /* ── Stage: done (waitlist joined) ── */
   if (stage === 'done') return (
-    <Overlay>
+    <Overlay onClose={close}>
       <ModalHeader title="Waitlist joined" />
       <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
         <div style={{
@@ -574,7 +577,7 @@ export default function BookingModal() {
 
   /* ── Stage: loanQR ── */
   if (stage === 'loanQR') return (
-    <Overlay>
+    <Overlay onClose={close}>
       <ModalHeader title="Your loan QR" />
       <div style={{ padding: '18px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: '#1a1b2e', marginBottom: 4, textAlign: 'center' }}>{resource?.title}</div>
