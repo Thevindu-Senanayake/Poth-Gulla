@@ -23,7 +23,7 @@ function dockerDown() {
 
 dockerUp();
 
-const turbo = spawn('yarn', ['turbo', 'dev', '--filter=poth-gulla-backend', '--filter=admin-web-client', '--filter=client'], {
+const turbo = spawn('yarn', ['turbo', 'dev', '--filter=poth-gulla-backend', '--filter=web-client', '--filter=client'], {
     stdio: 'inherit',
     shell: true,
 });

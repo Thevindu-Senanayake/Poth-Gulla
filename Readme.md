@@ -11,7 +11,7 @@ A decentralized library resource management system featuring ELO-style User Poin
 ```text
 Poth Gulla/
 ├── server/              # NestJS API — PostgreSQL + Prisma + JWT + Redis + Prometheus
-├── admin-web-client/    # React + Vite + Tailwind — staff/admin dashboard
+├── web-client/    # React + Vite + Tailwind — staff/admin dashboard
 ├── client/              # React Native (Expo SDK 54) — student/lecturer mobile app
 ├── infra/               # Prometheus scrape config + Grafana provisioning + dashboard
 ├── scripts/dev.mjs      # Dev runner: auto-starts Docker infra, launches all apps
@@ -419,7 +419,7 @@ yarn test:e2e        # e2e smoke suite — boots AppModule with Prisma/Redis fak
 | Package            | Stack                                                                                                       |
 | ------------------ | ----------------------------------------------------------------------------------------------------------- |
 | `server`           | NestJS 11, Prisma 7 (`prisma-client` generator), PostgreSQL 15, Redis (ioredis), JWT, bcrypt, Swagger, prom-client |
-| `admin-web-client` | React 19, Vite, Tailwind CSS v4, react-router-dom, axios                                                     |
+| `web-client` | React 19, Vite, Tailwind CSS v4, react-router-dom, axios                                                     |
 | `client`           | Expo SDK 54, expo-router, expo-secure-store, axios                                                           |
 | Observability      | Prometheus + Grafana (Docker)                                                                                |
 | Testing            | Jest 30 (ESM) + Supertest                                                                                    |
@@ -444,7 +444,7 @@ yarn build                        # compile to dist/
 yarn test                         # unit tests (every route)
 yarn test:e2e                     # e2e smoke suite
 
-# admin-web-client/
+# web-client/
 yarn dev                          # Vite dev server
 
 # client/

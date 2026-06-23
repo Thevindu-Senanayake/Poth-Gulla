@@ -57,14 +57,14 @@ services:
       - /app/node_modules
       - /app/generated
 
-  # ---- Frontend: Vite Admin Dashboard ----
-  # Also "full" profile — the admin web runs natively via Turbo in normal dev.
-  admin:
+  # ---- Frontend: Vite web client (all roles) ----
+  # Also "full" profile — the web client runs natively via Turbo in normal dev.
+  web:
     profiles: ["full"]
     build:
-      context: ./admin-web-client
+      context: ./web-client
       dockerfile: Dockerfile
-    container_name: poth_gulla_admin_web
+    container_name: poth_gulla_web
     restart: unless-stopped
     ports:
       - "5173:5173"
@@ -74,7 +74,7 @@ services:
     depends_on:
       - backend
     volumes:
-      - ./admin-web-client:/app
+      - ./web-client:/app
       - /app/node_modules
 
   # ---- Observability: Prometheus ----
