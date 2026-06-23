@@ -9,7 +9,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      # Host 5433 → container 5432. Avoids clashing with a native PostgreSQL that
+      # may already hold host 5432 (a port conflict can wedge Docker Desktop's
+      # port-forwarding proxy for ALL containers). In-network clients still use 5432.
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

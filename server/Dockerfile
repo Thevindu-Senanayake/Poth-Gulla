@@ -2,16 +2,15 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN npm install
+# Yarn is the source of truth. Do not use npm here.
+# Note: this is a Yarn-workspaces repo, so the authoritative lockfile lives at
+# the monorepo root; the per-package server/yarn.lock drifts from package.json.
+# A plain install (not --frozen-lockfile) resolves deps correctly for this dev image.
+COPY package.json yarn.lock ./
+RUN yarn install
 
-# Copy Prisma schema and generate the client
-COPY prisma ./prisma/
-RUN npx prisma generate
-
-# We don't copy the rest of the code here because the docker-compose
-# volume mount will handle it, keeping hot-reload active.
-
-# Start the NestJS development server
-CMD ["npm", "run", "start:dev"]
+# Source and the generated Prisma client are provided at runtime:
+#   - docker-compose bind-mounts ./server into /app for hot reload
+#   - the start command regenerates the client into /app/generated,
+#     which is protected by an anonymous volume so the bind mount can't shadow it
+CMD ["sh", "-c", "yarn prisma generate && yarn start:dev"]
