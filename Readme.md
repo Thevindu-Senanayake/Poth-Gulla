@@ -229,6 +229,52 @@ All read endpoints are public (any authenticated user). Write endpoints require 
 | `DELETE` | `/catalogue/rooms/:id` | ADMIN, STAFF | Delete room |
 | `PATCH` | `/catalogue/rooms/:id/maintenance` | ADMIN, STAFF | `{ underMaintenance: true\|false }` |
 
+### Points
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/points/me` | JWT | Own point-event history — `?page`, `?limit`. Returns `{ data, total, page, limit }` |
+| `GET` | `/points/:userId` | ADMIN, STAFF | Any user's point-event history |
+
+Each `PointEvent` record: `{ id, userId, action, delta, balanceAfter, metadata, createdAt }`.
+
+### Scan (QR-driven physical workflow)
+
+All scan endpoints require **JSON body** with an `Authorization` header.
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `POST` | `/scan/checkout` | ADMIN, STAFF | Bind an asset to an approved booking. Body: `{ bookingQr, assetTag }`. Creates `Borrowing`, marks item `BORROWED` and booking `COMPLETED`. Awards `+10` if the booking came from the waitlist. |
+| `POST` | `/scan/room-checkin` | JWT | User scans door QR for their own active room booking. Body: `{ roomQr }`. Marks booking `COMPLETED`, awards `+20` pts. |
+| `POST` | `/scan/return` | ADMIN, STAFF | Staff scans asset tag on return. Body: `{ assetTag, condition: "GOOD"\|"DAMAGED" }`. Scores return points, frees item, triggers waitlist promotion. Damaged device gets an additional `−300` on top of any timing penalty. |
+
+**Book return scoring:** `> 2 days early → +50`; `≤ 0 days late → +25`; `1 day late → −10`; `2–7 days late → −20 × days`; `> 7 days late → −220`.
+
+**Device return scoring (GOOD condition):** `early → +40`; `on time → +30`; `1–3 days late → −80`; `> 3 days late → −160`. DAMAGED: skip positive reward, add `−300`.
+
+### Overdue & Notifications
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `POST` | `/overdue/run` | ADMIN, STAFF | Manually trigger the overdue sweep. Returns `{ borrowingsProcessed, noShowsProcessed }`. |
+| `GET` | `/notifications/me` | JWT | Own notification inbox — `?page`, `?limit`, `?unreadOnly=true`. Returns `{ data, meta }` |
+| `POST` | `/notifications/read-all` | JWT | Mark all unread notifications as read |
+
+The overdue sweep handles two cases:
+
+- **Late borrowings** — 1 day late: remind borrower. 2–7 days: set `recallFlag`, notify all LIBRARY_STAFF. > 7 days: set `BorrowingStatus.OVERDUE`, notify all ADMINs.
+- **Room no-shows** — any APPROVED room booking with `endAt` in the past is cancelled and the user is charged `−150` pts.
+
+### Reviews
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/reviews/book/:bookTitleId` | JWT | List reviews for a book title — `?page`, `?limit`. Includes `user: { id, name }` |
+| `POST` | `/reviews/book/:bookTitleId` | JWT | Write a review. Body: `{ text, rating? (1–5) }`. Requires a `COMPLETED` booking for that book. One review per user per title. Awards `+15` pts. |
+| `DELETE` | `/reviews/:id` | JWT (owner or ADMIN/STAFF) | Delete a review |
+
+---
+
 **Auth flow:**
 
 1. Login as `admin@iit.ac.lk` with password `Password123`
