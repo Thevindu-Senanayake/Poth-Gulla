@@ -205,7 +205,15 @@ export class BookingService {
     }
 
     findById(id: string): Promise<Booking | null> {
-        return this.prisma.booking.findUnique({ where: { id } });
+        return this.prisma.booking.findUnique({
+            where: { id },
+            include: {
+                bookTitle: { select: { title: true } },
+                device: { select: { name: true } },
+                studyRoom: { select: { name: true } },
+                user: { select: { id: true, name: true } },
+            },
+        });
     }
 
     async findMany(params: BookingListParams): Promise<[Booking[], number]> {
@@ -221,6 +229,12 @@ export class BookingService {
                 skip: (page - 1) * limit,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
+                include: {
+                    bookTitle: { select: { title: true } },
+                    device: { select: { name: true } },
+                    studyRoom: { select: { name: true } },
+                    user: { select: { id: true, name: true } },
+                },
             }),
             this.prisma.booking.count({ where }),
         ]);
@@ -242,6 +256,12 @@ export class BookingService {
                 skip: (page - 1) * limit,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
+                include: {
+                    bookTitle: { select: { title: true } },
+                    device: { select: { name: true } },
+                    studyRoom: { select: { name: true } },
+                    user: { select: { id: true, name: true } },
+                },
             }),
             this.prisma.booking.count({ where }),
         ]);
