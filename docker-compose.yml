@@ -1,5 +1,5 @@
 services:
-  # 1. INFRASTRUCTURE: Database & Cache
+  # ---- Infrastructure ----
   postgres:
     image: postgres:15-alpine
     container_name: poth_gulla_db
@@ -12,15 +12,20 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     container_name: poth_gulla_cache
     restart: always
     ports:
       - "6379:6379"
 
-  # 2. BACKEND: NestJS API
+  # ---- Backend: NestJS API ----
   backend:
     build:
       context: ./server
@@ -30,30 +35,68 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Injecting the Docker-specific connection strings
       DATABASE_URL: ${DOCKER_DATABASE_URL}
       REDIS_URL: ${DOCKER_REDIS_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
     depends_on:
-      - postgres
-      - redis
-    # Mount local files so hot-reloading still works without rebuilding the image
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - ./server:/app
       - /app/node_modules
+      - /app/generated
 
-  # 3. FRONTEND: Vite Admin Dashboard
+  # ---- Frontend: Vite Admin Dashboard ----
   admin:
     build:
       context: ./admin-web-client
       dockerfile: Dockerfile
     container_name: poth_gulla_admin_web
+    restart: unless-stopped
     ports:
       - "5173:5173"
     environment:
       VITE_API_URL: ${VITE_API_URL}
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      - backend
     volumes:
       - ./admin-web-client:/app
       - /app/node_modules
 
+  # ---- Observability: Prometheus ----
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: poth_gulla_prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - backend
+
+  # ---- Observability: Grafana ----
+  grafana:
+    image: grafana/grafana:latest
+    container_name: poth_gulla_grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
 volumes:
-  pgdata: # Persists your database data even if the container drops
+  pgdata:
+  prometheus_data:
+  grafana_data:
