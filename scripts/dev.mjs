@@ -1,6 +1,6 @@
 import { execSync, spawn } from 'child_process';
 
-const SERVICES = ['postgres', 'redis'];
+const SERVICES = ['postgres', 'redis', 'prometheus', 'grafana'];
 
 function dockerUp() {
     console.log('[dev] Starting Docker services: ' + SERVICES.join(', '));
