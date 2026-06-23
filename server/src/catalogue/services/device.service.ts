@@ -7,6 +7,7 @@ import {
 import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 import { Device, ItemStatus } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { RedisService } from '../../redis/redis.service.js';
 
 export class CreateDeviceDto {
     @IsString()
@@ -57,12 +58,22 @@ export type DeviceListParams = {
     status?: ItemStatus;
 };
 
+const TTL_LIST = 30;
+const TTL_DETAIL = 60;
+
 @Injectable()
 export class DeviceService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private redis: RedisService,
+    ) {}
 
     async findMany(params: DeviceListParams): Promise<[Device[], number]> {
         const { page, limit, search, tier, categoryId, status } = params;
+        const cacheKey = `catalogue:devices:p${page}:l${limit}:s${search ?? ''}:t${tier ?? ''}:c${categoryId ?? ''}:st${status ?? ''}`;
+        const cached = await this.redis.get<[Device[], number]>(cacheKey);
+        if (cached) return cached;
+
         const term = search?.trim().slice(0, 100);
         const where = {
             ...(tier !== undefined ? { deviceTier: tier } : {}),
@@ -77,7 +88,7 @@ export class DeviceService {
                   }
                 : {}),
         };
-        return Promise.all([
+        const result = await Promise.all([
             this.prisma.device.findMany({
                 where,
                 skip: (page - 1) * limit,
@@ -87,26 +98,37 @@ export class DeviceService {
             }),
             this.prisma.device.count({ where }),
         ]);
+        await this.redis.set(cacheKey, result, TTL_LIST);
+        return result;
     }
 
     async findById(id: string) {
+        const cacheKey = `catalogue:devices:${id}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached) return cached;
+
         const device = await this.prisma.device.findUnique({
             where: { id },
             include: { category: true },
         });
         if (!device) throw new NotFoundException('Device not found');
+        await this.redis.set(cacheKey, device, TTL_DETAIL);
         return device;
     }
 
     async create(dto: CreateDeviceDto): Promise<Device> {
         const exists = await this.prisma.device.findUnique({ where: { assetTag: dto.assetTag } });
         if (exists) throw new ConflictException(`Asset tag ${dto.assetTag} already registered`);
-        return this.prisma.device.create({ data: { ...dto, status: ItemStatus.AVAILABLE } });
+        const result = await this.prisma.device.create({ data: { ...dto, status: ItemStatus.AVAILABLE } });
+        await this.redis.delByPattern('catalogue:devices:*');
+        return result;
     }
 
     async update(id: string, dto: UpdateDeviceDto): Promise<Device> {
         await this.findOrThrow(id);
-        return this.prisma.device.update({ where: { id }, data: dto });
+        const result = await this.prisma.device.update({ where: { id }, data: dto });
+        await this.redis.delByPattern('catalogue:devices:*');
+        return result;
     }
 
     async remove(id: string): Promise<Device> {
@@ -114,7 +136,9 @@ export class DeviceService {
         if (device.status === ItemStatus.BORROWED) {
             throw new BadRequestException('Cannot remove a device that is currently borrowed');
         }
-        return this.prisma.device.delete({ where: { id } });
+        const result = await this.prisma.device.delete({ where: { id } });
+        await this.redis.delByPattern('catalogue:devices:*');
+        return result;
     }
 
     async setMaintenance(id: string, underMaintenance: boolean): Promise<Device> {
@@ -122,12 +146,14 @@ export class DeviceService {
         if (underMaintenance && device.status === ItemStatus.BORROWED) {
             throw new BadRequestException('Cannot put a borrowed device under maintenance');
         }
-        return this.prisma.device.update({
+        const result = await this.prisma.device.update({
             where: { id },
             data: {
                 status: underMaintenance ? ItemStatus.UNDER_MAINTENANCE : ItemStatus.AVAILABLE,
             },
         });
+        await this.redis.delByPattern('catalogue:devices:*');
+        return result;
     }
 
     private async findOrThrow(id: string): Promise<Device> {

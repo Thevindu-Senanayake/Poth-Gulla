@@ -1,10 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { BookTitle } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { RedisService } from '../redis/redis.service.js';
+
+const TTL_RECS = 300; // 5 minutes
 
 @Injectable()
 export class RecommendationService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private redis: RedisService,
+    ) {}
 
     /**
      * Tag-based recommendations.
@@ -19,7 +25,21 @@ export class RecommendationService {
      * 5. Return the top `limit` titles ordered by score descending.
      */
     async forUser(userId: string, limit = 10): Promise<BookTitle[]> {
-        // Step 1 — books the user has already completed (COMPLETED borrowing)
+        const cacheKey = `recommendations:${userId}:${limit}`;
+        const cached = await this.redis.get<BookTitle[]>(cacheKey);
+        if (cached) return cached;
+
+        const result = await this.computeForUser(userId, limit);
+        await this.redis.set(cacheKey, result, TTL_RECS);
+        return result;
+    }
+
+    /** Invalidate cached recommendations for a user (call after they return a book). */
+    async invalidate(userId: string): Promise<void> {
+        await this.redis.delByPattern(`recommendations:${userId}:*`);
+    }
+
+    private async computeForUser(userId: string, limit: number): Promise<BookTitle[]> {
         const borrowedTitles = await this.prisma.bookTitle.findMany({
             where: {
                 bookings: {
@@ -36,7 +56,6 @@ export class RecommendationService {
 
         const borrowedIds = new Set(borrowedTitles.map(b => b.id));
 
-        // Step 2 — tag frequency map across everything the user has read
         const tagFreq = new Map<string, number>();
         for (const title of borrowedTitles) {
             for (const tag of title.tags) {
@@ -47,7 +66,6 @@ export class RecommendationService {
         const interestTags = [...tagFreq.keys()];
         if (interestTags.length === 0) return this.fallback(userId, limit);
 
-        // Step 3 — candidates: books with at least one matching tag, never borrowed
         const candidates = await this.prisma.bookTitle.findMany({
             where: {
                 id: { notIn: [...borrowedIds] },
@@ -56,7 +74,6 @@ export class RecommendationService {
             include: { category: true, _count: { select: { copies: true } } },
         });
 
-        // Step 4 — score by inverse-frequency-weighted tag overlap
         const scored = candidates.map(title => {
             const score = title.tags.reduce(
                 (acc, tag) => acc + (tagFreq.get(tag) ?? 0),
@@ -66,16 +83,12 @@ export class RecommendationService {
         });
 
         scored.sort((a, b) => b.score - a.score);
-
         return scored.slice(0, limit).map(s => s.title);
     }
 
-    /** Fallback when the user has no borrowing history: return newest titles. */
     private fallback(userId: string, limit: number): Promise<BookTitle[]> {
         return this.prisma.bookTitle.findMany({
-            where: {
-                bookings: { none: { userId } },
-            },
+            where: { bookings: { none: { userId } } },
             orderBy: { createdAt: 'desc' },
             take: limit,
             include: { category: true, _count: { select: { copies: true } } },
