@@ -7,6 +7,7 @@ import {
 import { IsArray, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import { BookCopy, BookTitle, ItemStatus } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { RedisService } from '../../redis/redis.service.js';
 
 export class CreateBookTitleDto {
     @IsString()
@@ -79,12 +80,22 @@ export type BookListParams = {
     categoryId?: string;
 };
 
+const TTL_LIST = 30;
+const TTL_DETAIL = 60;
+
 @Injectable()
 export class BookService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private redis: RedisService,
+    ) {}
 
     async findMany(params: BookListParams): Promise<[BookTitle[], number]> {
         const { page, limit, search, categoryId } = params;
+        const cacheKey = `catalogue:books:p${page}:l${limit}:s${search ?? ''}:c${categoryId ?? ''}`;
+        const cached = await this.redis.get<[BookTitle[], number]>(cacheKey);
+        if (cached) return cached;
+
         const term = search?.trim().slice(0, 100);
         const where = {
             ...(categoryId ? { categoryId } : {}),
@@ -99,7 +110,7 @@ export class BookService {
                   }
                 : {}),
         };
-        return Promise.all([
+        const result = await Promise.all([
             this.prisma.bookTitle.findMany({
                 where,
                 skip: (page - 1) * limit,
@@ -112,9 +123,15 @@ export class BookService {
             }),
             this.prisma.bookTitle.count({ where }),
         ]);
+        await this.redis.set(cacheKey, result, TTL_LIST);
+        return result;
     }
 
     async findById(id: string) {
+        const cacheKey = `catalogue:books:${id}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached) return cached;
+
         const title = await this.prisma.bookTitle.findUnique({
             where: { id },
             include: {
@@ -124,6 +141,7 @@ export class BookService {
             },
         });
         if (!title) throw new NotFoundException('Book title not found');
+        await this.redis.set(cacheKey, title, TTL_DETAIL);
         return title;
     }
 
@@ -132,7 +150,9 @@ export class BookService {
             const exists = await this.prisma.bookTitle.findUnique({ where: { isbn: dto.isbn } });
             if (exists) throw new ConflictException(`ISBN ${dto.isbn} already registered`);
         }
-        return this.prisma.bookTitle.create({ data: { ...dto, tags: dto.tags ?? [] } });
+        const result = await this.prisma.bookTitle.create({ data: { ...dto, tags: dto.tags ?? [] } });
+        await this.redis.delByPattern('catalogue:books:*');
+        return result;
     }
 
     async update(id: string, dto: UpdateBookTitleDto): Promise<BookTitle> {
@@ -143,7 +163,9 @@ export class BookService {
             });
             if (conflict) throw new ConflictException(`ISBN ${dto.isbn} already in use`);
         }
-        return this.prisma.bookTitle.update({ where: { id }, data: dto });
+        const result = await this.prisma.bookTitle.update({ where: { id }, data: dto });
+        await this.redis.delByPattern('catalogue:books:*');
+        return result;
     }
 
     async remove(id: string): Promise<BookTitle> {
@@ -165,16 +187,20 @@ export class BookService {
             throw new BadRequestException(
                 `Cannot delete a title with ${reviews} review${reviews === 1 ? '' : 's'}`,
             );
-        return this.prisma.bookTitle.delete({ where: { id } });
+        const result = await this.prisma.bookTitle.delete({ where: { id } });
+        await this.redis.delByPattern('catalogue:books:*');
+        return result;
     }
 
     async addCopy(bookTitleId: string, assetTag: string): Promise<BookCopy> {
         await this.findOrThrow(bookTitleId);
         const exists = await this.prisma.bookCopy.findUnique({ where: { assetTag } });
         if (exists) throw new ConflictException(`Asset tag ${assetTag} already registered`);
-        return this.prisma.bookCopy.create({
+        const result = await this.prisma.bookCopy.create({
             data: { bookTitleId, assetTag, status: ItemStatus.AVAILABLE },
         });
+        await this.redis.delByPattern('catalogue:books:*');
+        return result;
     }
 
     async retireCopy(copyId: string): Promise<BookCopy> {
@@ -183,10 +209,12 @@ export class BookService {
         if (copy.status === ItemStatus.BORROWED) {
             throw new BadRequestException('Cannot retire a copy that is currently borrowed');
         }
-        return this.prisma.bookCopy.update({
+        const result = await this.prisma.bookCopy.update({
             where: { id: copyId },
             data: { status: ItemStatus.RETIRED },
         });
+        await this.redis.delByPattern('catalogue:books:*');
+        return result;
     }
 
     private async findOrThrow(id: string): Promise<BookTitle> {

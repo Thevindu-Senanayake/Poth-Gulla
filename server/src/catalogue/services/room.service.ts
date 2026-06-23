@@ -7,6 +7,7 @@ import {
 import { IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 import { BookingStatus, ItemStatus, StudyRoom } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { RedisService } from '../../redis/redis.service.js';
 
 export class CreateRoomDto {
     @IsString()
@@ -52,19 +53,35 @@ export class UpdateRoomDto {
     status?: ItemStatus;
 }
 
+const TTL_LIST = 20;
+const TTL_DETAIL = 60;
+
 @Injectable()
 export class RoomService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private redis: RedisService,
+    ) {}
 
     async findMany(startAt?: Date, endAt?: Date): Promise<StudyRoom[]> {
+        // Only cache the base room list (no availability slot filter — that's dynamic)
+        if (!startAt && !endAt) {
+            const cacheKey = 'catalogue:rooms:list';
+            const cached = await this.redis.get<StudyRoom[]>(cacheKey);
+            if (cached) return cached;
+            const rooms = await this.prisma.studyRoom.findMany({
+                where: { status: { not: ItemStatus.RETIRED } },
+                orderBy: { name: 'asc' },
+            });
+            await this.redis.set(cacheKey, rooms, TTL_LIST);
+            return rooms;
+        }
+
         const rooms = await this.prisma.studyRoom.findMany({
             where: { status: { not: ItemStatus.RETIRED } },
             orderBy: { name: 'asc' },
         });
 
-        if (!startAt || !endAt) return rooms;
-
-        // Filter to rooms with no overlapping APPROVED/PENDING booking in the requested slot
         const busyRoomIds = await this.prisma.booking
             .findMany({
                 where: {
@@ -81,22 +98,31 @@ export class RoomService {
     }
 
     async findById(id: string) {
+        const cacheKey = `catalogue:rooms:${id}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached) return cached;
+
         const room = await this.prisma.studyRoom.findUnique({ where: { id } });
         if (!room) throw new NotFoundException('Study room not found');
+        await this.redis.set(cacheKey, room, TTL_DETAIL);
         return room;
     }
 
     async create(dto: CreateRoomDto): Promise<StudyRoom> {
         const exists = await this.prisma.studyRoom.findUnique({ where: { name: dto.name } });
         if (exists) throw new ConflictException(`Room "${dto.name}" already exists`);
-        return this.prisma.studyRoom.create({
+        const result = await this.prisma.studyRoom.create({
             data: { ...dto, features: dto.features ?? [], status: ItemStatus.AVAILABLE },
         });
+        await this.redis.delByPattern('catalogue:rooms:*');
+        return result;
     }
 
     async update(id: string, dto: UpdateRoomDto): Promise<StudyRoom> {
         await this.findOrThrow(id);
-        return this.prisma.studyRoom.update({ where: { id }, data: dto });
+        const result = await this.prisma.studyRoom.update({ where: { id }, data: dto });
+        await this.redis.delByPattern('catalogue:rooms:*');
+        return result;
     }
 
     async remove(id: string): Promise<StudyRoom> {
@@ -104,17 +130,21 @@ export class RoomService {
         if (room.status === ItemStatus.BORROWED) {
             throw new BadRequestException('Cannot remove a room with an active session');
         }
-        return this.prisma.studyRoom.delete({ where: { id } });
+        const result = await this.prisma.studyRoom.delete({ where: { id } });
+        await this.redis.delByPattern('catalogue:rooms:*');
+        return result;
     }
 
     async setMaintenance(id: string, underMaintenance: boolean): Promise<StudyRoom> {
         await this.findOrThrow(id);
-        return this.prisma.studyRoom.update({
+        const result = await this.prisma.studyRoom.update({
             where: { id },
             data: {
                 status: underMaintenance ? ItemStatus.UNDER_MAINTENANCE : ItemStatus.AVAILABLE,
             },
         });
+        await this.redis.delByPattern('catalogue:rooms:*');
+        return result;
     }
 
     private async findOrThrow(id: string): Promise<StudyRoom> {
