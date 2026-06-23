@@ -5,7 +5,8 @@ generator client {
 
 datasource db {
     provider = "postgresql"
-    url      = env("DATABASE_URL")
+    // Prisma 7 no longer allows `url` here. The connection string is supplied by
+    // prisma.config.ts (CLI/Migrate) and the PrismaPg adapter in PrismaService (runtime).
 }
 
 // ---- Enums ----
