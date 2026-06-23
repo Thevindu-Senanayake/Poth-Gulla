@@ -157,6 +157,8 @@ export function adaptBooking(b) {
     statusBg: meta.bg,
     startAt: b.startAt,
     endAt: b.endAt,
+    createdAt: b.createdAt,
+    updatedAt: b.updatedAt,
     message: b.message,
     qrToken: b.qrToken,
     color: colorFor(resourceId || b.id),

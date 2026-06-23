@@ -221,7 +221,7 @@ export default function StaffDashboard() {
                   </div>
                 </div>
                 <div style={{ fontSize: 11, color: "#9b9db2", flexShrink: 0 }}>
-                  {fmt(b.startAt)}
+                  {fmt(b.createdAt || b.startAt)}
                 </div>
               </div>
             ))

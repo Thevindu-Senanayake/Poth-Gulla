@@ -101,7 +101,7 @@ export default function MyBookings() {
                 <Cover resourceType={b.resourceType} color={b.color} w={38} h={38} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1b2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.title}</div>
-                  <div style={{ fontSize: 11, color: '#9b9db2' }}>{fmt(b.startAt)}</div>
+                  <div style={{ fontSize: 11, color: '#9b9db2' }}>{fmt(b.createdAt || b.startAt)}</div>
                 </div>
                 <span style={{ fontSize: 11, fontWeight: 700, color: b.statusCol, background: b.statusBg, borderRadius: 6, padding: '3px 8px', flexShrink: 0 }}>{b.statusLabel}</span>
               </div>
