@@ -1,29 +1,59 @@
 {
-    "name": "poth-gulla",
-    "private": true,
-    "packageManager": "yarn@1.22.22",
-    "workspaces": {
-        "packages": ["server", "web-client", "client"],
-        "nohoist": [
-            "**/react-native",
-            "**/react-native/**",
-            "**/expo",
-            "**/expo/**",
-            "**/expo-*",
-            "**/expo-*/**",
-            "**/react-native-*",
-            "**/react-native-*/**",
-            "**/@react-native*",
-            "**/@react-native*/**",
-            "**/@expo*",
-            "**/@expo*/**"
-        ]
-    },
-    "scripts": {
-        "dev": "node scripts/dev.mjs",
-        "build": "turbo build"
-    },
-    "devDependencies": {
-        "turbo": "^2"
-    }
+  "name": "poth-gulla",
+  "private": true,
+  "packageManager": "yarn@1.22.22",
+  "workspaces": {
+    "packages": [
+      "server",
+      "web-client",
+      "client"
+    ],
+    "nohoist": [
+      "**/react-native",
+      "**/react-native/**",
+      "**/expo",
+      "**/expo/**",
+      "**/expo-*",
+      "**/expo-*/**",
+      "**/react-native-*",
+      "**/react-native-*/**",
+      "**/@react-native*",
+      "**/@react-native*/**",
+      "**/@expo*",
+      "**/@expo*/**"
+    ]
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "turbo build",
+    "prepare": "husky install",
+    "lint": "yarn workspace server lint && yarn workspace web-client lint && yarn workspace client lint",
+    "format": "prettier --write \"**/*.{ts,js,tsx,jsx,json,md}\"",
+    "format-check": "prettier --check \"**/*.{ts,js,tsx,jsx,json,md}\"",
+    "lint:ci": "yarn lint && yarn format-check"
+  },
+  "devDependencies": {
+    "turbo": "^2",
+    "husky": "^8.0.0",
+    "lint-staged": "^14.0.0",
+    "prettier": "^3.4.2",
+    "eslint": "^9.18.0"
+  },
+  "lint-staged": {
+    "**/*.{json,md,yml,yaml,css}": [
+      "prettier --write"
+    ],
+    "server/**/*.{ts,tsx,js,jsx}": [
+      "yarn workspace server lint",
+      "prettier --write"
+    ],
+    "web-client/**/*.{ts,tsx,js,jsx}": [
+      "yarn workspace web-client lint",
+      "prettier --write"
+    ],
+    "client/**/*.{ts,tsx,js,jsx}": [
+      "yarn workspace client lint",
+      "prettier --write"
+    ]
+  }
 }
