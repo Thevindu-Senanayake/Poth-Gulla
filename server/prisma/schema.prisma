@@ -30,6 +30,7 @@ enum BookingStatus {
     WAITLIST
     REJECTED
     CANCELLED
+    CHECKED_OUT
     COMPLETED
 }
 
@@ -266,4 +267,12 @@ model Notification {
     createdAt DateTime @default(now())
 
     @@index([userId, read])
+}
+
+// Singleton row (id = "singleton") holding admin-editable runtime rules:
+// tier thresholds / borrowing limits, penalty values, and feature toggles.
+model SystemConfig {
+    id        String   @id @default("singleton")
+    data      Json
+    updatedAt DateTime @updatedAt
 }
