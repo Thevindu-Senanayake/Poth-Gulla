@@ -74,7 +74,7 @@ export default function Overdue() {
           {items.map((n) => {
             const c = TYPE_COL[n.type] || TYPE_COL.default;
             return (
-              <div key={n.id} style={{ background: '#fff', border: '1px solid #e7e7ef', borderLeft: `4px solid ${c.col}`, borderRadius: 13, padding: '16px 20px' }}>
+              <div className="pg-card-list" key={n.id} style={{ background: '#fff', border: '1px solid #e7e7ef', borderLeft: `4px solid ${c.col}`, borderRadius: 13, padding: '16px 20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <span style={{ background: c.bg, color: c.col, fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '3px 10px' }}>{n.type.replace(/_/g, ' ')}</span>
@@ -88,7 +88,7 @@ export default function Overdue() {
         </div>
       )}
 
-      <div style={{ background: 'linear-gradient(125deg,#052e16 0%,#166534 100%)', borderRadius: 13, padding: '16px 20px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+      <div className="pg-card-banner" style={{ background: 'linear-gradient(125deg,#052e16 0%,#166534 100%)', borderRadius: 13, padding: '16px 20px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
         <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 8, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <SvgIcon path="M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z" color="#86efac" />
         </div>

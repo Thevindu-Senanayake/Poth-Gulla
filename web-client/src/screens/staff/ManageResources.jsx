@@ -389,6 +389,7 @@ export default function ManageResources() {
       {/* ---- BOOKS: copy-level management ---- */}
       {tab === "books" && (
         <div
+          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
@@ -626,6 +627,7 @@ export default function ManageResources() {
       {/* ---- DEVICES: maintenance ---- */}
       {tab === "devices" && (
         <div
+          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
@@ -726,6 +728,7 @@ export default function ManageResources() {
       {/* ---- ROOMS: maintenance ---- */}
       {tab === "rooms" && (
         <div
+          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
@@ -806,6 +809,7 @@ export default function ManageResources() {
       {/* ---- LOANED DEVICES: who has what, return management ---- */}
       {tab === "loans" && (
         <div
+          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",

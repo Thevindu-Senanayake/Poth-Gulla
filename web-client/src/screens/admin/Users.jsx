@@ -196,6 +196,7 @@ export default function Users() {
 
       {/* Table */}
       <div
+        className="pg-card"
         style={{
           background: "#fff",
           border: "1px solid #e7e7ef",

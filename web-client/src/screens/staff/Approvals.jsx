@@ -113,6 +113,7 @@ export default function Approvals() {
       </div>
 
       <div
+        className="pg-card"
         style={{
           background: "#fffbeb",
           border: "1.5px solid #fde68a",
@@ -180,6 +181,7 @@ export default function Approvals() {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {list.map((entry) => (
             <div
+              className="pg-card-list"
               key={entry.id}
               style={{
                 background: "#fff",
