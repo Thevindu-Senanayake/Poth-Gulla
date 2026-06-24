@@ -8,6 +8,9 @@ describe('PointsService', () => {
         pointEvent: { create: jest.Mock; findMany: jest.Mock; count: jest.Mock };
         $transaction: jest.Mock;
     };
+    let systemConfig: {
+        get: jest.Mock;
+    };
 
     beforeEach(() => {
         prisma = {
@@ -19,7 +22,20 @@ describe('PointsService', () => {
             // Return the array of operations as-is; apply() only reads [0].
             $transaction: jest.fn(async (ops) => ops),
         };
-        service = new PointsService(prisma as any);
+        systemConfig = {
+            get: jest.fn().mockResolvedValue({
+                tiers: [
+                    { tier: 'Tier 1', threshold: 0 },
+                    { tier: 'Tier 2', threshold: 200 },
+                    { tier: 'Tier 3', threshold: 500 },
+                    { tier: 'Tier 4', threshold: 1000 },
+                    { tier: 'Tier 5', threshold: 2000 },
+                ],
+                penalties: [],
+                toggles: [],
+            }),
+        };
+        service = new PointsService(prisma as any, systemConfig as any);
     });
 
     it('adds a positive delta and recomputes the tier', async () => {
