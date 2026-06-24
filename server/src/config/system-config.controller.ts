@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsArray, IsOptional } from 'class-validator';
 import { Role } from '../../generated/prisma/client.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { SystemConfigService } from './system-config.service.js';
 
 export class UpdateSystemConfigDto {
@@ -35,9 +36,15 @@ export class SystemConfigController {
         return this.config.get();
     }
 
-    @ApiOperation({ summary: 'Update system config — Admin. Persists the edited rules.' })
+    @ApiOperation({
+        summary:
+            'Update system config — Admin. Persists the edited rules. Logs to audit trail.',
+    })
     @Put()
-    update(@Body() dto: UpdateSystemConfigDto) {
-        return this.config.update(dto);
+    update(
+        @Body() dto: UpdateSystemConfigDto,
+        @CurrentUser() user: { id: string },
+    ) {
+        return this.config.update(dto, user.id);
     }
 }

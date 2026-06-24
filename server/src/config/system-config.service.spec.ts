@@ -6,6 +6,7 @@ describe('SystemConfigService', () => {
     let prisma: {
         systemConfig: { findUnique: jest.Mock; create: jest.Mock; upsert: jest.Mock };
     };
+    let audit: { log: jest.Mock };
 
     beforeEach(() => {
         prisma = {
@@ -15,7 +16,8 @@ describe('SystemConfigService', () => {
                 upsert: jest.fn(),
             },
         };
-        service = new SystemConfigService(prisma as any);
+        audit = { log: jest.fn() };
+        service = new SystemConfigService(prisma as any, audit as any);
     });
 
     it('returns the stored config when the row exists', async () => {
@@ -43,6 +45,7 @@ describe('SystemConfigService', () => {
         };
         prisma.systemConfig.findUnique.mockResolvedValue({ data: current });
         prisma.systemConfig.upsert.mockImplementation(async ({ update }: any) => ({ data: update.data }));
+        audit.log.mockResolvedValue(null);
 
         const newTiers = [{ tier: 'new', threshold: 250 }];
         const result = await service.update({ tiers: newTiers });
@@ -54,6 +57,14 @@ describe('SystemConfigService', () => {
                 where: { id: 'singleton' },
                 update: { data: { tiers: newTiers, penalties: current.penalties, toggles: current.toggles } },
             }),
+        );
+        // Verify CONFIG_UPDATED was logged with actorId = null when no actorId provided
+        expect(audit.log).toHaveBeenCalledWith(
+            null,
+            'CONFIG_UPDATED',
+            'SystemConfig',
+            'singleton',
+            { patch: { tiers: newTiers } },
         );
     });
 });

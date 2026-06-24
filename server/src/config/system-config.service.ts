@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 
 const SINGLETON_ID = 'singleton';
 
@@ -15,10 +16,42 @@ export interface SystemConfigData {
 
 export const DEFAULT_SYSTEM_CONFIG: SystemConfigData = {
     tiers: [
-        { tier: 'Tier 1', label: 'Restricted', col: '#ef4444', threshold: 0, books: 1, devices: 1, rooms: 1 },
-        { tier: 'Tier 2', label: 'Basic', col: '#d97706', threshold: 200, books: 2, devices: 1, rooms: 1 },
-        { tier: 'Tier 3', label: 'Regular', col: '#16a34a', threshold: 500, books: 3, devices: 2, rooms: 1 },
-        { tier: 'Tier 4', label: 'Trusted', col: '#3b82f6', threshold: 1000, books: 4, devices: 3, rooms: 2 },
+        {
+            tier: 'Tier 1',
+            label: 'Restricted',
+            col: '#ef4444',
+            threshold: 0,
+            books: 1,
+            devices: 1,
+            rooms: 1,
+        },
+        {
+            tier: 'Tier 2',
+            label: 'Basic',
+            col: '#d97706',
+            threshold: 200,
+            books: 2,
+            devices: 1,
+            rooms: 1,
+        },
+        {
+            tier: 'Tier 3',
+            label: 'Regular',
+            col: '#16a34a',
+            threshold: 500,
+            books: 3,
+            devices: 2,
+            rooms: 1,
+        },
+        {
+            tier: 'Tier 4',
+            label: 'Trusted',
+            col: '#3b82f6',
+            threshold: 1000,
+            books: 4,
+            devices: 3,
+            rooms: 2,
+        },
         { tier: 'Tier 5', label: 'Elite', col: '#8b5cf6', threshold: 2000, books: 5, devices: 3, rooms: 2 },
     ],
     penalties: [
@@ -45,20 +78,29 @@ export const DEFAULT_SYSTEM_CONFIG: SystemConfigData = {
 
 @Injectable()
 export class SystemConfigService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private audit: AuditService,
+    ) {}
 
     /** Returns the stored config, lazily creating it with defaults on first read. */
     async get(): Promise<SystemConfigData> {
         const row = await this.prisma.systemConfig.findUnique({ where: { id: SINGLETON_ID } });
         if (row) return row.data as unknown as SystemConfigData;
         const created = await this.prisma.systemConfig.create({
-            data: { id: SINGLETON_ID, data: DEFAULT_SYSTEM_CONFIG as unknown as Prisma.InputJsonObject },
+            data: {
+                id: SINGLETON_ID,
+                data: DEFAULT_SYSTEM_CONFIG as unknown as Prisma.InputJsonObject,
+            },
         });
         return created.data as unknown as SystemConfigData;
     }
 
-    /** Merge the provided sections over the current config and persist (upsert). */
-    async update(patch: Partial<SystemConfigData>): Promise<SystemConfigData> {
+    /** Merge the provided sections over the current config and persist (upsert). Logs to audit trail. */
+    async update(
+        patch: Partial<SystemConfigData>,
+        actorId?: string | null,
+    ): Promise<SystemConfigData> {
         const current = await this.get();
         const next: SystemConfigData = {
             tiers: patch.tiers ?? current.tiers,
@@ -70,6 +112,12 @@ export class SystemConfigService {
             create: { id: SINGLETON_ID, data: next as unknown as Prisma.InputJsonObject },
             update: { data: next as unknown as Prisma.InputJsonObject },
         });
+
+        // Log the configuration update
+        await this.audit.log(actorId ?? null, 'CONFIG_UPDATED', 'SystemConfig', SINGLETON_ID, {
+            patch,
+        });
+
         return row.data as unknown as SystemConfigData;
     }
 }
