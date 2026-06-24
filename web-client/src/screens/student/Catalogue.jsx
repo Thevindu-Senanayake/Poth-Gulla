@@ -2,6 +2,7 @@ import { useApp } from "../../App";
 import { useFetch } from "../../hooks/useFetch";
 import { listAllResources } from "../../api/catalogue";
 import { Loading, ErrorState } from "../../components/States";
+import ResourceImage from "../../components/ResourceImage";
 
 const TYPE_FILTERS = [
   { key: "all", label: "All" },
@@ -132,29 +133,17 @@ export default function Catalogue() {
               {/* Card header */}
               <div
                 style={{
-                  background: resource.color,
                   height: 100,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                   position: "relative",
                 }}>
-                <svg
-                  width="36"
-                  height="36"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.85)"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round">
-                  {resource.iconPath
-                    .split("M")
-                    .filter(Boolean)
-                    .map((d, j) => (
-                      <path key={j} d={"M" + d} />
-                    ))}
-                </svg>
+                <ResourceImage
+                  imageUrl={resource.imageUrl}
+                  iconPath={resource.iconPath}
+                  color={resource.color}
+                  w="100%"
+                  h={100}
+                  radius={0}
+                />
                 <span
                   style={{
                     position: "absolute",

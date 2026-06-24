@@ -56,6 +56,7 @@ export function adaptBook(b) {
     available,
     color: colorFor(b.id),
     iconPath: BOOK_ICON,
+    imageUrl: b.imageUrl ?? null,
     tags: b.tags ?? [],
     blurb: b.description ?? "",
     tier: null,
@@ -74,6 +75,7 @@ export function adaptDevice(d) {
     available: d.status === "AVAILABLE" ? 1 : 0,
     color: colorFor(d.id),
     iconPath: DEVICE_ICON,
+    imageUrl: d.imageUrl ?? null,
     tags: [d.category?.name].filter(Boolean),
     blurb:
       `Tier ${d.deviceTier} device. ${d.deviceTier >= 4 ? "Requires staff approval to check out." : ""}`.trim(),
@@ -163,6 +165,7 @@ export function adaptBooking(b) {
     message: b.message,
     qrToken: b.qrToken,
     color: colorFor(resourceId || b.id),
+    imageUrl: b.bookTitle?.imageUrl ?? b.device?.imageUrl ?? null,
     raw: b,
   };
 }
