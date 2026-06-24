@@ -112,6 +112,7 @@ export default function Catalogue() {
           return (
             <div
               key={resource.id}
+              className="pg-card-interactive"
               onClick={() => handleCard(resource)}
               style={{
                 background: "#fff",
@@ -120,14 +121,6 @@ export default function Catalogue() {
                 overflow: "hidden",
                 cursor: "pointer",
                 transition: "box-shadow 0.15s ease, transform 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.09)";
-                e.currentTarget.style.transform = "translateY(-2px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "none";
-                e.currentTarget.style.transform = "translateY(0)";
               }}>
               {/* Card header */}
               <div

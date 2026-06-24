@@ -137,7 +137,7 @@ export default function Login() {
               textTransform: "uppercase",
               marginTop: 3,
             }}>
-            Smart Library System
+            Smart Library Management System
           </div>
         </div>
 
@@ -248,7 +248,7 @@ export default function Login() {
             fontSize: 11.5,
             color: "#9b9db2",
           }}>
-          Meridian University · Poth Gulla
+          Informatics Institute of Technology · Poth Gulla
         </div>
       </div>
     </div>
