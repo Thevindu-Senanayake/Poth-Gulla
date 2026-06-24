@@ -1,4 +1,3 @@
-import { useRef, useCallback } from "react";
 import { useApp } from "../App";
 
 const BOOK_SVG = "M5 4a1 1 0 0 1 1-1h11v15H6a1 1 0 0 0-1 1z";
@@ -163,6 +162,18 @@ function NavItem({ item, active, onClick }) {
   return (
     <button
       onClick={() => onClick(item.key)}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.background = "#f0f5f1";
+          e.currentTarget.style.color = "#16a34a";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.color = "#5c5e72";
+        }
+      }}
       style={{
         display: "flex",
         alignItems: "center",
@@ -222,15 +233,6 @@ function NavItem({ item, active, onClick }) {
 
 export default function Sidebar() {
   const { currentRole, page, setPage, user, logout } = useApp();
-  const sidebarRef = useRef(null);
-
-  const handleMouseMove = useCallback((e) => {
-    const el = sidebarRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    el.style.setProperty("--glow-x", `${e.clientX - rect.left}px`);
-    el.style.setProperty("--glow-y", `${e.clientY - rect.top}px`);
-  }, []);
 
   const navMap = {
     student: NAV_STUDENT,
@@ -248,9 +250,6 @@ export default function Sidebar() {
 
   return (
     <div
-      ref={sidebarRef}
-      className="sidebar-glow"
-      onMouseMove={handleMouseMove}
       style={{
         width: 248,
         background: "#fff",

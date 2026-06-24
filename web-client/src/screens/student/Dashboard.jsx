@@ -103,7 +103,6 @@ export default function Dashboard() {
       }}>
       {/* Hero */}
       <div
-        className="pg-card-banner"
         style={{
           background:
             "linear-gradient(125deg,#0c2a1a 0%,#15803d 60%,#22c55e 100%)",
@@ -216,12 +215,23 @@ export default function Dashboard() {
         {stats.map((stat, i) => (
           <div
             key={i}
-            className="pg-card-stat"
             style={{
               background: "#fff",
               border: "1px solid #e7e7ef",
               borderRadius: 13,
               padding: "18px 20px",
+              transition: "transform .15s, box-shadow .15s, border-color .15s",
+              cursor: "default",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-3px)";
+              e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
+              e.currentTarget.style.borderColor = "#d4d4e4";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "none";
+              e.currentTarget.style.boxShadow = "none";
+              e.currentTarget.style.borderColor = "#e7e7ef";
             }}>
             <div
               style={{
@@ -276,7 +286,6 @@ export default function Dashboard() {
         style={{ display: "grid", gridTemplateColumns: "1.55fr 1fr", gap: 18 }}>
         {/* Active loans */}
         <div
-          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
@@ -394,7 +403,6 @@ export default function Dashboard() {
         {/* Right column */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div
-            className="pg-card"
             style={{
               background: "#fff",
               border: "1px solid #e7e7ef",
@@ -464,7 +472,6 @@ export default function Dashboard() {
 
           {waitlist.length > 0 && (
             <div
-              className="pg-card-banner"
               style={{
                 background: "linear-gradient(135deg,#0c2a1a 0%,#166534 100%)",
                 borderRadius: 14,

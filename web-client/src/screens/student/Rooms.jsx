@@ -50,12 +50,22 @@ export default function Rooms() {
             return (
               <div
                 key={room.id}
-                className="pg-card-interactive"
                 style={{
                   background: "#fff",
                   border: "1px solid #e7e7ef",
                   borderRadius: 14,
                   overflow: "hidden",
+                  transition: "box-shadow 0.15s ease, transform 0.15s ease",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 20px rgba(0,0,0,0.09)";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.transform = "translateY(0)";
                 }}>
                 <div
                   style={{
@@ -123,6 +133,15 @@ export default function Rooms() {
                         fontSize: 12.5,
                         fontWeight: 700,
                         cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#15803d";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#16a34a";
+                        e.currentTarget.style.transform = "translateY(0)";
                       }}>
                       {isAvail ? "Reserve →" : "Join waitlist →"}
                     </button>
@@ -135,7 +154,6 @@ export default function Rooms() {
       )}
 
       <div
-        className="pg-card-banner"
         style={{
           background: "linear-gradient(125deg,#0c2a1a 0%,#166534 100%)",
           borderRadius: 12,

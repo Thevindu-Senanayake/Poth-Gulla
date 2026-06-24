@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useApp } from "../../App";
 import { useFetch } from "../../hooks/useFetch";
 import { allBookings } from "../../api/bookings";
@@ -23,6 +24,122 @@ function SvgIcon({ path, color, size = 16 }) {
           <path key={i} d={"M" + d} />
         ))}
     </svg>
+  );
+}
+
+/* ── Confirmation dialog ── */
+function ConfirmDialog({
+  open,
+  title,
+  message,
+  confirmLabel,
+  confirmColor,
+  onConfirm,
+  onCancel,
+}) {
+  if (!open) return null;
+  return (
+    <div
+      onClick={onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(6,24,15,0.48)",
+        backdropFilter: "blur(4px)",
+        zIndex: 2000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        animation: "pg-pop .15s ease both",
+      }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: "28px 28px 22px",
+          width: 400,
+          maxWidth: "92vw",
+          boxShadow: "0 20px 50px rgba(6,24,15,0.22)",
+        }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 10,
+          }}>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: `${confirmColor}18`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}>
+            <SvgIcon
+              path="M12 9v4M12 17h.01M12 3l9.5 16.5H2.5z"
+              color={confirmColor}
+              size={18}
+            />
+          </div>
+          <h3
+            style={{
+              fontFamily: "'Spectral', serif",
+              fontSize: 17,
+              fontWeight: 700,
+              color: "#1a1b2e",
+              margin: 0,
+            }}>
+            {title}
+          </h3>
+        </div>
+        <p
+          style={{
+            fontSize: 13,
+            color: "#5a5c74",
+            lineHeight: 1.65,
+            margin: "0 0 20px",
+            paddingLeft: 46,
+          }}>
+          {message}
+        </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: "9px 20px",
+              borderRadius: 9,
+              border: "1.5px solid #e7e7ef",
+              background: "#fff",
+              color: "#3a3b4e",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}>
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: "9px 20px",
+              borderRadius: 9,
+              border: "none",
+              background: confirmColor,
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: `0 2px 10px ${confirmColor}40`,
+            }}>
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -68,6 +185,39 @@ export default function WaitlistReview() {
   const { showToast, refresh } = useApp();
   const { data, loading, error, reload } = useFetch(() => loadReview(), []);
 
+  // Confirmation dialog state
+  const [confirm, setConfirm] = useState({
+    open: false,
+    title: "",
+    message: "",
+    confirmLabel: "Confirm",
+    confirmColor: "#16a34a",
+    onConfirm: () => {},
+  });
+
+  function askConfirm({
+    title,
+    message,
+    confirmLabel,
+    confirmColor,
+    onConfirm,
+  }) {
+    setConfirm({
+      open: true,
+      title,
+      message,
+      confirmLabel: confirmLabel || "Confirm",
+      confirmColor: confirmColor || "#16a34a",
+      onConfirm: () => {
+        setConfirm((c) => ({ ...c, open: false }));
+        onConfirm();
+      },
+    });
+  }
+  function closeConfirm() {
+    setConfirm((c) => ({ ...c, open: false }));
+  }
+
   if (loading) return <Loading label="Loading waitlist queues…" />;
   if (error) return <ErrorState error={error} onRetry={reload} />;
 
@@ -101,6 +251,17 @@ export default function WaitlistReview() {
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
       }}>
+      {/* Confirmation modal */}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        confirmLabel={confirm.confirmLabel}
+        confirmColor={confirm.confirmColor}
+        onConfirm={confirm.onConfirm}
+        onCancel={closeConfirm}
+      />
+
       <div style={{ marginBottom: 22 }}>
         <p style={{ fontSize: 12, color: "#7c7e93", margin: "0 0 3px" }}>
           Staff · Waitlist
@@ -118,7 +279,6 @@ export default function WaitlistReview() {
       </div>
 
       <div
-        className="pg-card-banner"
         style={{
           background: "linear-gradient(125deg,#0c2a1a 0%,#15803d 100%)",
           borderRadius: 13,
@@ -204,13 +364,22 @@ export default function WaitlistReview() {
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {flagged.map((entry) => (
               <div
-                className="pg-card-list"
                 key={entry.id}
                 style={{
                   background: "#fff",
                   border: "1.5px solid #fcd34d",
                   borderRadius: 13,
                   padding: "20px 22px",
+                  transition: "box-shadow 0.15s ease, transform 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 16px rgba(0,0,0,0.07)";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.transform = "translateY(0)";
                 }}>
                 <div
                   style={{
@@ -294,7 +463,15 @@ export default function WaitlistReview() {
                 )}
                 <div style={{ display: "flex", gap: 10 }}>
                   <button
-                    onClick={() => doDecline(entry.id)}
+                    onClick={() =>
+                      askConfirm({
+                        title: "Decline this entry?",
+                        message: `Dismiss "${entry.resourceName}" from the waitlist? The member will be notified that their request was declined.`,
+                        confirmLabel: "Decline",
+                        confirmColor: "#ef4444",
+                        onConfirm: () => doDecline(entry.id),
+                      })
+                    }
                     style={{
                       flex: 1,
                       padding: "10px 0",
@@ -305,11 +482,28 @@ export default function WaitlistReview() {
                       fontSize: 13,
                       fontWeight: 700,
                       cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#fef2f2";
+                      e.currentTarget.style.borderColor = "#fecaca";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#fff";
+                      e.currentTarget.style.borderColor = "#e7e7ef";
                     }}>
                     Decline
                   </button>
                   <button
-                    onClick={() => doPromote(entry.id)}
+                    onClick={() =>
+                      askConfirm({
+                        title: "Promote this entry?",
+                        message: `Promote "${entry.resourceName}" to an approved booking? A pickup QR will be issued to the member.`,
+                        confirmLabel: "Promote",
+                        confirmColor: "#16a34a",
+                        onConfirm: () => doPromote(entry.id),
+                      })
+                    }
                     style={{
                       flex: 1,
                       padding: "10px 0",
@@ -321,6 +515,15 @@ export default function WaitlistReview() {
                       fontWeight: 700,
                       cursor: "pointer",
                       boxShadow: "0 2px 10px rgba(22,163,74,.25)",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#15803d";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#16a34a";
+                      e.currentTarget.style.transform = "translateY(0)";
                     }}>
                     Promote
                   </button>
@@ -347,7 +550,6 @@ export default function WaitlistReview() {
           <Empty label="No auto-promoting entries waiting." />
         ) : (
           <div
-            className="pg-card"
             style={{
               background: "#fff",
               border: "1px solid #e7e7ef",
@@ -364,6 +566,13 @@ export default function WaitlistReview() {
                   padding: "14px 20px",
                   borderBottom:
                     i < autoQueue.length - 1 ? "1px solid #f3f3f8" : "none",
+                  transition: "background 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f8faf9";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
                 }}>
                 <div
                   style={{
@@ -407,7 +616,15 @@ export default function WaitlistReview() {
                   </div>
                 </div>
                 <button
-                  onClick={() => doPromote(entry.id)}
+                  onClick={() =>
+                    askConfirm({
+                      title: "Promote this entry?",
+                      message: `Manually promote "${entry.resourceName}" to an approved booking? This overrides the automatic queue order.`,
+                      confirmLabel: "Promote",
+                      confirmColor: "#16a34a",
+                      onConfirm: () => doPromote(entry.id),
+                    })
+                  }
                   style={{
                     fontSize: 11,
                     color: "#16a34a",
@@ -418,6 +635,15 @@ export default function WaitlistReview() {
                     flexShrink: 0,
                     cursor: "pointer",
                     fontWeight: 700,
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#bbf7d0";
+                    e.currentTarget.style.borderColor = "#86efac";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#d7f8e9";
+                    e.currentTarget.style.borderColor = "#bbf7d0";
                   }}>
                   Promote
                 </button>
