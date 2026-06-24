@@ -6,7 +6,7 @@ import { AuditService } from '../audit/audit.service.js';
 const SINGLETON_ID = 'singleton';
 
 // Admin-editable runtime rules. Defaults mirror the canonical numbers in
-// CLAUDE.md §7B / domain.constants.ts. Persisted in the SystemConfig singleton so
+// DEVELOPMENT.md §7B / domain.constants.ts. Persisted in the SystemConfig singleton so
 // the System Config screen survives reloads (see issue #23).
 
 export interface TierConfig {
