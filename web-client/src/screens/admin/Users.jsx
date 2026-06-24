@@ -13,7 +13,7 @@ const TIER_ORDER = {
   "Tier 3": 3,
   "Tier 4": 4,
   "Tier 5": 5,
-  "—": 0,
+  "-": 0,
 };
 
 export default function Users() {
@@ -103,7 +103,8 @@ export default function Users() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       {/* Header */}
       <div
         style={{
@@ -111,7 +112,8 @@ export default function Users() {
           justifyContent: "space-between",
           alignItems: "flex-start",
           marginBottom: 22,
-        }}>
+        }}
+      >
         <div>
           <h1
             style={{
@@ -120,7 +122,8 @@ export default function Users() {
               fontWeight: 700,
               color: "#1a1b2e",
               margin: "0 0 4px",
-            }}>
+            }}
+          >
             Users
           </h1>
           <p style={{ fontSize: 13, color: "#7c7e93", margin: 0 }}>
@@ -139,12 +142,13 @@ export default function Users() {
             fontWeight: 700,
             cursor: "pointer",
             letterSpacing: 0.2,
-          }}>
+          }}
+        >
           + Add user
         </button>
       </div>
 
-      {/* Filters — dropdowns for role, tier and sort */}
+      {/* Filters - dropdowns for role, tier and sort */}
       <div
         style={{
           display: "flex",
@@ -152,13 +156,15 @@ export default function Users() {
           marginBottom: 20,
           flexWrap: "wrap",
           alignItems: "flex-end",
-        }}>
+        }}
+      >
         <div>
           <label style={dropLabel}>Role</label>
           <select
             value={userFilter}
             onChange={(e) => setUserFilter(e.target.value)}
-            style={dropStyle}>
+            style={dropStyle}
+          >
             {ROLE_CHIPS.map((r) => (
               <option key={r} value={r}>
                 {r === "All" ? "All roles" : r}
@@ -171,7 +177,8 @@ export default function Users() {
           <select
             value={tierFilter}
             onChange={(e) => setTierFilter(e.target.value)}
-            style={dropStyle}>
+            style={dropStyle}
+          >
             {TIER_CHIPS.map((t) => (
               <option key={t} value={t}>
                 {t === "All" ? "All tiers" : "Tier " + t.replace("T", "")}
@@ -184,7 +191,8 @@ export default function Users() {
           <select
             value={sortOpt}
             onChange={(e) => setSortOpt(e.target.value)}
-            style={dropStyle}>
+            style={dropStyle}
+          >
             {SORT_OPTS.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -202,7 +210,8 @@ export default function Users() {
           border: "1px solid #e7e7ef",
           borderRadius: 14,
           overflow: "hidden",
-        }}>
+        }}
+      >
         {/* Table header */}
         <div
           style={{
@@ -211,7 +220,8 @@ export default function Users() {
             padding: "10px 20px",
             background: "#f8f8fc",
             borderBottom: "1px solid #e7e7ef",
-          }}>
+          }}
+        >
           {["Member", "Role", "Tier", "Points", "Status", "Actions"].map(
             (col) => (
               <span
@@ -222,7 +232,8 @@ export default function Users() {
                   color: "#9b9db2",
                   textTransform: "uppercase",
                   letterSpacing: 0.5,
-                }}>
+                }}
+              >
                 {col}
               </span>
             ),
@@ -237,7 +248,8 @@ export default function Users() {
               textAlign: "center",
               color: "#9b9db2",
               fontSize: 13,
-            }}>
+            }}
+          >
             No users match these filters.
           </div>
         )}
@@ -251,7 +263,8 @@ export default function Users() {
               borderBottom:
                 i < filtered.length - 1 ? "1px solid #f0f0f6" : "none",
               alignItems: "center",
-            }}>
+            }}
+          >
             {/* Member */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div
@@ -267,7 +280,8 @@ export default function Users() {
                   fontWeight: 700,
                   color: "#fff",
                   flexShrink: 0,
-                }}>
+                }}
+              >
                 {u.name
                   .split(" ")
                   .map((n) => n[0])
@@ -276,7 +290,8 @@ export default function Users() {
               </div>
               <div>
                 <div
-                  style={{ fontSize: 13, fontWeight: 600, color: "#1a1b2e" }}>
+                  style={{ fontSize: 13, fontWeight: 600, color: "#1a1b2e" }}
+                >
                   {u.name}
                 </div>
                 <div style={{ fontSize: 11, color: "#9b9db2" }}>{u.email}</div>
@@ -292,7 +307,8 @@ export default function Users() {
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 12,
                 color: "#3a3b4e",
-              }}>
+              }}
+            >
               {u.tier}
             </span>
 
@@ -303,8 +319,9 @@ export default function Users() {
                 fontSize: 13,
                 fontWeight: 700,
                 color: "#16a34a",
-              }}>
-              {u.pts > 0 ? u.pts.toLocaleString() : "—"}
+              }}
+            >
+              {u.pts > 0 ? u.pts.toLocaleString() : "-"}
             </span>
 
             {/* Status */}
@@ -318,7 +335,8 @@ export default function Users() {
                 fontSize: 11,
                 fontWeight: 700,
                 width: "fit-content",
-              }}>
+              }}
+            >
               {u.status}
             </span>
 
@@ -337,7 +355,8 @@ export default function Users() {
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
-                }}>
+                }}
+              >
                 <svg
                   width="14"
                   height="14"
@@ -346,7 +365,8 @@ export default function Users() {
                   stroke="#3a3b4e"
                   strokeWidth="2"
                   strokeLinecap="round"
-                  strokeLinejoin="round">
+                  strokeLinejoin="round"
+                >
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
@@ -364,7 +384,8 @@ export default function Users() {
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
-                }}>
+                }}
+              >
                 <svg
                   width="14"
                   height="14"
@@ -373,7 +394,8 @@ export default function Users() {
                   stroke={u.isActive ? "#dc2626" : "#16a34a"}
                   strokeWidth="2"
                   strokeLinecap="round"
-                  strokeLinejoin="round">
+                  strokeLinejoin="round"
+                >
                   {u.isActive ? (
                     <path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10" />
                   ) : (

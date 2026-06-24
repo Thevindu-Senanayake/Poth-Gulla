@@ -1,10 +1,10 @@
-# Poth Gulla — Smart Library Resource Management System
+# Poth Gulla - Smart Library Resource Management System
 
 > Team: SegFault | CIPHER 2.0 Hackathon | Scenario 04
 >
 > A decentralized library resource management system featuring ELO-style User Point tiers, fair waitlist scoring, QR-driven check-in/checkout, and real-time availability across book copies, devices, and study rooms.
 >
-> Status: v0.2.4 — Core logic complete and production-ready. UI layers in progress.
+> Status: v0.2.4 - Core logic complete and production-ready. UI layers in progress.
 
 ---
 
@@ -164,45 +164,45 @@ Base URL: `http://localhost:3000/api`
 
 ### Auth
 
-- `POST /auth/register` — Create account (ADMIN only)
-- `POST /auth/login` — Login, returns JWT
-- `GET /auth/me` — Validate token + get user
-- `POST /auth/logout` — Acknowledge logout
+- `POST /auth/register` - Create account (ADMIN only)
+- `POST /auth/login` - Login, returns JWT
+- `GET /auth/me` - Validate token + get user
+- `POST /auth/logout` - Acknowledge logout
 
 ### Bookings
 
-- `POST /bookings` — Create booking (routes to APPROVED/PENDING/WAITLIST)
-- `GET /bookings/me` — Own bookings
-- `GET /bookings` — All bookings (ADMIN/STAFF)
-- `PATCH /bookings/:id/approve` — Approve PENDING device booking
-- `POST /bookings/:id/cancel` — Cancel own booking
+- `POST /bookings` - Create booking (routes to APPROVED/PENDING/WAITLIST)
+- `GET /bookings/me` - Own bookings
+- `GET /bookings` - All bookings (ADMIN/STAFF)
+- `PATCH /bookings/:id/approve` - Approve PENDING device booking
+- `POST /bookings/:id/cancel` - Cancel own booking
 
 ### Waitlist
 
-- `GET /waitlist/me` — Own waitlist entries
-- `GET /waitlist/:resourceType/:resourceKey` — Full ordered queue (ADMIN/STAFF)
-- `POST /waitlist/:id/promote` — Promote entry to booking
+- `GET /waitlist/me` - Own waitlist entries
+- `GET /waitlist/:resourceType/:resourceKey` - Full ordered queue (ADMIN/STAFF)
+- `POST /waitlist/:id/promote` - Promote entry to booking
 
 ### Catalogue
 
-- `GET /catalogue/books` — List books with availability
-- `GET /catalogue/devices` — List devices
-- `GET /catalogue/rooms` — List rooms + availability
-- `POST /catalogue/books`, `/devices`, `/rooms` — Create (ADMIN/STAFF)
+- `GET /catalogue/books` - List books with availability
+- `GET /catalogue/devices` - List devices
+- `GET /catalogue/rooms` - List rooms + availability
+- `POST /catalogue/books`, `/devices`, `/rooms` - Create (ADMIN/STAFF)
 
 ### Scan (QR Workflow)
 
-- `POST /scan/checkout` — Bind asset to booking, set CHECKED_OUT
-- `POST /scan/room-checkin` — User scans door QR, marks COMPLETED, awards +20 pts
-- `POST /scan/return` — Staff scans return, applies point scoring
+- `POST /scan/checkout` - Bind asset to booking, set CHECKED_OUT
+- `POST /scan/room-checkin` - User scans door QR, marks COMPLETED, awards +20 pts
+- `POST /scan/return` - Staff scans return, applies point scoring
 
 ### Other
 
-- `GET /points/me` — Point-event history
-- `GET /recommendations/me` — Personalised book recommendations (Lecturer/Student)
-- `GET /audit/logs` — System-wide audit log (ADMIN)
-- `GET /config` — Runtime tier/penalty config (ADMIN)
-- `GET /metrics` — Prometheus metrics
+- `GET /points/me` - Point-event history
+- `GET /recommendations/me` - Personalised book recommendations (Lecturer/Student)
+- `GET /audit/logs` - System-wide audit log (ADMIN)
+- `GET /config` - Runtime tier/penalty config (ADMIN)
+- `GET /metrics` - Prometheus metrics
 
 Detailed API docs: [Postman collection](server/postman_collection.json) or visit `http://localhost:3000/api/docs` (Swagger UI).
 
@@ -218,7 +218,7 @@ Detailed API docs: [Postman collection](server/postman_collection.json) or visit
 
 ### Commit discipline
 
-Keep commits granular — one logical change per commit. Pre-commit hook enforces:
+Keep commits granular - one logical change per commit. Pre-commit hook enforces:
 
 - Linting (ESLint)
 - Formatting (Prettier)
@@ -326,7 +326,7 @@ npx localtunnel --port 3000
 
 ## License
 
-AGPL-3.0 — See [LICENSE](LICENSE)
+AGPL-3.0 - See [LICENSE](LICENSE)
 
 **Limits:** JSON and URL-encoded request bodies are capped at 5 MB. Requests that do not complete within 30 seconds are aborted.
 
@@ -342,7 +342,7 @@ To call protected routes from the browser:
 
 1. Open `/api/docs`.
 2. `POST /auth/login` with a demo account, copy the `accessToken`.
-3. Click **Authorize** (top right), paste the token, and execute any endpoint — the bearer token persists across requests.
+3. Click **Authorize** (top right), paste the token, and execute any endpoint - the bearer token persists across requests.
 
 The raw OpenAPI JSON is available at `http://localhost:3000/api/docs-json`.
 
@@ -350,7 +350,7 @@ The raw OpenAPI JSON is available at `http://localhost:3000/api/docs-json`.
 
 ## Caching (Redis)
 
-Catalogue and recommendation reads are cached in Redis as a read-through layer. Mutations invalidate the relevant key patterns (`SCAN` + `DEL`), and a Redis outage degrades gracefully — the API always falls back to Postgres.
+Catalogue and recommendation reads are cached in Redis as a read-through layer. Mutations invalidate the relevant key patterns (`SCAN` + `DEL`), and a Redis outage degrades gracefully - the API always falls back to Postgres.
 
 | Endpoint                                | TTL   | Invalidated by                     |
 | --------------------------------------- | ----- | ---------------------------------- |
@@ -375,12 +375,12 @@ The API exposes Prometheus metrics at **`GET /api/metrics`** (public, so Prometh
 | `http_requests_total`            | Counter   | `method`, `route`, `status_code` |
 | `http_request_duration_seconds`  | Histogram | `method`, `route`, `status_code` |
 | `library_bookings_created_total` | Counter   | `resource_type`, `status`        |
-| `library_active_borrowings`      | Gauge     | —                                |
-| Node.js process/runtime metrics  | default   | —                                |
+| `library_active_borrowings`      | Gauge     | -                                |
+| Node.js process/runtime metrics  | default   | -                                |
 
-**Prometheus** (`http://localhost:9090`) scrapes the API every 15 s — config in `infra/prometheus.yml`.
+**Prometheus** (`http://localhost:9090`) scrapes the API every 15 s - config in `infra/prometheus.yml`.
 
-**Grafana** (`http://localhost:3001`, login `admin` / `admin`) auto-provisions the Prometheus datasource and a **Poth Gulla — API Overview** dashboard on first start (request rate, P50/P95/P99 latency, total requests, active borrowings, error rate %, bookings by resource type). Provisioning files live in `infra/grafana/provisioning/`.
+**Grafana** (`http://localhost:3001`, login `admin` / `admin`) auto-provisions the Prometheus datasource and a **Poth Gulla - API Overview** dashboard on first start (request rate, P50/P95/P99 latency, total requests, active borrowings, error rate %, bookings by resource type). Provisioning files live in `infra/grafana/provisioning/`.
 
 To change the Grafana password, set `GRAFANA_ADMIN_PASSWORD` in the root `.env`.
 
@@ -393,18 +393,18 @@ The backend has Jest unit tests for every route handler plus an end-to-end smoke
 ```bash
 cd server
 
-yarn test            # unit tests — every controller route (mocked services)
+yarn test            # unit tests - every controller route (mocked services)
 yarn test:watch      # unit tests in watch mode
 yarn test:cov        # unit tests with coverage report (→ server/coverage/)
-yarn test:e2e        # e2e smoke suite — boots AppModule with Prisma/Redis faked
+yarn test:e2e        # e2e smoke suite - boots AppModule with Prisma/Redis faked
 ```
 
-- **Unit tests** (`src/**/*.spec.ts`) — every controller (delegation, query parsing, ownership/forbidden, not-found) **plus core service logic**: tier utils, points (floor/tier recompute), return scoring, booking routing/limits/caps, and the SystemConfig module. No database required.
-- **E2E smoke suite** (`test/app.e2e-spec.ts`) boots the real `AppModule` — JWT guard (401), role guard (403), `ValidationPipe` (400), `/api` prefix — across the auth → booking → scan surface, with Prisma and Redis faked.
+- **Unit tests** (`src/**/*.spec.ts`) - every controller (delegation, query parsing, ownership/forbidden, not-found) **plus core service logic**: tier utils, points (floor/tier recompute), return scoring, booking routing/limits/caps, and the SystemConfig module. No database required.
+- **E2E smoke suite** (`test/app.e2e-spec.ts`) boots the real `AppModule` - JWT guard (401), role guard (403), `ValidationPipe` (400), `/api` prefix - across the auth → booking → scan surface, with Prisma and Redis faked.
 
 ### Continuous integration
 
-- **`ci.yml`** runs the backend tests + web build on **every pull request** (and push to `main`). Make `test-and-build` a **required status check** on `main` to block merges on failure — see [`deploy/DEPLOY.md` §8](deploy/DEPLOY.md).
+- **`ci.yml`** runs the backend tests + web build on **every pull request** (and push to `main`). Make `test-and-build` a **required status check** on `main` to block merges on failure - see [`deploy/DEPLOY.md` §8](deploy/DEPLOY.md).
 - **`release-deploy.yml`** runs the same tests as a **gate**: a failed test job stops the release before any image is built or deployed. It also **builds only the services that changed** since the previous tag (carrying forward the unchanged service's signed digest).
 
 ---

@@ -16,7 +16,8 @@ function SvgIcon({ path, color, size = 16 }) {
       stroke={color}
       strokeWidth="2"
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+    >
       {path
         .split("M")
         .filter(Boolean)
@@ -51,7 +52,8 @@ function ConfirmDialog({
         alignItems: "center",
         justifyContent: "center",
         animation: "pg-pop .15s ease both",
-      }}>
+      }}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -61,14 +63,16 @@ function ConfirmDialog({
           width: 400,
           maxWidth: "92vw",
           boxShadow: "0 20px 50px rgba(6,24,15,0.22)",
-        }}>
+        }}
+      >
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 10,
             marginBottom: 10,
-          }}>
+          }}
+        >
           <div
             style={{
               width: 36,
@@ -79,7 +83,8 @@ function ConfirmDialog({
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
-            }}>
+            }}
+          >
             <SvgIcon
               path="M12 9v4M12 17h.01M12 3l9.5 16.5H2.5z"
               color={confirmColor}
@@ -93,7 +98,8 @@ function ConfirmDialog({
               fontWeight: 700,
               color: "#1a1b2e",
               margin: 0,
-            }}>
+            }}
+          >
             {title}
           </h3>
         </div>
@@ -104,7 +110,8 @@ function ConfirmDialog({
             lineHeight: 1.65,
             margin: "0 0 20px",
             paddingLeft: 46,
-          }}>
+          }}
+        >
           {message}
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -119,7 +126,8 @@ function ConfirmDialog({
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             Cancel
           </button>
           <button
@@ -134,7 +142,8 @@ function ConfirmDialog({
               fontWeight: 700,
               cursor: "pointer",
               boxShadow: `0 2px 10px ${confirmColor}40`,
-            }}>
+            }}
+          >
             {confirmLabel}
           </button>
         </div>
@@ -228,7 +237,7 @@ export default function WaitlistReview() {
   async function doPromote(id) {
     try {
       await promote(id);
-      showToast("Promoted — booking approved");
+      showToast("Promoted - booking approved");
       refresh();
     } catch (e) {
       showToast(e?.response?.data?.message ?? "Could not promote");
@@ -250,7 +259,8 @@ export default function WaitlistReview() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       {/* Confirmation modal */}
       <ConfirmDialog
         open={confirm.open}
@@ -273,7 +283,8 @@ export default function WaitlistReview() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: 0,
-          }}>
+          }}
+        >
           Waitlist review
         </h1>
       </div>
@@ -287,7 +298,8 @@ export default function WaitlistReview() {
           display: "flex",
           gap: 14,
           alignItems: "flex-start",
-        }}>
+        }}
+      >
         <div
           style={{
             background: "rgba(255,255,255,0.15)",
@@ -299,7 +311,8 @@ export default function WaitlistReview() {
             justifyContent: "center",
             flexShrink: 0,
             marginTop: 1,
-          }}>
+          }}
+        >
           <SvgIcon path="M4 7h16M4 12h16M4 17h10" color="#fff" />
         </div>
         <div>
@@ -310,7 +323,8 @@ export default function WaitlistReview() {
               fontWeight: 600,
               color: "#fff",
               marginBottom: 4,
-            }}>
+            }}
+          >
             Flagging system
           </div>
           <div
@@ -318,7 +332,8 @@ export default function WaitlistReview() {
               fontSize: 12,
               color: "rgba(255,255,255,0.75)",
               lineHeight: 1.6,
-            }}>
+            }}
+          >
             Entries with a justification message pause auto-promotion and float
             to the top for review. Promote one to approve its booking and issue
             a pickup QR; message-free entries auto-promote on a free event.
@@ -334,7 +349,8 @@ export default function WaitlistReview() {
             alignItems: "center",
             gap: 10,
             marginBottom: 16,
-          }}>
+          }}
+        >
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -342,7 +358,8 @@ export default function WaitlistReview() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: 0,
-            }}>
+            }}
+          >
             Flagged for review
           </h2>
           <span
@@ -354,7 +371,8 @@ export default function WaitlistReview() {
               padding: "2px 9px",
               borderRadius: 20,
               border: "1px solid #fcd34d",
-            }}>
+            }}
+          >
             {flagged.length} pending
           </span>
         </div>
@@ -380,14 +398,16 @@ export default function WaitlistReview() {
                 onMouseLeave={(e) => {
                   e.currentTarget.style.boxShadow = "none";
                   e.currentTarget.style.transform = "translateY(0)";
-                }}>
+                }}
+              >
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "flex-start",
                     marginBottom: 14,
-                  }}>
+                  }}
+                >
                   <div>
                     <div
                       style={{
@@ -395,7 +415,8 @@ export default function WaitlistReview() {
                         fontWeight: 700,
                         color: "#1a1b2e",
                         marginBottom: 4,
-                      }}>
+                      }}
+                    >
                       {entry.resourceName}
                     </div>
                     <span
@@ -405,7 +426,8 @@ export default function WaitlistReview() {
                         background: "#f3f3f8",
                         borderRadius: 20,
                         padding: "2px 8px",
-                      }}>
+                      }}
+                    >
                       {entry.resourceType}
                     </span>
                   </div>
@@ -415,7 +437,8 @@ export default function WaitlistReview() {
                         fontSize: 10,
                         color: "#9b9db2",
                         marginBottom: 3,
-                      }}>
+                      }}
+                    >
                       Priority
                     </div>
                     <div
@@ -424,7 +447,8 @@ export default function WaitlistReview() {
                         fontSize: 18,
                         fontWeight: 800,
                         color: "#16a34a",
-                      }}>
+                      }}
+                    >
                       {Math.round((entry.priorityScore ?? 0) * 10) / 10}
                     </div>
                   </div>
@@ -437,7 +461,8 @@ export default function WaitlistReview() {
                       borderRadius: 8,
                       padding: "12px 14px",
                       marginBottom: 16,
-                    }}>
+                    }}
+                  >
                     <div
                       style={{
                         fontSize: 10,
@@ -446,7 +471,8 @@ export default function WaitlistReview() {
                         textTransform: "uppercase",
                         letterSpacing: 0.5,
                         marginBottom: 6,
-                      }}>
+                      }}
+                    >
                       Member's justification
                     </div>
                     <p
@@ -456,7 +482,8 @@ export default function WaitlistReview() {
                         margin: 0,
                         fontStyle: "italic",
                         lineHeight: 1.6,
-                      }}>
+                      }}
+                    >
                       "{entry.message}"
                     </p>
                   </div>
@@ -491,7 +518,8 @@ export default function WaitlistReview() {
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = "#fff";
                       e.currentTarget.style.borderColor = "#e7e7ef";
-                    }}>
+                    }}
+                  >
                     Decline
                   </button>
                   <button
@@ -524,7 +552,8 @@ export default function WaitlistReview() {
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = "#16a34a";
                       e.currentTarget.style.transform = "translateY(0)";
-                    }}>
+                    }}
+                  >
                     Promote
                   </button>
                 </div>
@@ -543,7 +572,8 @@ export default function WaitlistReview() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: "0 0 14px",
-          }}>
+          }}
+        >
           Automatic queue
         </h2>
         {autoQueue.length === 0 ? (
@@ -555,7 +585,8 @@ export default function WaitlistReview() {
               border: "1px solid #e7e7ef",
               borderRadius: 13,
               overflow: "hidden",
-            }}>
+            }}
+          >
             {autoQueue.map((entry, i) => (
               <div
                 key={entry.id}
@@ -573,7 +604,8 @@ export default function WaitlistReview() {
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = "transparent";
-                }}>
+                }}
+              >
                 <div
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
@@ -583,7 +615,8 @@ export default function WaitlistReview() {
                     width: 24,
                     textAlign: "center",
                     flexShrink: 0,
-                  }}>
+                  }}
+                >
                   #{i + 1}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -593,7 +626,8 @@ export default function WaitlistReview() {
                       fontWeight: 700,
                       color: "#1a1b2e",
                       marginBottom: 2,
-                    }}>
+                    }}
+                  >
                     {entry.resourceName}
                   </div>
                   <span style={{ fontSize: 11, color: "#7c7e93" }}>
@@ -602,7 +636,8 @@ export default function WaitlistReview() {
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
                   <div
-                    style={{ fontSize: 10, color: "#9b9db2", marginBottom: 2 }}>
+                    style={{ fontSize: 10, color: "#9b9db2", marginBottom: 2 }}
+                  >
                     Priority
                   </div>
                   <div
@@ -611,7 +646,8 @@ export default function WaitlistReview() {
                       fontSize: 14,
                       fontWeight: 700,
                       color: "#7c7e93",
-                    }}>
+                    }}
+                  >
                     {Math.round((entry.priorityScore ?? 0) * 10) / 10}
                   </div>
                 </div>
@@ -644,7 +680,8 @@ export default function WaitlistReview() {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "#d7f8e9";
                     e.currentTarget.style.borderColor = "#bbf7d0";
-                  }}>
+                  }}
+                >
                   Promote
                 </button>
               </div>

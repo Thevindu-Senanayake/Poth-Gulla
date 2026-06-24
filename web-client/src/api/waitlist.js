@@ -1,13 +1,13 @@
-import { api } from './client';
-import { adaptWaitlistEntry } from './adapters';
+import { api } from "./client";
+import { adaptWaitlistEntry } from "./adapters";
 
-// GET /waitlist/me — own pending waitlist entries
+// GET /waitlist/me - own pending waitlist entries
 export async function myWaitlist() {
-  const { data } = await api.get('/waitlist/me');
+  const { data } = await api.get("/waitlist/me");
   return (data ?? []).map(adaptWaitlistEntry);
 }
 
-// GET /waitlist/:resourceType/:resourceKey — full ordered queue (ADMIN, LIBRARY_STAFF)
+// GET /waitlist/:resourceType/:resourceKey - full ordered queue (ADMIN, LIBRARY_STAFF)
 export async function queue(resourceType, resourceKey) {
   const { data } = await api.get(`/waitlist/${resourceType}/${resourceKey}`);
   return (data ?? []).map(adaptWaitlistEntry);

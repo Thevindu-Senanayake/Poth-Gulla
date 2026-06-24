@@ -63,7 +63,7 @@ export class BookingService {
       throw new BadRequestException(`Exceeds the ${resourceType} duration cap`);
     }
 
-    // (2) per-tier concurrency check — Admin/Staff have tier = null and bypass this
+    // (2) per-tier concurrency check - Admin/Staff have tier = null and bypass this
     if (user.tier != null) {
       const config = await this.systemConfig.get();
       const tierInfo = config.tiers[user.tier - 1]; // tier is 1-indexed

@@ -36,7 +36,7 @@ export class SystemConfigController {
   constructor(private config: SystemConfigService) {}
 
   @ApiOperation({
-    summary: 'Get system config (tier thresholds, penalties, toggles) — Admin',
+    summary: 'Get system config (tier thresholds, penalties, toggles) - Admin',
   })
   @Get()
   get() {
@@ -45,7 +45,7 @@ export class SystemConfigController {
 
   @ApiOperation({
     summary:
-      'Update system config — Admin. Persists the edited rules. Logs to audit trail.',
+      'Update system config - Admin. Persists the edited rules. Logs to audit trail.',
   })
   @Put()
   update(

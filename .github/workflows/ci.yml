@@ -1,4 +1,4 @@
-# CI — runs on every pull request (and pushes to main) so tests must pass before a
+# CI - runs on every pull request (and pushes to main) so tests must pass before a
 # merge. Enforcement requires a branch-protection rule that marks "test-and-build"
 # as a required status check (see deploy/DEPLOY.md → "Require tests on PRs").
 name: ci

@@ -1,6 +1,6 @@
-import { useApp } from '../App';
-import { createBooking } from '../api/bookings';
-import ResourceImage from '../components/ResourceImage';
+import { useApp } from "../App";
+import { createBooking } from "../api/bookings";
+import ResourceImage from "../components/ResourceImage";
 
 function QRGrid({ cells }) {
   const size = 11;
@@ -15,7 +15,8 @@ function QRGrid({ cells }) {
         borderRadius: 10,
         overflow: "hidden",
         background: "#fff",
-      }}>
+      }}
+    >
       {cells.map((cell, i) => (
         <div key={i} style={{ background: cell.bg }} />
       ))}
@@ -35,7 +36,8 @@ function DatePicker({ label, value, onChange }) {
           marginBottom: 6,
           textTransform: "uppercase",
           letterSpacing: 0.4,
-        }}>
+        }}
+      >
         {label}
       </label>
       <input
@@ -65,7 +67,7 @@ function CoverIcon({ resource }) {
     <ResourceImage
       imageUrl={resource.imageUrl}
       iconPath={resource.iconPath}
-      color={resource.color || '#15803d'}
+      color={resource.color || "#15803d"}
       w={54}
       h={66}
       radius={8}
@@ -75,7 +77,7 @@ function CoverIcon({ resource }) {
 
 // Module-scope so its component identity is STABLE across BookingModal re-renders.
 // (Defined inside the component, every keystroke created a new type and React
-// remounted the whole subtree — the justification textarea lost focus each char.)
+// remounted the whole subtree - the justification textarea lost focus each char.)
 const Overlay = ({ children, onClose }) => (
   <div
     onClick={onClose}
@@ -88,7 +90,8 @@ const Overlay = ({ children, onClose }) => (
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-    }}>
+    }}
+  >
     <div
       onClick={(e) => e.stopPropagation()}
       style={{
@@ -99,7 +102,8 @@ const Overlay = ({ children, onClose }) => (
         maxHeight: "90vh",
         overflowY: "auto",
         boxShadow: "0 24px 60px rgba(6,24,15,0.22)",
-      }}>
+      }}
+    >
       {children}
     </div>
   </div>
@@ -141,7 +145,7 @@ export default function BookingModal() {
   }
 
   // Build a valid ISO window, clamped to the backend's per-type duration caps
-  // (BOOK ≤ 14d, DEVICE ≤ 7d, ROOM ≤ 4h — see server domain.constants.ts).
+  // (BOOK ≤ 14d, DEVICE ≤ 7d, ROOM ≤ 4h - see server domain.constants.ts).
   function buildWindow() {
     const start = new Date(`${bookDate}T09:00:00`);
     const type = resource?.type;
@@ -157,7 +161,7 @@ export default function BookingModal() {
     return { startAt: start.toISOString(), endAt: end.toISOString() };
   }
 
-  // Single submit — backend decides APPROVED | PENDING | WAITLIST and we branch on the result.
+  // Single submit - backend decides APPROVED | PENDING | WAITLIST and we branch on the result.
   async function submitBooking() {
     if (busy) return;
     setBookingModal((prev) => ({ ...prev, busy: true }));
@@ -197,7 +201,8 @@ export default function BookingModal() {
         alignItems: "center",
         padding: "20px 24px 16px",
         borderBottom: "1px solid #f0f0f6",
-      }}>
+      }}
+    >
       <h2
         style={{
           fontFamily: "'Spectral', serif",
@@ -205,7 +210,8 @@ export default function BookingModal() {
           fontWeight: 700,
           color: "#1a1b2e",
           margin: 0,
-        }}>
+        }}
+      >
         {title}
       </h2>
       <button
@@ -219,7 +225,8 @@ export default function BookingModal() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-        }}>
+        }}
+      >
         <svg
           width="18"
           height="18"
@@ -228,7 +235,8 @@ export default function BookingModal() {
           stroke="#9b9db2"
           strokeWidth="2"
           strokeLinecap="round"
-          strokeLinejoin="round">
+          strokeLinejoin="round"
+        >
           <path d="M18 6 6 18M6 6l12 12" />
         </svg>
       </button>
@@ -254,7 +262,8 @@ export default function BookingModal() {
         fontSize: 13,
         fontWeight: 700,
         cursor: "pointer",
-      }}>
+      }}
+    >
       Cancel
     </button>
   );
@@ -272,7 +281,8 @@ export default function BookingModal() {
         fontSize: 13,
         fontWeight: 700,
         cursor: "pointer",
-      }}>
+      }}
+    >
       {children}
     </button>
   );
@@ -292,7 +302,8 @@ export default function BookingModal() {
                   fontWeight: 700,
                   color: "#1a1b2e",
                   marginBottom: 3,
-                }}>
+                }}
+              >
                 {resource?.title}
               </div>
               <div style={{ fontSize: 12, color: "#7c7e93" }}>
@@ -327,7 +338,8 @@ export default function BookingModal() {
                 marginBottom: 6,
                 textTransform: "uppercase",
                 letterSpacing: 0.4,
-              }}>
+              }}
+            >
               Justification (optional)
             </label>
             <textarea
@@ -361,7 +373,8 @@ export default function BookingModal() {
               alignItems: "center",
               gap: 8,
               marginBottom: 4,
-            }}>
+            }}
+          >
             <div
               style={{
                 width: 8,
@@ -400,7 +413,8 @@ export default function BookingModal() {
               gap: 12,
               marginBottom: 18,
               alignItems: "flex-start",
-            }}>
+            }}
+          >
             <svg
               width="22"
               height="22"
@@ -410,7 +424,8 @@ export default function BookingModal() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ flexShrink: 0, marginTop: 1 }}>
+              style={{ flexShrink: 0, marginTop: 1 }}
+            >
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
               <path d="M12 9v4M12 17h.01" />
             </svg>
@@ -421,7 +436,8 @@ export default function BookingModal() {
                   fontWeight: 700,
                   color: "#92400e",
                   marginBottom: 4,
-                }}>
+                }}
+              >
                 High-value device · Approval required
               </div>
               <div style={{ fontSize: 12, color: "#b45309", lineHeight: 1.5 }}>
@@ -440,7 +456,8 @@ export default function BookingModal() {
                   fontWeight: 700,
                   color: "#1a1b2e",
                   marginBottom: 3,
-                }}>
+                }}
+              >
                 {resource?.title}
               </div>
               <div style={{ fontSize: 12, color: "#7c7e93" }}>
@@ -476,7 +493,8 @@ export default function BookingModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             {busy ? "Submitting…" : "Submit for approval"}
           </button>
         </BtnRow>
@@ -499,7 +517,8 @@ export default function BookingModal() {
               gap: 12,
               marginBottom: 18,
               alignItems: "flex-start",
-            }}>
+            }}
+          >
             <svg
               width="22"
               height="22"
@@ -509,7 +528,8 @@ export default function BookingModal() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ flexShrink: 0, marginTop: 1 }}>
+              style={{ flexShrink: 0, marginTop: 1 }}
+            >
               <path d="M4 7h16M4 12h16M4 17h10" />
             </svg>
             <div>
@@ -519,12 +539,13 @@ export default function BookingModal() {
                   fontWeight: 700,
                   color: "#9d174d",
                   marginBottom: 4,
-                }}>
+                }}
+              >
                 All copies currently on loan
               </div>
               <div style={{ fontSize: 12, color: "#be185d", lineHeight: 1.5 }}>
                 You can join the waitlist. Add a justification message to
-                improve your priority score — staff may promote you ahead of the
+                improve your priority score - staff may promote you ahead of the
                 queue.
               </div>
             </div>
@@ -539,7 +560,8 @@ export default function BookingModal() {
                   fontWeight: 700,
                   color: "#1a1b2e",
                   marginBottom: 3,
-                }}>
+                }}
+              >
                 {resource?.title}
               </div>
               <div style={{ fontSize: 12, color: "#7c7e93" }}>
@@ -558,7 +580,8 @@ export default function BookingModal() {
                 marginBottom: 6,
                 textTransform: "uppercase",
                 letterSpacing: 0.4,
-              }}>
+              }}
+            >
               Justification message (recommended)
             </label>
             <textarea
@@ -596,7 +619,8 @@ export default function BookingModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             {busy ? "Joining…" : "Join waitlist"}
           </button>
         </BtnRow>
@@ -614,7 +638,8 @@ export default function BookingModal() {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-          }}>
+          }}
+        >
           <div
             style={{
               background: "#dcfce7",
@@ -626,7 +651,8 @@ export default function BookingModal() {
               color: "#16a34a",
               marginBottom: 14,
               letterSpacing: 0.3,
-            }}>
+            }}
+          >
             Booking confirmed
           </div>
 
@@ -637,7 +663,8 @@ export default function BookingModal() {
               color: "#1a1b2e",
               marginBottom: 4,
               textAlign: "center",
-            }}>
+            }}
+          >
             {resource?.title}
           </div>
           <div style={{ fontSize: 12, color: "#7c7e93", marginBottom: 20 }}>
@@ -658,8 +685,9 @@ export default function BookingModal() {
               wordBreak: "break-all",
               textAlign: "center",
               maxWidth: 280,
-            }}>
-            {loanToken || "—"}
+            }}
+          >
+            {loanToken || "-"}
           </div>
 
           <div
@@ -670,7 +698,8 @@ export default function BookingModal() {
               color: "#7c7e93",
               marginBottom: 4,
               textAlign: "center",
-            }}>
+            }}
+          >
             <span>
               {bookDate} → {bookReturn}
             </span>
@@ -692,7 +721,8 @@ export default function BookingModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             View my bookings
           </button>
           <button
@@ -707,7 +737,8 @@ export default function BookingModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             Close
           </button>
         </BtnRow>
@@ -726,7 +757,8 @@ export default function BookingModal() {
             flexDirection: "column",
             alignItems: "center",
             textAlign: "center",
-          }}>
+          }}
+        >
           <div
             style={{
               width: 64,
@@ -737,7 +769,8 @@ export default function BookingModal() {
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 16,
-            }}>
+            }}
+          >
             <svg
               width="30"
               height="30"
@@ -746,7 +779,8 @@ export default function BookingModal() {
               stroke="#d97706"
               strokeWidth="2"
               strokeLinecap="round"
-              strokeLinejoin="round">
+              strokeLinejoin="round"
+            >
               <path d="M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z" />
             </svg>
           </div>
@@ -756,7 +790,8 @@ export default function BookingModal() {
               fontWeight: 700,
               color: "#1a1b2e",
               marginBottom: 8,
-            }}>
+            }}
+          >
             Request submitted
           </div>
           <div
@@ -765,7 +800,8 @@ export default function BookingModal() {
               color: "#7c7e93",
               lineHeight: 1.6,
               marginBottom: 20,
-            }}>
+            }}
+          >
             Your booking request for <strong>{resource?.title}</strong> is
             pending staff review. You'll be notified when it's approved or
             declined.
@@ -787,7 +823,8 @@ export default function BookingModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             View my bookings
           </button>
         </BtnRow>
@@ -806,7 +843,8 @@ export default function BookingModal() {
             flexDirection: "column",
             alignItems: "center",
             textAlign: "center",
-          }}>
+          }}
+        >
           <div
             style={{
               width: 64,
@@ -818,14 +856,16 @@ export default function BookingModal() {
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 16,
-            }}>
+            }}
+          >
             <span
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 22,
                 fontWeight: 800,
                 color: "#db2777",
-              }}>
+              }}
+            >
               #2
             </span>
           </div>
@@ -835,7 +875,8 @@ export default function BookingModal() {
               fontWeight: 700,
               color: "#1a1b2e",
               marginBottom: 8,
-            }}>
+            }}
+          >
             You're on the waitlist
           </div>
           <div
@@ -844,7 +885,8 @@ export default function BookingModal() {
               color: "#7c7e93",
               lineHeight: 1.6,
               marginBottom: 8,
-            }}>
+            }}
+          >
             You've joined the waitlist for <strong>{resource?.title}</strong>.
           </div>
           <div
@@ -853,7 +895,8 @@ export default function BookingModal() {
               color: "#be185d",
               fontWeight: 600,
               marginBottom: 20,
-            }}>
+            }}
+          >
             Your justification will be reviewed by staff and may boost your
             position.
           </div>
@@ -874,7 +917,8 @@ export default function BookingModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             View my waitlist
           </button>
           <CancelBtn onClick={close} />
@@ -893,7 +937,8 @@ export default function BookingModal() {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-          }}>
+          }}
+        >
           <div
             style={{
               fontSize: 16,
@@ -901,7 +946,8 @@ export default function BookingModal() {
               color: "#1a1b2e",
               marginBottom: 4,
               textAlign: "center",
-            }}>
+            }}
+          >
             {resource?.title}
           </div>
           <div style={{ fontSize: 12, color: "#7c7e93", marginBottom: 18 }}>
@@ -922,8 +968,9 @@ export default function BookingModal() {
               wordBreak: "break-all",
               textAlign: "center",
               maxWidth: 280,
-            }}>
-            {loanToken || "—"}
+            }}
+          >
+            {loanToken || "-"}
           </div>
 
           <div
@@ -937,7 +984,8 @@ export default function BookingModal() {
               fontWeight: 600,
               textAlign: "center",
               marginBottom: 4,
-            }}>
+            }}
+          >
             Show this QR at the desk to return this item
           </div>
         </div>
@@ -954,7 +1002,8 @@ export default function BookingModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             Close
           </button>
         </BtnRow>

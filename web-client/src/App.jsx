@@ -55,7 +55,7 @@ function toUiUser(u) {
     avatarBg,
     points: u.userPoints ?? 0,
     tier: u.tier ?? null,
-    tierLabel: u.tier ? `Tier ${u.tier}` : "—",
+    tierLabel: u.tier ? `Tier ${u.tier}` : "-",
     isActive: u.isActive,
   };
 }
@@ -143,7 +143,7 @@ export default function App() {
   useEffect(() => {
     const handler = () => {
       setUser(null);
-      showToast("Session expired — please sign in again");
+      showToast("Session expired - please sign in again");
     };
     window.addEventListener("auth:force-logout", handler);
     return () => window.removeEventListener("auth:force-logout", handler);
@@ -255,7 +255,8 @@ export default function App() {
           fontFamily: "'Public Sans', sans-serif",
           color: "#16a34a",
           fontWeight: 700,
-        }}>
+        }}
+      >
         Loading…
       </div>
     );
@@ -269,7 +270,8 @@ export default function App() {
           flexDirection: "column",
           height: "100vh",
           overflow: "hidden",
-        }}>
+        }}
+      >
         {!user && <Login />}
         {user && <DesktopApp />}
         {bookingModal.open && <BookingModal />}

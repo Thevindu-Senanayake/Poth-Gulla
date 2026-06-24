@@ -81,7 +81,7 @@ export function adaptDevice(d) {
       `Tier ${d.deviceTier} device. ${d.deviceTier >= 4 ? "Requires staff approval to check out." : ""}`.trim(),
     tier: d.deviceTier,
     status: d.status,
-    serial: d.assetTag, // serial / asset tag — shown across the catalogue
+    serial: d.assetTag, // serial / asset tag - shown across the catalogue
     raw: d,
   };
 }
@@ -115,7 +115,7 @@ export function adaptUser(u) {
     role: ROLE_LABEL[u.role] ?? u.role,
     roleKey: ROLE_MAP[u.role] ?? "student",
     rawRole: u.role,
-    tier: u.tier ? `Tier ${u.tier}` : "—",
+    tier: u.tier ? `Tier ${u.tier}` : "-",
     tierNum: u.tier ?? 0,
     pts: u.userPoints ?? 0,
     status: u.isActive ? "Active" : "Suspended",

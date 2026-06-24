@@ -1,6 +1,6 @@
 #!/bin/sh
 # Production entrypoint for the API container.
-#   1. apply the schema (prototype workflow — no migration files yet)
+#   1. apply the schema (prototype workflow - no migration files yet)
 #   2. run the idempotent seed (all upserts; safe on every deploy)
 #   3. start the compiled server
 # DATABASE_URL must point at the in-network Postgres (set by the deploy compose).

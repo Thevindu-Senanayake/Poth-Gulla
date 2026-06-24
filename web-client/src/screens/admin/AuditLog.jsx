@@ -41,7 +41,7 @@ export default function AuditLog() {
       .join(" · "),
     kind: l.targetType || "System",
     time: fmt(l.createdAt),
-    ip: l.metadata?.ip || "—",
+    ip: l.metadata?.ip || "-",
     col: colorFor(l.targetType || l.action || "x"),
   }));
 
@@ -56,7 +56,8 @@ export default function AuditLog() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       {/* Header */}
       <div style={{ marginBottom: 18 }}>
         <h1
@@ -66,7 +67,8 @@ export default function AuditLog() {
             fontWeight: 700,
             color: "#1a1b2e",
             margin: "0 0 4px",
-          }}>
+          }}
+        >
           Audit Log
         </h1>
         <p style={{ fontSize: 13, color: "#7c7e93", margin: 0 }}>
@@ -85,7 +87,8 @@ export default function AuditLog() {
           display: "flex",
           alignItems: "center",
           gap: 12,
-        }}>
+        }}
+      >
         <div
           style={{
             width: 30,
@@ -96,7 +99,8 @@ export default function AuditLog() {
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-          }}>
+          }}
+        >
           <svg
             width="14"
             height="14"
@@ -105,7 +109,8 @@ export default function AuditLog() {
             stroke="rgba(255,255,255,0.9)"
             strokeWidth="2"
             strokeLinecap="round"
-            strokeLinejoin="round">
+            strokeLinejoin="round"
+          >
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
         </div>
@@ -118,7 +123,8 @@ export default function AuditLog() {
               fontSize: 12,
               color: "rgba(255,255,255,0.65)",
               marginLeft: 8,
-            }}>
+            }}
+          >
             All actions are immutably recorded. No entry can be edited or
             deleted.
           </span>
@@ -127,7 +133,8 @@ export default function AuditLog() {
 
       {/* Filter chips */}
       <div
-        style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+        style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}
+      >
         {FILTER_CHIPS.map((chip) => (
           <button
             key={chip}
@@ -141,7 +148,8 @@ export default function AuditLog() {
               fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
-            }}>
+            }}
+          >
             {chip}
           </button>
         ))}
@@ -155,7 +163,8 @@ export default function AuditLog() {
           border: "1px solid #e7e7ef",
           borderRadius: 14,
           overflow: "hidden",
-        }}>
+        }}
+      >
         {/* Table header */}
         <div
           style={{
@@ -166,7 +175,8 @@ export default function AuditLog() {
             borderBottom: "1px solid #e7e7ef",
             gap: 16,
             alignItems: "center",
-          }}>
+          }}
+        >
           <div />
           {["Actor / Action", "Target", "Kind", "Timestamp · IP"].map((col) => (
             <span
@@ -177,7 +187,8 @@ export default function AuditLog() {
                 color: "#9b9db2",
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
-              }}>
+              }}
+            >
               {col}
             </span>
           ))}
@@ -191,7 +202,8 @@ export default function AuditLog() {
               textAlign: "center",
               color: "#9b9db2",
               fontSize: 13,
-            }}>
+            }}
+          >
             No entries for this filter.
           </div>
         )}
@@ -205,7 +217,8 @@ export default function AuditLog() {
               borderBottom:
                 i < filtered.length - 1 ? "1px solid #f0f0f6" : "none",
               alignItems: "center",
-            }}>
+            }}
+          >
             {/* Colored left bar */}
             <div
               style={{
@@ -224,7 +237,8 @@ export default function AuditLog() {
                   fontWeight: 600,
                   color: "#1a1b2e",
                   marginBottom: 2,
-                }}>
+                }}
+              >
                 {log.action}
               </div>
               <div
@@ -232,7 +246,8 @@ export default function AuditLog() {
                   fontFamily: "'IBM Plex Mono', monospace",
                   fontSize: 11,
                   color: "#9b9db2",
-                }}>
+                }}
+              >
                 {log.actor}
               </div>
             </div>
@@ -244,7 +259,8 @@ export default function AuditLog() {
                 fontSize: 12,
                 color: "#3a3b4e",
                 lineHeight: 1.4,
-              }}>
+              }}
+            >
               {log.target}
             </div>
 
@@ -260,7 +276,8 @@ export default function AuditLog() {
                   padding: "3px 10px",
                   fontSize: 11,
                   fontWeight: 700,
-                }}>
+                }}
+              >
                 {log.kind}
               </span>
             </div>
@@ -273,7 +290,8 @@ export default function AuditLog() {
                   fontSize: 11,
                   color: "#3a3b4e",
                   marginBottom: 2,
-                }}>
+                }}
+              >
                 {log.time}
               </div>
               <div style={{ fontSize: 11, color: "#9b9db2" }}>{log.ip}</div>

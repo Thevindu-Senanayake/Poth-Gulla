@@ -17,7 +17,8 @@ export default function Rooms() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       <div style={{ marginBottom: 24 }}>
         <h1
           style={{
@@ -26,11 +27,12 @@ export default function Rooms() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: "0 0 4px",
-          }}>
+          }}
+        >
           Study Rooms
         </h1>
         <p style={{ color: "#7c7e93", fontSize: 13, margin: 0 }}>
-          Reserve a quiet space — bookings route instantly unless the slot
+          Reserve a quiet space - bookings route instantly unless the slot
           clashes.
         </p>
       </div>
@@ -44,7 +46,8 @@ export default function Rooms() {
             gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
             gap: 16,
             marginBottom: 20,
-          }}>
+          }}
+        >
           {rooms.map((room) => {
             const isAvail = room.available > 0;
             return (
@@ -66,7 +69,8 @@ export default function Rooms() {
                 onMouseLeave={(e) => {
                   e.currentTarget.style.boxShadow = "none";
                   e.currentTarget.style.transform = "translateY(0)";
-                }}>
+                }}
+              >
                 <div
                   style={{
                     background: room.color,
@@ -74,7 +78,8 @@ export default function Rooms() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                  }}>
+                  }}
+                >
                   <svg
                     width="34"
                     height="34"
@@ -83,7 +88,8 @@ export default function Rooms() {
                     stroke="rgba(255,255,255,0.9)"
                     strokeWidth="1.6"
                     strokeLinecap="round"
-                    strokeLinejoin="round">
+                    strokeLinejoin="round"
+                  >
                     <path d="M3 3h18v18H3zM9 3v18M15 9H3M15 15H3" />
                   </svg>
                 </div>
@@ -94,7 +100,8 @@ export default function Rooms() {
                       fontWeight: 700,
                       color: "#1a1b2e",
                       marginBottom: 3,
-                    }}>
+                    }}
+                  >
                     {room.title}
                   </div>
                   <div
@@ -102,7 +109,8 @@ export default function Rooms() {
                       fontSize: 12,
                       color: "#7c7e93",
                       marginBottom: 12,
-                    }}>
+                    }}
+                  >
                     {room.author}
                   </div>
                   <div
@@ -110,7 +118,8 @@ export default function Rooms() {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                    }}>
+                    }}
+                  >
                     <span
                       style={{
                         fontSize: 11,
@@ -119,7 +128,8 @@ export default function Rooms() {
                         background: isAvail ? "#d7f8e9" : "#fce7f3",
                         borderRadius: 6,
                         padding: "4px 9px",
-                      }}>
+                      }}
+                    >
                       {isAvail ? "Available" : "In use"}
                     </span>
                     <button
@@ -142,7 +152,8 @@ export default function Rooms() {
                       onMouseLeave={(e) => {
                         e.currentTarget.style.background = "#16a34a";
                         e.currentTarget.style.transform = "translateY(0)";
-                      }}>
+                      }}
+                    >
                       {isAvail ? "Reserve →" : "Join waitlist →"}
                     </button>
                   </div>
@@ -161,7 +172,8 @@ export default function Rooms() {
           display: "flex",
           alignItems: "center",
           gap: 12,
-        }}>
+        }}
+      >
         <div
           style={{
             width: 36,
@@ -172,7 +184,8 @@ export default function Rooms() {
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-          }}>
+          }}
+        >
           <svg
             width="18"
             height="18"
@@ -181,7 +194,8 @@ export default function Rooms() {
             stroke="#86efac"
             strokeWidth="2"
             strokeLinecap="round"
-            strokeLinejoin="round">
+            strokeLinejoin="round"
+          >
             <rect x="3" y="3" width="7" height="7" rx="1" />
             <rect x="14" y="3" width="7" height="7" rx="1" />
             <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -195,7 +209,8 @@ export default function Rooms() {
               fontWeight: 700,
               color: "#fff",
               marginBottom: 2,
-            }}>
+            }}
+          >
             QR check-in earns points
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)" }}>

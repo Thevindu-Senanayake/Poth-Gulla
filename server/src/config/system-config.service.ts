@@ -154,7 +154,7 @@ export class SystemConfigService {
       'SystemConfig',
       SINGLETON_ID,
       {
-        patch: next as unknown as Prisma.InputJsonObject,
+        patch: patch as unknown as Prisma.InputJsonObject,
       },
     );
 
