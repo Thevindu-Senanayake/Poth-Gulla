@@ -1,20 +1,11 @@
 import { useApp } from '../../App';
 import { useFetch } from '../../hooks/useFetch';
 import { myBookings, cancelBooking } from '../../api/bookings';
-import { BOOK_ICON, DEVICE_ICON, ROOM_ICON } from '../../api/adapters';
 import { Loading, ErrorState, Empty } from '../../components/States';
+import ResourceImage from '../../components/ResourceImage';
 
-const ICON = { BOOK: BOOK_ICON, DEVICE: DEVICE_ICON, ROOM: ROOM_ICON };
-
-function Cover({ resourceType, color, w = 52, h = 64 }) {
-  const path = ICON[resourceType] || BOOK_ICON;
-  return (
-    <div style={{ width: w, height: h, background: color, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-      <svg width={w * 0.44} height={h * 0.36} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        {path.split('M').filter(Boolean).map((d, j) => <path key={j} d={'M' + d} />)}
-      </svg>
-    </div>
-  );
+function Cover({ imageUrl, resourceType, color, w = 52, h = 64 }) {
+  return <ResourceImage imageUrl={imageUrl} resourceType={resourceType} color={color} w={w} h={h} radius={7} />;
 }
 
 function fmt(d) {
@@ -60,7 +51,7 @@ export default function MyBookings() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {active.map((b) => (
               <div key={b.id} style={{ background: '#fff', border: '1px solid #e7e7ef', borderRadius: 13, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
-                <Cover resourceType={b.resourceType} color={b.color} />
+                <Cover imageUrl={b.imageUrl} resourceType={b.resourceType} color={b.color} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: '#1a1b2e', marginBottom: 3 }}>{b.title}</div>
                   <div style={{ fontSize: 12, color: '#7c7e93', marginBottom: 8, textTransform: 'capitalize' }}>{b.type}</div>
@@ -80,7 +71,7 @@ export default function MyBookings() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {upcoming.map((b) => (
               <div key={b.id} style={{ background: '#fff', border: '1px solid #e7e7ef', borderRadius: 13, padding: '16px 18px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                <Cover resourceType={b.resourceType} color={b.color} w={42} h={42} />
+                <Cover imageUrl={b.imageUrl} resourceType={b.resourceType} color={b.color} w={42} h={42} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1b2e', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.title}</div>
                   <div style={{ fontSize: 12, color: '#7c7e93', marginBottom: 8 }}>{fmt(b.startAt)} → {fmt(b.endAt)}</div>
@@ -99,7 +90,7 @@ export default function MyBookings() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {history.map((b) => (
               <div key={b.id} style={{ background: '#fff', border: '1px solid #e7e7ef', borderRadius: 13, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'center' }}>
-                <Cover resourceType={b.resourceType} color={b.color} w={38} h={38} />
+                <Cover imageUrl={b.imageUrl} resourceType={b.resourceType} color={b.color} w={38} h={38} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1b2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.title}</div>
                   <div style={{ fontSize: 11, color: '#9b9db2' }}>{fmt(b.createdAt || b.startAt)}</div>

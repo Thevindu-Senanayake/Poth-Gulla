@@ -4,6 +4,7 @@ import { myBookings } from '../../api/bookings';
 import { myWaitlist } from '../../api/waitlist';
 import { BOOK_ICON, DEVICE_ICON, ROOM_ICON } from '../../api/adapters';
 import { Loading, ErrorState } from '../../components/States';
+import ResourceImage from '../../components/ResourceImage';
 
 const ICON = { BOOK: BOOK_ICON, DEVICE: DEVICE_ICON, ROOM: ROOM_ICON };
 
@@ -102,11 +103,7 @@ export default function Dashboard() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {activeLoans.map((loan) => (
                 <div key={loan.id} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ width: 44, height: 54, background: loan.color, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      {(ICON[loan.resourceType] || BOOK_ICON).split('M').filter(Boolean).map((d, j) => <path key={j} d={'M' + d} />)}
-                    </svg>
-                  </div>
+                  <ResourceImage imageUrl={loan.imageUrl} resourceType={loan.resourceType} color={loan.color} w={44} h={54} radius={6} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1b2e', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{loan.title}</div>
                     <div style={{ fontSize: 12, color: '#7c7e93', textTransform: 'capitalize' }}>{loan.type}</div>

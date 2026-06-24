@@ -1,5 +1,6 @@
 import { useApp } from '../App';
 import { createBooking } from '../api/bookings';
+import ResourceImage from '../components/ResourceImage';
 
 function QRGrid({ cells }) {
   const size = 11;
@@ -50,22 +51,15 @@ function DatePicker({ label, value, onChange }) {
 
 function CoverIcon({ resource }) {
   if (!resource) return null;
-  const paths = (resource.iconPath || '').split('M').filter(Boolean);
   return (
-    <div style={{
-      width: 54,
-      height: 66,
-      background: resource.color || '#15803d',
-      borderRadius: 8,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0,
-    }}>
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        {paths.map((d, j) => <path key={j} d={'M' + d} />)}
-      </svg>
-    </div>
+    <ResourceImage
+      imageUrl={resource.imageUrl}
+      iconPath={resource.iconPath}
+      color={resource.color || '#15803d'}
+      w={54}
+      h={66}
+      radius={8}
+    />
   );
 }
 
