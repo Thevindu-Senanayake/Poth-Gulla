@@ -44,15 +44,15 @@
       "prettier --write"
     ],
     "server/**/*.{ts,tsx,js,jsx}": [
-      "yarn workspace server lint",
+      "eslint --config server/eslint.config.mjs --fix",
       "prettier --write"
     ],
     "web-client/**/*.{ts,tsx,js,jsx}": [
-      "yarn workspace web-client lint",
+      "eslint --config web-client/eslint.config.js --fix",
       "prettier --write"
     ],
     "client/**/*.{ts,tsx,js,jsx}": [
-      "yarn workspace client lint",
+      "eslint --config client/eslint.config.js --fix",
       "prettier --write"
     ]
   }
