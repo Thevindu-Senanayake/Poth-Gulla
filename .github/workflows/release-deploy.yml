@@ -49,7 +49,15 @@ jobs:
           echo "${SIGNER_IDENTITY} ${SIGNER_PUBKEY}" > ~/.ssh/allowed_signers
           git config gpg.format ssh
           git config gpg.ssh.allowedSignersFile ~/.ssh/allowed_signers
+          # actions/checkout can leave a LIGHTWEIGHT tag pointing at the commit, so
+          # `git verify-tag` errors with "cannot verify a non-tag object". Re-fetch
+          # the annotated (signed) tag object from origin before verifying.
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
           echo "Verifying tag ${GITHUB_REF_NAME}…"
+          if [ "$(git cat-file -t "${GITHUB_REF_NAME}")" != "tag" ]; then
+            echo "::error::${GITHUB_REF_NAME} is not an annotated tag — sign it with 'git tag -s'."
+            exit 1
+          fi
           git verify-tag "${GITHUB_REF_NAME}"
           echo "✓ Tag signature is valid."
 
