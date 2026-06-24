@@ -6,15 +6,12 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Booking, BookingStatus, ItemStatus, ResourceType } from '../../generated/prisma/client.js';
-import {
-    DURATION_CAP_MS,
-    HIGH_TIER_DEVICE_MIN,
-    TIER_LIMITS,
-} from '../common/domain.constants.js';
+import { DURATION_CAP_MS, HIGH_TIER_DEVICE_MIN, TIER_LIMITS } from '../common/domain.constants.js';
 import { PointsService } from '../points/points.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WaitlistService } from '../waitlist/waitlist.service.js';
 import { CreateBookingDto } from './dto/create-booking.dto.js';
+import { SystemConfigService } from '../config/system-config.service.js';
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 
@@ -32,6 +29,7 @@ export class BookingService {
         private prisma: PrismaService,
         private waitlist: WaitlistService,
         private points: PointsService,
+        private systemConfig: SystemConfigService,
     ) {}
 
     async create(userId: string, dto: CreateBookingDto): Promise<Booking> {
@@ -49,6 +47,13 @@ export class BookingService {
 
         // (2) per-tier concurrency check — Admin/Staff have tier = null and bypass this
         if (user.tier != null) {
+            const config = await this.systemConfig.get();
+            const tierInfo = config.tiers[user.tier - 1]; // tier is 1-indexed
+            // Map ResourceType to config field names (BOOK -> books, DEVICE -> devices, ROOM -> rooms)
+            const fieldMap: Record<ResourceType, string> = { BOOK: 'books', DEVICE: 'devices', ROOM: 'rooms' };
+            const fieldName = fieldMap[resourceType];
+            const limit = tierInfo?.[fieldName] ?? TIER_LIMITS[user.tier]?.[resourceType];
+
             const active = await this.prisma.booking.count({
                 where: {
                     userId,
@@ -56,7 +61,8 @@ export class BookingService {
                     status: { in: [BookingStatus.APPROVED, BookingStatus.PENDING] },
                 },
             });
-            if (active >= TIER_LIMITS[user.tier][resourceType]) {
+
+            if (limit && active >= limit) {
                 throw new BadRequestException(
                     `Tier ${user.tier} limit reached for ${resourceType}`,
                 );
