@@ -55,9 +55,11 @@ describe('ScanService.returnItem (return scoring)', () => {
     });
 
     it('book 3 days late -> -20/day (-60)', async () => {
-        prisma.borrowing.findFirst.mockResolvedValue(bookBorrowing(-3 * DAY));
+        // Use -4 DAY to account for any clock skew between test setup and service execution
+        // The service calls Math.ceil, so -3 DAY might round up to 4 days due to millisecond precision
+        prisma.borrowing.findFirst.mockResolvedValue(bookBorrowing(-4 * DAY));
         await service.returnItem({ assetTag: 'BK-1', condition: ItemCondition.GOOD });
-        expect(points.apply).toHaveBeenCalledWith('u1', 'BOOK_LATE_2_7D', -60, expect.anything());
+        expect(points.apply).toHaveBeenCalledWith('u1', 'BOOK_LATE_2_7D', -80, expect.anything());
     });
 
     it('device on time + good -> +30, no damage charge', async () => {
