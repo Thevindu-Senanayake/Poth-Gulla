@@ -16,7 +16,7 @@ name: release-deploy
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: read
@@ -29,6 +29,7 @@ jobs:
   # ── 1. Require an SSH-signed git tag ───────────────────────────────────────
   verify-tag:
     runs-on: ubuntu-latest
+    environment: dev
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,9 +59,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write       # push to GHCR
-      id-token: write        # cosign keyless + attestations (OIDC)
-      attestations: write    # SLSA provenance / SBOM attestations
+      packages: write # push to GHCR
+      id-token: write # cosign keyless + attestations (OIDC)
+      attestations: write # SLSA provenance / SBOM attestations
     strategy:
       fail-fast: true
       matrix:
@@ -107,7 +108,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          provenance: false   # we attest provenance natively below (cleaner cosign subject)
+          provenance: false # we attest provenance natively below (cleaner cosign subject)
           build-args: |
             ${{ matrix.component == 'web' && format('VITE_API_URL={0}', vars.VITE_API_URL) || '' }}
 
