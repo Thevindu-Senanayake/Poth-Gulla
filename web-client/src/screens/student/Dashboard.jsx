@@ -31,7 +31,7 @@ export default function Dashboard() {
 
   const bookings = data?.bookings || [];
   const waitlist = data?.waitlist || [];
-  const activeLoans = bookings.filter((b) => b.status === 'APPROVED');
+  const activeLoans = bookings.filter((b) => b.status === 'APPROVED' || b.status === 'CHECKED_OUT');
   const pending = bookings.filter((b) => b.status === 'PENDING');
 
   const pts = user.points ?? 0;
