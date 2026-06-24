@@ -1,0 +1,43 @@
+# syntax=docker/dockerfile:1
+# Production image for the NestJS API. Multi-stage: build the app, then run dist.
+# Node 22+ is required by Prisma 7.
+
+# ---- Builder ----
+FROM node:22-alpine AS builder
+WORKDIR /app
+
+# Install deps (full, incl. dev) against the package manifest.
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile || yarn install
+
+# Generate the Prisma client, then compile NestJS to dist/.
+COPY prisma ./prisma/
+COPY prisma.config.ts tsconfig*.json nest-cli.json ./
+RUN yarn prisma generate
+COPY src ./src/
+RUN yarn build
+
+# ---- Runtime ----
+FROM node:22-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=development
+# ^ kept non-production on purpose: this is a DEV deployment, so Swagger (/api/docs)
+#   stays enabled. Set NODE_ENV=production to lock it down.
+
+# Tini for proper signal handling (clean container stop).
+RUN apk add --no-cache tini
+
+# Bring over installed deps + build output + everything the entrypoint needs at
+# runtime (prisma CLI + tsx + generated client + schema + seed live in node_modules
+# and prisma/). Full node_modules is intentional for a dev deploy (db push + seed).
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/generated ./generated
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY package.json ./package.json
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
+EXPOSE 3000
+ENTRYPOINT ["/sbin/tini", "--", "./docker-entrypoint.sh"]
