@@ -30,7 +30,8 @@ export default function MyBookings() {
   if (error) return <ErrorState error={error} onRetry={reload} />;
 
   const all = data?.items || [];
-  const active = all.filter((b) => b.status === 'APPROVED');
+  // APPROVED = ready for pickup, CHECKED_OUT = currently on loan — both are "active".
+  const active = all.filter((b) => b.status === 'APPROVED' || b.status === 'CHECKED_OUT');
   const upcoming = all.filter((b) => b.status === 'PENDING' || b.status === 'WAITLIST');
   const history = all.filter((b) => ['COMPLETED', 'CANCELLED', 'REJECTED'].includes(b.status));
 

@@ -78,7 +78,9 @@ export class ScanService {
         const [updated] = await this.prisma.$transaction([
             this.prisma.booking.update({
                 where: { id: booking.id },
-                data: { status: BookingStatus.COMPLETED, bookCopyId: copy.id },
+                // Checkout opens an active loan — the booking is CHECKED_OUT, not
+                // COMPLETED. It's marked COMPLETED only when the item is returned.
+                data: { status: BookingStatus.CHECKED_OUT, bookCopyId: copy.id },
             }),
             this.prisma.bookCopy.update({
                 where: { id: copy.id },
@@ -119,7 +121,8 @@ export class ScanService {
         const [updated] = await this.prisma.$transaction([
             this.prisma.booking.update({
                 where: { id: booking.id },
-                data: { status: BookingStatus.COMPLETED },
+                // Active loan — CHECKED_OUT now, COMPLETED on return.
+                data: { status: BookingStatus.CHECKED_OUT },
             }),
             this.prisma.device.update({
                 where: { id: device.id },
@@ -219,6 +222,11 @@ export class ScanService {
                       where: { id: borrowing.deviceId! },
                       data: { status: ItemStatus.AVAILABLE },
                   }),
+            // The loan is now closed — complete the originating booking.
+            this.prisma.booking.update({
+                where: { id: borrowing.bookingId },
+                data: { status: BookingStatus.COMPLETED },
+            }),
         ]);
 
         // Apply return points

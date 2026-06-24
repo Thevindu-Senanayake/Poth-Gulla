@@ -133,6 +133,7 @@ const STATUS_META = {
   WAITLIST: { label: "Waitlisted", col: "#db2777", bg: "#fce7f3" },
   REJECTED: { label: "Rejected", col: "#ef4444", bg: "#fee2e2" },
   CANCELLED: { label: "Cancelled", col: "#6b7280", bg: "#f1f1f5" },
+  CHECKED_OUT: { label: "Checked out", col: "#0d9488", bg: "#ccfbf1" },
   COMPLETED: { label: "Completed", col: "#2563eb", bg: "#dbeafe" },
 };
 
