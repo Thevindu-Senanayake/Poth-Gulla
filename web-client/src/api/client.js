@@ -1,8 +1,11 @@
 import axios from 'axios';
 
 // Base URL of the NestJS API. Override with VITE_API_URL in a .env file.
-// The backend mounts everything under the global prefix `/api` (see server/src/main.ts).
-export const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
+// Defaults to the same-origin `/api` path, which the deployed web server reverse-
+// proxies to the backend (see web-client/nginx.conf). `||` (not `??`) so an empty
+// build-time value also falls back instead of producing a broken empty base URL.
+// Local dev sets VITE_API_URL=http://localhost:3000/api in web-client/.env.
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const api = axios.create({ baseURL: API_BASE_URL });
 
