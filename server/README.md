@@ -111,6 +111,7 @@ Click **Authorize**, paste your JWT, and try every endpoint directly from the br
 | Reviews | list by book, create, delete |
 | Recommendations | personalised list |
 | Audit Log | query log |
+| System Config | get config, update config |
 
 ---
 

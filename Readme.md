@@ -255,7 +255,7 @@ All scan endpoints require **JSON body** with an `Authorization` header.
 
 | Method | Route | Auth | Description |
 | --- | --- | --- | --- |
-| `POST` | `/scan/checkout` | ADMIN, STAFF | Bind an asset to an approved booking. Body: `{ bookingQr, assetTag }`. Creates `Borrowing`, marks item `BORROWED` and booking `COMPLETED`. Awards `+10` if the booking came from the waitlist. |
+| `POST` | `/scan/checkout` | ADMIN, STAFF | Bind an asset to an approved booking. Body: `{ bookingQr, assetTag }`. Creates `Borrowing`, marks item `BORROWED` and the booking `CHECKED_OUT` (an active loan; it becomes `COMPLETED` only on return). Awards `+10` if the booking came from the waitlist. |
 | `POST` | `/scan/room-checkin` | JWT | User scans door QR for their own active room booking. Body: `{ roomQr }`. Marks booking `COMPLETED`, awards `+20` pts. |
 | `POST` | `/scan/return` | ADMIN, STAFF | Staff scans asset tag on return. Body: `{ assetTag, condition: "GOOD"\|"DAMAGED" }`. Scores return points, frees item, triggers waitlist promotion. Damaged device gets an additional `−300` on top of any timing penalty. |
 
@@ -296,11 +296,22 @@ The overdue sweep handles two cases:
 | --- | --- | --- | --- |
 | `GET` | `/audit/logs` | ADMIN | System-wide action log — `?page`, `?limit` (max 200), `?actorId`, `?action` (case-insensitive contains), `?targetType`. Returns `{ data, meta }` with `actor: { id, name, role }`. |
 
+### System Config
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/config` | ADMIN | Get runtime rules — `{ tiers, penalties, toggles }`. Lazily seeded with defaults on first read. |
+| `PUT` | `/config` | ADMIN | Persist edited rules (partial body merged over current). Used by the admin **System Config** screen. |
+
 ### Metrics
 
 | Method | Route | Auth | Description |
 | --- | --- | --- | --- |
 | `GET` | `/metrics` | Public | Prometheus exposition format (`text/plain`). Scraped by the Prometheus container. |
+
+> **Booking statuses:** `PENDING → APPROVED → CHECKED_OUT → COMPLETED` (plus `WAITLIST`, `REJECTED`, `CANCELLED`). `CHECKED_OUT` is the active-loan state set at QR checkout; `COMPLETED` is set on return.
+>
+> **Resource images:** book titles and devices carry an optional `imageUrl` (book covers seeded from OpenLibrary by ISBN); the web client renders it with an icon fallback.
 
 ---
 
@@ -409,8 +420,13 @@ yarn test:cov        # unit tests with coverage report (→ server/coverage/)
 yarn test:e2e        # e2e smoke suite — boots AppModule with Prisma/Redis faked
 ```
 
-- **Unit tests** (`src/**/*.spec.ts`) cover every controller: delegation, query-param parsing/clamping, ownership/forbidden logic, and not-found paths. No database required.
-- **E2E smoke suite** (`test/app.e2e-spec.ts`) boots the real `AppModule` — exercising the global JWT guard (401), role guard (403), `ValidationPipe` (400), and the `/api` prefix — across the critical auth → booking → scan surface, with Prisma and Redis replaced by in-memory fakes.
+- **Unit tests** (`src/**/*.spec.ts`) — every controller (delegation, query parsing, ownership/forbidden, not-found) **plus core service logic**: tier utils, points (floor/tier recompute), return scoring, booking routing/limits/caps, and the SystemConfig module. No database required.
+- **E2E smoke suite** (`test/app.e2e-spec.ts`) boots the real `AppModule` — JWT guard (401), role guard (403), `ValidationPipe` (400), `/api` prefix — across the auth → booking → scan surface, with Prisma and Redis faked.
+
+### Continuous integration
+
+- **`ci.yml`** runs the backend tests + web build on **every pull request** (and push to `main`). Make `test-and-build` a **required status check** on `main` to block merges on failure — see [`deploy/DEPLOY.md` §8](deploy/DEPLOY.md).
+- **`release-deploy.yml`** runs the same tests as a **gate**: a failed test job stops the release before any image is built or deployed. It also **builds only the services that changed** since the previous tag (carrying forward the unchanged service's signed digest).
 
 ---
 

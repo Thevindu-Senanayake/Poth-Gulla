@@ -137,3 +137,43 @@ tag's run → *Re-run all jobs*), or push a new tag built from the older commit.
 - Add TLS (a Caddy/Traefik reverse proxy + a domain) instead of plain HTTP.
 - Don't publish Postgres/Redis/Prometheus to the host; put Grafana behind auth/proxy.
 - Set `NODE_ENV=production` on the API (disables Swagger) for a non-dev environment.
+
+---
+
+## 8. Continuous integration & tests
+
+Two workflows:
+
+- [`ci.yml`](../.github/workflows/ci.yml) — on every **pull request** (and push to
+  `main`): backend unit tests (`yarn test`) + e2e smoke (`yarn test:e2e`) + web build.
+- [`release-deploy.yml`](../.github/workflows/release-deploy.yml) — the release runs
+  the **same tests as a gate**: the `build` job `needs` the `test` job, so **failing
+  tests stop the release before anything is built or deployed**.
+
+### Build only what changed (Approach B)
+
+The release diffs the new tag against the previous one. A service (`server` /
+`web-client`) is rebuilt, re-signed and re-attested **only if its files changed**;
+otherwise the **previous release's signed digest is carried forward** (and still
+`cosign verify`-ed on the droplet). Both services are always deployed as a coherent,
+digest-pinned pair. Buildx GHA layer cache speeds up the builds that do run.
+
+### Require tests on PRs (branch protection)
+
+The `ci.yml` check only *blocks* a merge if you make it a **required status check**:
+
+1. Repo **Settings → Branches → Add branch ruleset** (or Branch protection rule) for `main`.
+2. Enable **Require status checks to pass before merging**.
+3. Add **`test-and-build`** (the `ci.yml` job) as a required check.
+4. (Recommended) Also enable **Require a pull request before merging**.
+
+Via CLI (needs `gh` auth with admin):
+
+```bash
+gh api -X PUT repos/OWNER/REPO/branches/main/protection \
+  -F required_status_checks.strict=true \
+  -F 'required_status_checks.contexts[]=test-and-build' \
+  -F enforce_admins=true \
+  -F required_pull_request_reviews.required_approving_review_count=1 \
+  -F restrictions=
+```
