@@ -101,6 +101,7 @@ export default function Resources() {
         }}>
         {stats.map((stat, i) => (
           <div
+            className="pg-card-stat"
             key={i}
             style={{
               background: "#fff",
@@ -127,6 +128,7 @@ export default function Resources() {
       </div>
 
       <div
+        className="pg-card"
         style={{
           background: "#fff",
           border: "1px solid #e7e7ef",
