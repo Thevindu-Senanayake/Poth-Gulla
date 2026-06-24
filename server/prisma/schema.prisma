@@ -103,6 +103,7 @@ model BookTitle {
     language    String?
     tags        String[]
     description String?
+    imageUrl    String?
     categoryId  String?
     category    Category?  @relation(fields: [categoryId], references: [id])
     copies      BookCopy[]
@@ -131,6 +132,7 @@ model Device {
     id         String      @id @default(uuid())
     name       String
     deviceTier Int         @default(1)
+    imageUrl   String?
     categoryId String?
     category   Category?   @relation(fields: [categoryId], references: [id])
     assetTag   String      @unique
