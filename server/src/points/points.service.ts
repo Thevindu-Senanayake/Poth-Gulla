@@ -1,16 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, PointEvent, User } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { tierFromPoints } from '../users/tier.utils.js';
+import { tierFromPointsWithConfig } from '../users/tier.utils.js';
 import { POINT_DELTA, PointAction } from './point-events.js';
+import { SystemConfigService } from '../config/system-config.service.js';
 
 @Injectable()
 export class PointsService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private systemConfig: SystemConfigService,
+    ) {}
 
     /**
      * Apply an arbitrary delta to a user's balance.
-     * Floor is 0. Tier is recomputed (patron roles only). A PointEvent is persisted.
+     * Floor is 0. Tier is recomputed (patron roles only) using dynamic config. A PointEvent is persisted.
      */
     async apply(
         userId: string,
@@ -20,7 +24,11 @@ export class PointsService {
     ): Promise<User> {
         const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
         const newPoints = Math.max(0, user.userPoints + delta);
-        const newTier = user.tier != null ? tierFromPoints(newPoints) : null;
+
+        // Fetch dynamic tier config from SystemConfigService
+        const config = await this.systemConfig.get();
+        const newTier =
+            user.tier != null ? tierFromPointsWithConfig(newPoints, config.tiers) : null;
 
         const [updated] = await this.prisma.$transaction([
             this.prisma.user.update({
