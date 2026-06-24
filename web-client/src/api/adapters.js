@@ -56,6 +56,7 @@ export function adaptBook(b) {
     available,
     color: colorFor(b.id),
     iconPath: BOOK_ICON,
+    imageUrl: b.imageUrl ?? null,
     tags: b.tags ?? [],
     blurb: b.description ?? "",
     tier: null,
@@ -74,6 +75,7 @@ export function adaptDevice(d) {
     available: d.status === "AVAILABLE" ? 1 : 0,
     color: colorFor(d.id),
     iconPath: DEVICE_ICON,
+    imageUrl: d.imageUrl ?? null,
     tags: [d.category?.name].filter(Boolean),
     blurb:
       `Tier ${d.deviceTier} device. ${d.deviceTier >= 4 ? "Requires staff approval to check out." : ""}`.trim(),
@@ -133,6 +135,7 @@ const STATUS_META = {
   WAITLIST: { label: "Waitlisted", col: "#db2777", bg: "#fce7f3" },
   REJECTED: { label: "Rejected", col: "#ef4444", bg: "#fee2e2" },
   CANCELLED: { label: "Cancelled", col: "#6b7280", bg: "#f1f1f5" },
+  CHECKED_OUT: { label: "Checked out", col: "#0d9488", bg: "#ccfbf1" },
   COMPLETED: { label: "Completed", col: "#2563eb", bg: "#dbeafe" },
 };
 
@@ -162,6 +165,7 @@ export function adaptBooking(b) {
     message: b.message,
     qrToken: b.qrToken,
     color: colorFor(resourceId || b.id),
+    imageUrl: b.bookTitle?.imageUrl ?? b.device?.imageUrl ?? null,
     raw: b,
   };
 }

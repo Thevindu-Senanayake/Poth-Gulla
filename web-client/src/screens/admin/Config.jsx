@@ -1,20 +1,26 @@
-import { useState } from "react";
-import { useApp } from "../../App";
-import {
-  configTiers,
-  configPenalties,
-  configToggles,
-} from "../../data/mockData";
+import { useEffect, useState } from 'react';
+import { useApp } from '../../App';
+import { useFetch } from '../../hooks/useFetch';
+import { getSystemConfig, saveSystemConfig } from '../../api/config';
+import { configTiers, configPenalties, configToggles } from '../../data/mockData';
+import { Loading, ErrorState } from '../../components/States';
 
 export default function Config() {
   const { showToast } = useApp();
 
-  // These rules are defined in the backend domain config (TIER_LIMITS, POINT_DELTA, feature
-  // flags) and have no live edit endpoint, so this screen presents them as an editable
-  // reference. "Save" is local-only until a /config endpoint is exposed.
-  const [tiers, setTiers] = useState(configTiers);
-  const [penalties, setPenalties] = useState(configPenalties);
-  const [toggles, setToggles] = useState(configToggles);
+  // Persisted server-side (issue #23): load on mount, save on demand.
+  const { data, loading, error, reload } = useFetch(() => getSystemConfig(), []);
+  const [tiers, setTiers] = useState([]);
+  const [penalties, setPenalties] = useState([]);
+  const [toggles, setToggles] = useState([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!data) return;
+    setTiers(data.tiers ?? configTiers);
+    setPenalties(data.penalties ?? configPenalties);
+    setToggles(data.toggles ?? configToggles);
+  }, [data]);
 
   function updateTierField(i, field, val) {
     setTiers((prev) =>
@@ -33,6 +39,21 @@ export default function Config() {
       prev.map((t, idx) => (idx === i ? { ...t, on: !t.on } : t)),
     );
   }
+
+  async function save() {
+    setSaving(true);
+    try {
+      await saveSystemConfig({ tiers, penalties, toggles });
+      showToast('Config saved successfully');
+    } catch (e) {
+      showToast(e?.response?.data?.message ?? 'Could not save config');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <Loading label="Loading system config…" />;
+  if (error) return <ErrorState error={error} onRetry={reload} />;
 
   return (
     <div
@@ -66,19 +87,20 @@ export default function Config() {
           </p>
         </div>
         <button
-          onClick={() => showToast("Config saved successfully")}
+          onClick={save}
+          disabled={saving}
           style={{
-            background: "#16a34a",
-            color: "#fff",
-            border: "none",
+            background: saving ? '#9ca3af' : '#16a34a',
+            color: '#fff',
+            border: 'none',
             borderRadius: 9,
             padding: "10px 22px",
             fontSize: 13,
             fontWeight: 700,
-            cursor: "pointer",
+            cursor: saving ? 'not-allowed' : 'pointer',
             letterSpacing: 0.2,
           }}>
-          Save changes
+          {saving ? 'Saving…' : 'Save changes'}
         </button>
       </div>
 

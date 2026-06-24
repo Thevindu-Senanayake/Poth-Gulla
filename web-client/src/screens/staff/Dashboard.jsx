@@ -3,6 +3,7 @@ import { useFetch } from "../../hooks/useFetch";
 import { allBookings } from "../../api/bookings";
 import { loadLookups } from "../../api/lookups";
 import { Loading, ErrorState } from "../../components/States";
+import ResourceImage from "../../components/ResourceImage";
 
 function SvgIcon({ path, color, size = 18 }) {
   return (
@@ -203,23 +204,14 @@ export default function StaffDashboard() {
                   borderBottom:
                     i < recent.length - 1 ? "1px solid #f3f3f8" : "none",
                 }}>
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 9,
-                    background: b.statusBg,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}>
-                  <SvgIcon
-                    path="M5 4a1 1 0 0 1 1-1h11v15H6a1 1 0 0 0-1 1z"
-                    color={b.statusCol}
-                    size={16}
-                  />
-                </div>
+                <ResourceImage
+                  imageUrl={b.imageUrl}
+                  resourceType={b.resourceType}
+                  color={b.color}
+                  w={36}
+                  h={36}
+                  radius={9}
+                />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}>
