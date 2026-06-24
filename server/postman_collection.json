@@ -1565,8 +1565,13 @@
             ],
             "url": {
               "raw": "{{base_url}}/points/me?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["points", "me"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "points",
+                "me"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -1592,8 +1597,13 @@
             ],
             "url": {
               "raw": "{{base_url}}/points/{{user_id}}?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["points", "{{user_id}}"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "points",
+                "{{user_id}}"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -1820,8 +1830,13 @@
             ],
             "url": {
               "raw": "{{base_url}}/notifications/me?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["notifications", "me"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                "me"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -1852,8 +1867,13 @@
             ],
             "url": {
               "raw": "{{base_url}}/notifications/me?unreadOnly=true&page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["notifications", "me"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                "me"
+              ],
               "query": [
                 {
                   "key": "unreadOnly",
@@ -1924,8 +1944,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/reviews/book/{{book_title_id}}?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["reviews", "book", "{{book_title_id}}"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "book",
+                "{{book_title_id}}"
+              ],
               "query": [
                 {
                   "key": "page",
