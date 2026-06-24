@@ -1,0 +1,18 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Validate Conventional Commits format: type(scope): subject
+# Valid types: feat, fix, chore, refactor, docs, test, style, perf, ci
+# Example: feat(booking): add tier concurrency limits
+
+COMMIT_MSG=$(cat "$1")
+
+# Pattern: type(scope): subject or type: subject (for types like docs, chore)
+# Allow optional scope in parentheses
+if ! echo "$COMMIT_MSG" | grep -qE '^(feat|fix|chore|refactor|docs|test|style|perf|ci)(\(.+\))?:'; then
+  echo "Commit message does not follow Conventional Commits format:"
+  echo "Expected: type(scope): subject"
+  echo "Example: feat(booking): add tier concurrency limits"
+  echo "Valid types: feat, fix, chore, refactor, docs, test, style, perf, ci"
+  exit 1
+fi
