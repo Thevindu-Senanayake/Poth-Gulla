@@ -1,11 +1,13 @@
 # Release & deploy to the DigitalOcean dev droplet.
 #
 # Flow (triggered by pushing a signed tag `vX.Y.Z`):
-#   1. verify-tag      — the git tag MUST be SSH-signed by an allowed signer.
-#   2. build           — build prod images, push to GHCR, cosign-sign (keyless),
-#                        + SLSA provenance + SBOM attestations.
-#   3. deploy          — SSH to the droplet, cosign-VERIFY the signed images
-#                        (fail closed), then pull + up the full stack.
+#   1. verify-tag — the git tag MUST be SSH-signed by an allowed signer.
+#   2. test       — backend unit + e2e tests. FAILS HERE => no build, no deploy.
+#   3. changes    — diff vs the previous tag to see which services changed.
+#   4. build      — per service: build/sign/attest ONLY if it changed; otherwise
+#                   carry forward the previous release's signed digest (Approach B).
+#   5. deploy     — SSH to the droplet, cosign-VERIFY both digests (fail closed),
+#                   then pull + up the full stack.
 #
 # Security notes:
 #   - Least-privilege GITHUB_TOKEN; OIDC (id-token) only where signing happens.
@@ -61,9 +63,67 @@ jobs:
           git verify-tag "${GITHUB_REF_NAME}"
           echo "✓ Tag signature is valid."
 
-  # ── 2. Build, push, sign, attest (matrix: server + web) ────────────────────
-  build:
+  # ── 2. Tests gate the whole release ────────────────────────────────────────
+  test:
     needs: verify-tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - name: Install workspace deps
+        run: yarn install --frozen-lockfile || yarn install
+      - name: Generate Prisma client
+        working-directory: server
+        run: yarn prisma generate
+      - name: Backend unit tests
+        working-directory: server
+        run: yarn test
+      - name: Backend e2e smoke tests
+        working-directory: server
+        run: yarn test:e2e
+
+  # ── 3. Which services changed since the previous tag? ──────────────────────
+  changes:
+    needs: verify-tag
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.detect.outputs.server }}
+      web: ${{ steps.detect.outputs.web }}
+      prev_tag: ${{ steps.detect.outputs.prev_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: detect
+        run: |
+          set -euo pipefail
+          git fetch --tags --force origin >/dev/null 2>&1 || true
+          CURRENT="${GITHUB_REF_NAME}"
+          PREV=$(git tag --list 'v*' --sort=-version:refname | grep -v "^${CURRENT}$" | head -n1 || true)
+          echo "prev_tag=${PREV}" >> "$GITHUB_OUTPUT"
+          if [ -z "${PREV}" ]; then
+            echo "No previous tag — building all services."
+            echo "server=true" >> "$GITHUB_OUTPUT"
+            echo "web=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "Diffing ${PREV}..${CURRENT}"
+          CHANGED=$(git diff --name-only "${PREV}" "${CURRENT}")
+          echo "$CHANGED"
+          server=false; web=false
+          echo "$CHANGED" | grep -qE '^server/'      && server=true || true
+          echo "$CHANGED" | grep -qE '^web-client/'  && web=true    || true
+          # If only shared/infra files changed, redeploy both to be safe.
+          if [ "$server" = false ] && [ "$web" = false ]; then server=true; web=true; fi
+          echo "server=${server}" >> "$GITHUB_OUTPUT"
+          echo "web=${web}" >> "$GITHUB_OUTPUT"
+          echo "=> server=${server} web=${web} (prev=${PREV})"
+
+  # ── 4. Build/sign changed services; carry forward unchanged digests ────────
+  build:
+    needs: [test, changes]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -97,7 +157,29 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Decide build vs carry-forward
+        env:
+          PREV_TAG: ${{ needs.changes.outputs.prev_tag }}
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.component }}" = "server" ]; then
+            C="${{ needs.changes.outputs.server }}"
+          else
+            C="${{ needs.changes.outputs.web }}"
+          fi
+          # Can only carry forward if the previous tag's image actually exists.
+          if [ "$C" != "true" ] && [ -n "${PREV_TAG}" ]; then
+            if ! docker buildx imagetools inspect "${IMAGE}:${PREV_TAG#v}" >/dev/null 2>&1; then
+              echo "Previous image ${IMAGE}:${PREV_TAG#v} not found — building."
+              C=true
+            fi
+          fi
+          echo "CHANGED=${C}" >> "$GITHUB_ENV"
+          echo "=> ${{ matrix.component }} CHANGED=${C}"
+
+      # ---- changed: build, sign, attest ----
       - name: Image metadata (tags + labels)
+        if: env.CHANGED == 'true'
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -107,6 +189,7 @@ jobs:
             type=sha,prefix=sha-
 
       - name: Build & push (linux/amd64)
+        if: env.CHANGED == 'true'
         id: build
         uses: docker/build-push-action@v6
         with:
@@ -116,19 +199,24 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          provenance: false # we attest provenance natively below (cleaner cosign subject)
+          provenance: false # provenance attested natively below (cleaner cosign subject)
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
           build-args: |
             ${{ matrix.component == 'web' && format('VITE_API_URL={0}', vars.VITE_API_URL) || '' }}
 
       - name: Install cosign
+        if: env.CHANGED == 'true'
         uses: sigstore/cosign-installer@v3
 
       - name: Sign image (cosign keyless)
+        if: env.CHANGED == 'true'
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: cosign sign --yes "${IMAGE}@${DIGEST}"
 
       - name: SLSA build provenance attestation
+        if: env.CHANGED == 'true'
         uses: actions/attest-build-provenance@v1
         with:
           subject-name: ${{ env.IMAGE }}
@@ -136,6 +224,7 @@ jobs:
           push-to-registry: true
 
       - name: Generate SBOM (SPDX)
+        if: env.CHANGED == 'true'
         uses: anchore/sbom-action@v0
         with:
           image: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
@@ -143,6 +232,7 @@ jobs:
           output-file: sbom.spdx.json
 
       - name: Attest SBOM
+        if: env.CHANGED == 'true'
         uses: actions/attest-sbom@v1
         with:
           subject-name: ${{ env.IMAGE }}
@@ -150,8 +240,24 @@ jobs:
           sbom-path: sbom.spdx.json
           push-to-registry: true
 
+      # ---- unchanged: reuse the previous release's signed digest ----
+      - name: Resolve previous digest (carry-forward)
+        if: env.CHANGED != 'true'
+        id: prev
+        env:
+          PREV_TAG: ${{ needs.changes.outputs.prev_tag }}
+        run: |
+          set -euo pipefail
+          DIGEST=$(docker buildx imagetools inspect "${IMAGE}:${PREV_TAG#v}" --format '{{.Manifest.Digest}}')
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "Carrying forward ${IMAGE}@${DIGEST} (from ${PREV_TAG})"
+
+      # ---- record the digest-pinned ref either way ----
       - name: Record digest-pinned image ref
-        run: echo "${IMAGE}@${{ steps.build.outputs.digest }}" > image-ref.txt
+        run: |
+          DIGEST="${{ steps.build.outputs.digest || steps.prev.outputs.digest }}"
+          echo "${IMAGE}@${DIGEST}" > image-ref.txt
+          cat image-ref.txt
 
       - uses: actions/upload-artifact@v4
         with:
@@ -159,7 +265,7 @@ jobs:
           path: image-ref.txt
           retention-days: 7
 
-  # ── 3. Deploy to the droplet (verify signatures, then pull + up) ───────────
+  # ── 5. Deploy to the droplet (verify signatures, then pull + up) ───────────
   deploy:
     needs: build
     runs-on: ubuntu-latest
