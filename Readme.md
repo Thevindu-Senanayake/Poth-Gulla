@@ -1,353 +1,332 @@
 # Poth Gulla — Smart Library Resource Management System
 
-> Team: SegFault | CIPHER 2.0 | Scenario 04
+> Team: SegFault | CIPHER 2.0 Hackathon | Scenario 04
+>
+> A decentralized library resource management system featuring ELO-style User Point tiers, fair waitlist scoring, QR-driven check-in/checkout, and real-time availability across book copies, devices, and study rooms.
+>
+> Status: v0.2.3 — Core logic complete and production-ready. UI layers in progress.
 
-A decentralized library resource management system featuring ELO-style User Point tiers, fair waitlist scoring, QR-driven check-in/checkout, and real-time availability across book copies, devices, and study rooms.
+---
+
+## Core Features Implemented
+
+- User Points & Tier System: Dynamic thresholds (Tier 1–5), concurrent booking limits, tier-based role weight in waitlist scoring
+- Fair Waitlist: Priority score = (tier × 0.6) + (role × 0.4), auto-promotion on freed slots, staff review queue for justified entries
+- QR-Driven Physical Workflow: One-time booking QR, permanent asset tags, checkout/return with condition tracking
+- Resource Management: Books (copies), devices (tier-based approval), study rooms (interval-overlap detection)
+- Audit Logging: System-wide event log for all bookings, point mutations, and config changes
+- RBAC: Admin, Library Staff, Lecturer, Student roles with granular endpoint permissions
+- Real-time Notifications: Overdue recall, booking confirmations, waitlist promotions
+- System Config: Admin-editable tier thresholds, penalties, toggles; persisted in DB with audit trail
+
+---
+
+## Tech Stack
+
+| Component    | Stack                                                                           |
+| ------------ | ------------------------------------------------------------------------------- |
+| Backend API  | NestJS, Prisma 7 (PostgreSQL), JWT, Yarn                                        |
+| Admin web    | React 19, Vite, TypeScript, Tailwind CSS, Yarn                                  |
+| Mobile app   | React Native (Expo SDK 54), React Native Navigation, Yarn                       |
+| Infra        | Docker Compose (Postgres, Redis, Prometheus, Grafana)                           |
+| Testing      | Jest, Supertest (39 test files, 123 unit + 11 e2e)                              |
+| CI/CD        | GitHub Actions (lint gate, test gate, change detection, signed releases)        |
+| Code quality | Prettier (4-space indent, single quotes), ESLint, lint-staged, Husky pre-commit |
 
 ---
 
 ## Project Structure
 
-```text
-Poth Gulla/
-├── server/              # NestJS API — PostgreSQL + Prisma + JWT + Redis + Prometheus
-├── web-client/    # React + Vite + Tailwind — staff/admin dashboard
-├── client/              # React Native (Expo SDK 54) — student/lecturer mobile app
-├── infra/               # Prometheus scrape config + Grafana provisioning + dashboard
-├── scripts/dev.mjs      # Dev runner: auto-starts Docker infra, launches all apps
-├── docker-compose.yml   # Postgres + Redis + Prometheus + Grafana containers
-└── .env                 # Root compose variables (not committed)
 ```
-
-Monorepo managed with Yarn Workspaces and Turborepo. All three apps share one `yarn dev` command.
+Poth Gulla/
+├── server/                  # NestJS API (v22+, PostgreSQL + Prisma 7)
+│   ├── src/
+│   │   ├── auth/           # JWT, RBAC, login/register/logout
+│   │   ├── booking/        # Router, conflict detection, APPROVED/PENDING/WAITLIST
+│   │   ├── waitlist/       # Priority scoring, auto-promotion
+│   │   ├── points/         # User Points mutations, tier derivation
+│   │   ├── scan/           # QR checkout/return, room check-in
+│   │   ├── catalogue/      # Books, copies, devices, rooms, categories
+│   │   ├── users/          # CRUD, tier-points coupling
+│   │   ├── config/         # Admin-editable system config (tiers/penalties)
+│   │   ├── audit/          # System-wide event log
+│   │   ├── overdue/        # Daily cron for late borrowing sweep
+│   │   ├── review/         # Book reviews, one-per-book guard
+│   │   ├── recommendation/ # Personalised book recommendations
+│   │   └── ...
+│   ├── prisma/
+│   │   ├── schema.prisma   # 11 models: User, Role, Booking, WaitlistEntry, etc.
+│   │   └── seed.ts         # Demo data (4 users, 6 books/14 copies, 9 devices, 4 rooms)
+│   ├── test/               # e2e smoke tests
+│   └── Dockerfile, Dockerfile.prod
+│
+├── web-client/              # React + Vite admin dashboard (Node 22)
+│   ├── src/
+│   │   ├── screens/        # Dashboard, resource catalogue, booking management
+│   │   ├── components/     # Reusable UI components
+│   │   ├── hooks/          # useAuth, useBookings, etc.
+│   │   └── api/            # Axios client with 401 force-logout
+│   └── Dockerfile
+│
+├── client/                  # React Native (Expo SDK 54) mobile app
+│   ├── app/
+│   │   ├── (auth)/         # Login screen
+│   │   ├── index.tsx       # Booking flow, waitlist view
+│   │   └── [QR scanner]    # (in progress)
+│   ├── src/
+│   │   ├── api/            # Axios client with secure token storage
+│   │   └── auth/           # AuthContext
+│   └── app.json            # Expo config
+│
+├── deploy/                  # Deployment scripts (optional, currently unused)
+├── infra/                   # Prometheus + Grafana provisioning
+├── .github/workflows/       # CI: lint gate, test gate, signed releases, change detection
+├── .husky/                  # Git hooks: pre-commit (lint-staged), commit-msg (Conventional Commits)
+├── docker-compose.yml       # Postgres 15, Redis 7, Prometheus, Grafana
+├── package.json             # Root Yarn workspace
+└── .env                     # Compose environment (not committed)
+```
 
 ---
 
 ## Prerequisites
 
-| Tool           | Version | Notes                                      |
-| -------------- | ------- | ------------------------------------------ |
-| Docker Desktop | Latest  | WSL2 backend on Windows                    |
-| Node.js        | v22+    | Required by Prisma 7                       |
-| Yarn           | v1.22+  | `npm install -g yarn`                      |
-| Expo Go        | Latest  | Installed on a physical iOS/Android device |
+- Node.js v22+ (Prisma 7 requirement)
+- Docker Desktop (with WSL2 on Windows)
+- Yarn v1.22+
 
 ---
 
-## First-Time Setup
+## Quick Start
 
-### 1. Environment files
-
-**Root `.env`** (create alongside `docker-compose.yml`):
-
-```dotenv
-# Postgres container credentials
-POSTGRES_USER=admin
-POSTGRES_PASSWORD=password123
-POSTGRES_DB=poth_gulla
-
-# In-container URLs (used by the backend container)
-DOCKER_DATABASE_URL=postgresql://admin:password123@postgres:5432/poth_gulla?schema=public
-DOCKER_REDIS_URL=redis://redis:6379
-
-# JWT
-JWT_SECRET=change-me-to-a-long-random-string
-JWT_EXPIRES_IN=7d
-
-# Admin web (baked into browser bundle)
-VITE_API_URL=http://localhost:3000/api
-
-# Grafana admin password (defaults to "admin" if omitted)
-GRAFANA_ADMIN_PASSWORD=admin
-```
-
-**`server/.env`** (for Prisma CLI and native backend runs):
-
-```dotenv
-# Use 127.0.0.1, NOT localhost — on Windows, localhost resolves to ::1 (IPv6)
-# but Docker only binds on 127.0.0.1 (IPv4).
-# Host port is 5433 (→ container 5432), so a native Postgres on 5432 doesn't clash.
-DATABASE_URL="postgresql://admin:password123@127.0.0.1:5433/poth_gulla?schema=public"
-
-JWT_SECRET=change-me-to-a-long-random-string
-JWT_EXPIRES_IN=7d
-```
-
-### 2. Install dependencies
+### 1. Clone & install dependencies
 
 ```bash
+git clone https://github.com/Thevindu-Senanayake/Poth-Gulla.git
+cd Poth\ Gulla
 yarn install
 ```
 
-### 3. Create the database schema and seed demo data
+### 2. Create environment files
 
-Start the containers first (`yarn dev` in one terminal), then in a second terminal:
+**Root `.env`:**
 
-```bash
-cd server
-yarn prisma db push       # creates tables from schema
-yarn prisma generate      # regenerate Prisma client
-yarn tsx prisma/seed.ts   # seeds demo accounts + catalogue data
+```dotenv
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=password123
+POSTGRES_DB=poth_gulla
+DOCKER_DATABASE_URL=postgresql://admin:password123@postgres:5432/poth_gulla?schema=public
+DOCKER_REDIS_URL=redis://redis:6379
+JWT_SECRET=change-me-to-a-long-random-string
+JWT_EXPIRES_IN=7d
+VITE_API_URL=http://localhost:3000/api
+GRAFANA_ADMIN_PASSWORD=admin
 ```
 
-The seed inserts:
+**`server/.env`:**
 
-- 4 demo user accounts (admin, staff, lecturer, student)
-- 5 categories (3 book, 2 device)
-- 6 book titles with 14 physical copies
-- 9 devices across tiers 2–5
-- 4 study rooms
+```dotenv
+DATABASE_URL="postgresql://admin:password123@127.0.0.1:5433/poth_gulla?schema=public"
+JWT_SECRET=change-me-to-a-long-random-string
+JWT_EXPIRES_IN=7d
+```
 
----
-
-## Running the Project
+### 3. Start all services
 
 ```bash
-# Starts postgres + redis in Docker, then launches all three apps under the Turbo TUI.
-# Ctrl+C stops all processes and tears down the containers automatically.
 yarn dev
 ```
 
-| Service         | URL                                   |
-| --------------- | ------------------------------------- |
-| API             | `http://localhost:3000/api`           |
-| Swagger UI      | `http://localhost:3000/api/docs`      |
-| API metrics     | `http://localhost:3000/api/metrics`   |
-| Admin Dashboard | `http://localhost:5173`               |
-| Prometheus      | `http://localhost:9090`               |
-| Grafana         | `http://localhost:3001` (admin/admin) |
-| Mobile (Expo)   | Scan QR code in terminal with Expo Go |
+This starts:
 
-`yarn dev` now also starts the Prometheus and Grafana containers alongside Postgres and Redis.
+- PostgreSQL on 127.0.0.1:5433
+- Redis on 6379
+- Prometheus on 9090
+- Grafana on 3001 (admin/admin)
+- API on 3000
+- Admin web on 5173
+- Metro bundler for mobile (scan QR with Expo Go)
 
-### Mobile app — physical device access
-
-The mobile app needs to reach the API from your phone. Use a tunnel:
+### 4. Seed demo data (in a second terminal)
 
 ```bash
-npx localtunnel --port 3000
-# Copy the https URL + /api and set it as API_BASE_URL in client/src/api/client.ts
+cd server
+yarn prisma db push
+yarn prisma generate
+yarn tsx prisma/seed.ts
 ```
 
 ---
 
-## API Reference
+## API Quick Reference
 
 Base URL: `http://localhost:3000/api`
 
 ### Auth
 
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/` | Public | Health check — returns `{ status, name, version, environment, uptime, timestamp, database }`. Authenticated callers get `auth: { userId, role }`. ADMIN callers also get `system: { pid, nodeVersion, memory }`. Status becomes `"degraded"` if the DB is unreachable. |
-| `POST` | `/auth/login` | Public (409 if token present) | Login, returns JWT |
-| `POST` | `/auth/register` | ADMIN | Create a new user account |
-| `POST` | `/auth/logout` | JWT | Acknowledge logout (client clears token) |
-| `GET` | `/auth/me` | JWT | Validate token + get current user |
-
-### Users
-
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/users` | ADMIN, STAFF | List users — `?page`, `?limit`, `?role`, `?tier`, `?isActive`, `?search` |
-| `GET` | `/users/:id` | ADMIN, STAFF | Get user by ID |
-| `PATCH` | `/users/:id` | ADMIN | Update name, role, userPoints, or tier (tier↔points are coupled) |
-| `PATCH` | `/users/:id/disable` | ADMIN | Disable account (blocks JWT) |
-| `PATCH` | `/users/:id/enable` | ADMIN | Re-enable account |
+- `POST /auth/register` — Create account (ADMIN only)
+- `POST /auth/login` — Login, returns JWT
+- `GET /auth/me` — Validate token + get user
+- `POST /auth/logout` — Acknowledge logout
 
 ### Bookings
 
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `POST` | `/bookings` | JWT | Create booking — routes to `APPROVED`, `PENDING`, or `WAITLIST` |
-| `GET` | `/bookings/me` | JWT | Own bookings — `?status`, `?resourceType`, `?page`, `?limit` |
-| `GET` | `/bookings` | ADMIN, STAFF | All bookings — `?userId`, `?resourceType`, `?status`, `?page`, `?limit` |
-| `GET` | `/bookings/:id` | JWT (owner or ADMIN/STAFF) | Get single booking |
-| `PATCH` | `/bookings/:id/approve` | ADMIN, STAFF | Approve a `PENDING` device booking |
-| `PATCH` | `/bookings/:id/reject` | ADMIN, STAFF | Reject a `PENDING` booking |
-| `POST` | `/bookings/:id/cancel` | JWT (owner) | Cancel own booking; frees slot + promotes waitlist |
-| `POST` | `/bookings/:id/cancel-any` | ADMIN, STAFF | Cancel any booking |
-
-**Booking body:**
-
-```json
-{
-  "resourceType": "BOOK | DEVICE | ROOM",
-  "resourceId": "<bookTitleId | deviceId | studyRoomId>",
-  "startAt": "2026-06-22T09:00:00.000Z",
-  "endAt":   "2026-06-29T09:00:00.000Z",
-  "message": "(optional) reason, floats entry to top of staff review queue"
-}
-```
-
-**Routing logic:** BOOK → free copy available? `APPROVED` : `WAITLIST`. DEVICE tier 1–3 → available? `APPROVED` : `WAITLIST`. DEVICE tier 4–5 → available? `PENDING` (staff must approve) : `WAITLIST`. ROOM → no time overlap? `APPROVED` : `WAITLIST`.
+- `POST /bookings` — Create booking (routes to APPROVED/PENDING/WAITLIST)
+- `GET /bookings/me` — Own bookings
+- `GET /bookings` — All bookings (ADMIN/STAFF)
+- `PATCH /bookings/:id/approve` — Approve PENDING device booking
+- `POST /bookings/:id/cancel` — Cancel own booking
 
 ### Waitlist
 
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/waitlist/me` | JWT | Own pending waitlist entries |
-| `GET` | `/waitlist/:resourceType/:resourceKey` | ADMIN, STAFF | Full ordered queue for a resource |
-| `POST` | `/waitlist/:id/promote` | ADMIN, STAFF | Promote entry → booking becomes `APPROVED` + gets `qrToken` |
-| `POST` | `/waitlist/:id/dismiss` | ADMIN, STAFF | Dismiss entry |
-
-**Queue order:** `hasMessage DESC, priorityScore DESC` where `priorityScore = tier × 0.6 + roleWeight × 0.4` (Lecturer weight 5, Student weight 3). Message-free queues auto-promote on a free event; any message pauses auto-promotion for staff review.
+- `GET /waitlist/me` — Own waitlist entries
+- `GET /waitlist/:resourceType/:resourceKey` — Full ordered queue (ADMIN/STAFF)
+- `POST /waitlist/:id/promote` — Promote entry to booking
 
 ### Catalogue
 
-All read endpoints are public (any authenticated user). Write endpoints require `ADMIN` or `LIBRARY_STAFF`.
+- `GET /catalogue/books` — List books with availability
+- `GET /catalogue/devices` — List devices
+- `GET /catalogue/rooms` — List rooms + availability
+- `POST /catalogue/books`, `/devices`, `/rooms` — Create (ADMIN/STAFF)
 
-#### Categories
+### Scan (QR Workflow)
 
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/catalogue/categories` | JWT | List categories — `?type=BOOK\|DEVICE` |
-| `POST` | `/catalogue/categories` | ADMIN, STAFF | Create category |
-| `PATCH` | `/catalogue/categories/:id` | ADMIN, STAFF | Rename category |
-| `DELETE` | `/catalogue/categories/:id` | ADMIN, STAFF | Delete category |
+- `POST /scan/checkout` — Bind asset to booking, set CHECKED_OUT
+- `POST /scan/room-checkin` — User scans door QR, marks COMPLETED, awards +20 pts
+- `POST /scan/return` — Staff scans return, applies point scoring
 
-#### Books
+### Other
 
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/catalogue/books` | JWT | List titles — `?search`, `?categoryId`, `?page`, `?limit`. Response includes `_count.copies` (available) |
-| `GET` | `/catalogue/books/:id` | JWT | Title + full `copies[]` array with `assetTag` and `status` |
-| `POST` | `/catalogue/books` | ADMIN, STAFF | Create book title |
-| `PATCH` | `/catalogue/books/:id` | ADMIN, STAFF | Update title metadata |
-| `DELETE` | `/catalogue/books/:id` | ADMIN, STAFF | Delete title |
-| `POST` | `/catalogue/books/:id/copies` | ADMIN, STAFF | Add physical copy `{ assetTag }` |
-| `DELETE` | `/catalogue/copies/:id` | ADMIN, STAFF | Soft-retire copy (`RETIRED`); blocked if `BORROWED` |
+- `GET /points/me` — Point-event history
+- `GET /recommendations/me` — Personalised book recommendations (Lecturer/Student)
+- `GET /audit/logs` — System-wide audit log (ADMIN)
+- `GET /config` — Runtime tier/penalty config (ADMIN)
+- `GET /metrics` — Prometheus metrics
 
-#### Devices
-
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/catalogue/devices` | JWT | List devices — `?search`, `?tier`, `?categoryId`, `?status`, `?page`, `?limit` |
-| `GET` | `/catalogue/devices/:id` | JWT | Single device |
-| `POST` | `/catalogue/devices` | ADMIN, STAFF | Create device `{ name, assetTag, deviceTier, categoryId? }` |
-| `PATCH` | `/catalogue/devices/:id` | ADMIN, STAFF | Update device |
-| `DELETE` | `/catalogue/devices/:id` | ADMIN, STAFF | Delete device (blocked if `BORROWED`) |
-| `PATCH` | `/catalogue/devices/:id/maintenance` | ADMIN, STAFF | `{ underMaintenance: true\|false }` |
-
-#### Study Rooms
-
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/catalogue/rooms` | JWT | List rooms. Pass `?startAt` + `?endAt` (ISO 8601) to add `available` flag per room |
-| `GET` | `/catalogue/rooms/:id` | JWT | Single room |
-| `POST` | `/catalogue/rooms` | ADMIN, STAFF | Create room `{ name, capacity, features?, roomQr }` |
-| `PATCH` | `/catalogue/rooms/:id` | ADMIN, STAFF | Update room |
-| `DELETE` | `/catalogue/rooms/:id` | ADMIN, STAFF | Delete room |
-| `PATCH` | `/catalogue/rooms/:id/maintenance` | ADMIN, STAFF | `{ underMaintenance: true\|false }` |
-
-### Points
-
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/points/me` | JWT | Own point-event history — `?page`, `?limit`. Returns `{ data, total, page, limit }` |
-| `GET` | `/points/:userId` | ADMIN, STAFF | Any user's point-event history |
-
-Each `PointEvent` record: `{ id, userId, action, delta, balanceAfter, metadata, createdAt }`.
-
-### Scan (QR-driven physical workflow)
-
-All scan endpoints require **JSON body** with an `Authorization` header.
-
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `POST` | `/scan/checkout` | ADMIN, STAFF | Bind an asset to an approved booking. Body: `{ bookingQr, assetTag }`. Creates `Borrowing`, marks item `BORROWED` and the booking `CHECKED_OUT` (an active loan; it becomes `COMPLETED` only on return). Awards `+10` if the booking came from the waitlist. |
-| `POST` | `/scan/room-checkin` | JWT | User scans door QR for their own active room booking. Body: `{ roomQr }`. Marks booking `COMPLETED`, awards `+20` pts. |
-| `POST` | `/scan/return` | ADMIN, STAFF | Staff scans asset tag on return. Body: `{ assetTag, condition: "GOOD"\|"DAMAGED" }`. Scores return points, frees item, triggers waitlist promotion. Damaged device gets an additional `−300` on top of any timing penalty. |
-
-**Book return scoring:** `> 2 days early → +50`; `≤ 0 days late → +25`; `1 day late → −10`; `2–7 days late → −20 × days`; `> 7 days late → −220`.
-
-**Device return scoring (GOOD condition):** `early → +40`; `on time → +30`; `1–3 days late → −80`; `> 3 days late → −160`. DAMAGED: skip positive reward, add `−300`.
-
-### Overdue & Notifications
-
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `POST` | `/overdue/run` | ADMIN, STAFF | Manually trigger the overdue sweep. Returns `{ borrowingsProcessed, noShowsProcessed }`. |
-| `GET` | `/notifications/me` | JWT | Own notification inbox — `?page`, `?limit`, `?unreadOnly=true`. Returns `{ data, meta }` |
-| `POST` | `/notifications/read-all` | JWT | Mark all unread notifications as read |
-
-The overdue sweep handles two cases:
-
-- **Late borrowings** — 1 day late: remind borrower. 2–7 days: set `recallFlag`, notify all LIBRARY_STAFF. > 7 days: set `BorrowingStatus.OVERDUE`, notify all ADMINs.
-- **Room no-shows** — any APPROVED room booking with `endAt` in the past is cancelled and the user is charged `−150` pts.
-
-### Reviews
-
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/reviews/book/:bookTitleId` | JWT | List reviews for a book title — `?page`, `?limit`. Includes `user: { id, name }` |
-| `POST` | `/reviews/book/:bookTitleId` | JWT | Write a review. Body: `{ text, rating? (1–5) }`. Requires a `COMPLETED` booking for that book. One review per user per title. Awards `+15` pts. |
-| `DELETE` | `/reviews/:id` | JWT (owner or ADMIN/STAFF) | Delete a review |
-
-### Recommendations
-
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/recommendations/me` | LECTURER, STUDENT | Personalised book recommendations from borrowing-history tags — `?limit` (1–50, default 10). Falls back to newest unread titles for users with no history. **Redis-cached 5 min per user.** |
-
-### Audit Log
-
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/audit/logs` | ADMIN | System-wide action log — `?page`, `?limit` (max 200), `?actorId`, `?action` (case-insensitive contains), `?targetType`. Returns `{ data, meta }` with `actor: { id, name, role }`. |
-
-### System Config
-
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/config` | ADMIN | Get runtime rules — `{ tiers, penalties, toggles }`. Lazily seeded with defaults on first read. |
-| `PUT` | `/config` | ADMIN | Persist edited rules (partial body merged over current). Used by the admin **System Config** screen. |
-
-### Metrics
-
-| Method | Route | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/metrics` | Public | Prometheus exposition format (`text/plain`). Scraped by the Prometheus container. |
-
-> **Booking statuses:** `PENDING → APPROVED → CHECKED_OUT → COMPLETED` (plus `WAITLIST`, `REJECTED`, `CANCELLED`). `CHECKED_OUT` is the active-loan state set at QR checkout; `COMPLETED` is set on return.
->
-> **Resource images:** book titles and devices carry an optional `imageUrl` (book covers seeded from OpenLibrary by ISBN); the web client renders it with an icon fallback.
+Detailed API docs: [Postman collection](server/postman_collection.json) or visit `http://localhost:3000/api/docs` (Swagger UI).
 
 ---
 
-**Auth flow:**
+## Development
 
-1. Login as `admin@iit.ac.lk` with password `Password123`
-2. Copy the `accessToken` from the response
-3. Pass it as `Authorization: Bearer <token>` on protected routes
+### Code style
 
-**Demo accounts** (seeded, password `Password123`):
+- TypeScript everywhere
+- Prettier (4-space indent, single quotes, `trailingComma: es5`, `printWidth: 100`)
+- Conventional Commits: `type(scope): subject` (feat, fix, chore, refactor, docs, test, style, perf, ci)
 
-| Email                | Role          |
-| -------------------- | ------------- |
-| `admin@iit.ac.lk`    | ADMIN         |
-| `staff@iit.ac.lk`    | LIBRARY_STAFF |
-| `lecturer@iit.ac.lk` | LECTURER      |
-| `student@iit.ac.lk`  | STUDENT       |
+### Commit discipline
 
-### Response conventions
+Keep commits granular — one logical change per commit. Pre-commit hook enforces:
 
-Every response includes an `X-Request-ID` header (UUID) that links to the corresponding line in `server/logs/events.jsonl` for tracing.
+- Linting (ESLint)
+- Formatting (Prettier)
+- Conventional Commits format
 
-Error responses always follow:
-
-```json
-{
-  "statusCode": 400,
-  "timestamp": "2026-06-23T…",
-  "path": "/api/…",
-  "message": "Validation failed",
-  "error": "Bad Request",
-  "errors": { "email": ["email must be an email"] }
-}
+```bash
+git add .
+git commit -m "feat(booking): add tier concurrency limits"
 ```
 
-`errors` is only present on validation failures and groups messages by field name. In development (`NODE_ENV != production`) a `stack` field is also included on every error.
+### Testing
+
+```bash
+cd server
+yarn test                # 123 unit tests
+yarn test:e2e            # 11 e2e smoke tests
+yarn build               # TypeScript compilation
+```
+
+### CI/CD
+
+Every PR runs:
+
+- `yarn lint:ci` (lint + format-check)
+- `yarn test` + `yarn test:e2e`
+- `yarn build` (web-client)
+
+Merges to `main` trigger a release workflow:
+
+1. Verify commit is SSH-signed
+2. Run all tests
+3. Detect which services changed (Postgres, admin web)
+4. Build, sign, attest only changed services
+5. Deploy to DigitalOcean dev droplet via cosign verification
+
+---
+
+## Demo Accounts
+
+Password: `Password123`
+
+| Email              | Role          |
+| ------------------ | ------------- |
+| admin@iit.ac.lk    | ADMIN         |
+| staff@iit.ac.lk    | LIBRARY_STAFF |
+| lecturer@iit.ac.lk | LECTURER      |
+| student@iit.ac.lk  | STUDENT       |
+
+---
+
+## Architecture & Algorithms
+
+See [CLAUDE.md](CLAUDE.md) for:
+
+- Project conventions & best practices
+- Domain model (tiers, user points, scoring)
+- Prisma setup (new prisma-client generator)
+- Booking router & conflict detection
+- Waitlist priority scoring & auto-promotion
+- Point mutations & tier recalculation
+
+See [CORE_LOGIC_IMPLEMENTATION_PLAN.md](docs/CORE_LOGIC_IMPLEMENTATION_PLAN.md) (reference) for the spec.
+
+---
+
+## Troubleshooting
+
+### Prisma client not found
+
+Ensure the new `prisma-client` generator was used:
+
+```bash
+cd server
+yarn prisma generate
+ls generated/prisma/
+```
+
+Should list: `client.ts`, `enums.ts`, `models.ts`, etc.
+
+### Node version mismatch
+
+```bash
+node --version  # Should be v22+
+# If not, install via:
+nvm install 22
+nvm use 22
+```
+
+### Database connection error (P1001)
+
+1. Ensure Docker is running: `docker ps`
+2. Check `.env` uses `127.0.0.1` (not `localhost`) for host connections
+3. Verify port: `nc -zv 127.0.0.1 5433`
+
+### Expo mobile app can't reach API
+
+Use localtunnel to expose local API:
+
+```bash
+npx localtunnel --port 3000
+# Copy https URL and set API_BASE_URL in client/src/api/client.ts
+```
+
+---
+
+## License
+
+AGPL-3.0 — See [LICENSE](LICENSE)
 
 **Limits:** JSON and URL-encoded request bodies are capped at 5 MB. Requests that do not complete within 30 seconds are aborted.
 
@@ -373,15 +352,15 @@ The raw OpenAPI JSON is available at `http://localhost:3000/api/docs-json`.
 
 Catalogue and recommendation reads are cached in Redis as a read-through layer. Mutations invalidate the relevant key patterns (`SCAN` + `DEL`), and a Redis outage degrades gracefully — the API always falls back to Postgres.
 
-| Endpoint | TTL | Invalidated by |
-| --- | --- | --- |
-| `GET /catalogue/books` | 30 s | any book / copy mutation |
-| `GET /catalogue/books/:id` | 60 s | book update / delete / copy change |
-| `GET /catalogue/devices` | 30 s | any device mutation |
-| `GET /catalogue/devices/:id` | 60 s | device update / delete |
-| `GET /catalogue/rooms` (no slot filter) | 20 s | any room mutation |
-| `GET /catalogue/rooms/:id` | 60 s | room update / delete |
-| `GET /recommendations/me` | 5 min | natural expiry (per-user key) |
+| Endpoint                                | TTL   | Invalidated by                     |
+| --------------------------------------- | ----- | ---------------------------------- |
+| `GET /catalogue/books`                  | 30 s  | any book / copy mutation           |
+| `GET /catalogue/books/:id`              | 60 s  | book update / delete / copy change |
+| `GET /catalogue/devices`                | 30 s  | any device mutation                |
+| `GET /catalogue/devices/:id`            | 60 s  | device update / delete             |
+| `GET /catalogue/rooms` (no slot filter) | 20 s  | any room mutation                  |
+| `GET /catalogue/rooms/:id`              | 60 s  | room update / delete               |
+| `GET /recommendations/me`               | 5 min | natural expiry (per-user key)      |
 
 Room availability queries (`?startAt` + `?endAt`) are never cached, since they depend on live booking overlap.
 
@@ -391,13 +370,13 @@ Room availability queries (`?startAt` + `?endAt`) are never cached, since they d
 
 The API exposes Prometheus metrics at **`GET /api/metrics`** (public, so Prometheus can scrape without auth). A global interceptor records every request.
 
-| Metric | Type | Labels |
-| --- | --- | --- |
-| `http_requests_total` | Counter | `method`, `route`, `status_code` |
-| `http_request_duration_seconds` | Histogram | `method`, `route`, `status_code` |
-| `library_bookings_created_total` | Counter | `resource_type`, `status` |
-| `library_active_borrowings` | Gauge | — |
-| Node.js process/runtime metrics | default | — |
+| Metric                           | Type      | Labels                           |
+| -------------------------------- | --------- | -------------------------------- |
+| `http_requests_total`            | Counter   | `method`, `route`, `status_code` |
+| `http_request_duration_seconds`  | Histogram | `method`, `route`, `status_code` |
+| `library_bookings_created_total` | Counter   | `resource_type`, `status`        |
+| `library_active_borrowings`      | Gauge     | —                                |
+| Node.js process/runtime metrics  | default   | —                                |
 
 **Prometheus** (`http://localhost:9090`) scrapes the API every 15 s — config in `infra/prometheus.yml`.
 
@@ -432,13 +411,13 @@ yarn test:e2e        # e2e smoke suite — boots AppModule with Prisma/Redis fak
 
 ## Tech Stack
 
-| Package            | Stack                                                                                                       |
-| ------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `server`           | NestJS 11, Prisma 7 (`prisma-client` generator), PostgreSQL 15, Redis (ioredis), JWT, bcrypt, Swagger, prom-client |
-| `web-client` | React 19, Vite, Tailwind CSS v4, react-router-dom, axios                                                     |
-| `client`           | Expo SDK 54, expo-router, expo-secure-store, axios                                                           |
-| Observability      | Prometheus + Grafana (Docker)                                                                                |
-| Testing            | Jest 30 (ESM) + Supertest                                                                                    |
+| Package       | Stack                                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `server`      | NestJS 11, Prisma 7 (`prisma-client` generator), PostgreSQL 15, Redis (ioredis), JWT, bcrypt, Swagger, prom-client |
+| `web-client`  | React 19, Vite, Tailwind CSS v4, react-router-dom, axios                                                           |
+| `client`      | Expo SDK 54, expo-router, expo-secure-store, axios                                                                 |
+| Observability | Prometheus + Grafana (Docker)                                                                                      |
+| Testing       | Jest 30 (ESM) + Supertest                                                                                          |
 
 **Package manager:** Yarn (all packages). Never use `npm`.
 
