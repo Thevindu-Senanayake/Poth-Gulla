@@ -3,3 +3,10 @@
 
 # Run lint-staged on staged files; fail the commit if lint errors remain
 yarn lint-staged
+
+if [ $? -ne 0 ]; then
+  echo "Pre-commit check failed. Fix linting issues and try again."
+  exit 1
+fi
+
+echo "Pre-commit checks passed"
