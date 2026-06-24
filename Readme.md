@@ -271,7 +271,7 @@ Password: `Password123`
 
 ## Architecture & Algorithms
 
-See [CLAUDE.md](CLAUDE.md) for:
+See [DEVELOPMENT.md](DEVELOPMENT.md) for:
 
 - Project conventions & best practices
 - Domain model (tiers, user points, scoring)

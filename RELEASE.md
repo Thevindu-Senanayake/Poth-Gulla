@@ -29,7 +29,7 @@ Current version: **v0.2.4** (see `package.json`)
 
 2. **Code review complete** - All PRs targeting `main` are merged
 
-3. **Documentation updated** - CLAUDE.md section 2, README.md, any architecture docs
+3. **Documentation updated** - DEVELOPMENT.md section 2, README.md, any architecture docs
 
 4. **Decide version bump:**
    - Patch fix (v0.2.3 → v0.2.4) - typo, small bug, docs
@@ -142,7 +142,7 @@ Scenario: New waitlist auto-promotion feature.
    - `feat(waitlist): implement auto-promotion on freed slots`
    - `docs(readme): document waitlist auto-promotion behavior`
 2. Update `package.json` version to `0.3.0`
-3. Update CLAUDE.md and README.md as needed
+3. Update DEVELOPMENT.md and README.md as needed
 4. Tag:
    ```bash
    git tag -s v0.3.0 -m "Release v0.3.0: auto-promote waitlist entries"
@@ -158,7 +158,7 @@ Scenario: First production release with all features complete.
 
 1. Merge all remaining features
 2. Update `package.json` to `1.0.0`
-3. Update CLAUDE.md, README.md, docs
+3. Update DEVELOPMENT.md, README.md, docs
 4. Create a `RELEASE_NOTES.md` summarizing major features, breaking changes (if any)
 5. Tag:
    ```bash
@@ -295,6 +295,6 @@ Ask a maintainer if you don't have these.
 
 ## See Also
 
-- [CLAUDE.md](CLAUDE.md) - Project conventions, commit discipline
+- [DEVELOPMENT.md](DEVELOPMENT.md) - Project conventions, commit discipline
 - [.github/workflows/release-deploy.yml](.github/workflows/release-deploy.yml) - Full release workflow definition
 - [Conventional Commits](https://www.conventionalcommits.org/) - Commit message format standard

@@ -5,7 +5,7 @@ export { tierFromPoints as tierForPoints } from '../users/tier.utils.js';
 
 /**
  * Concurrent APPROVED+PENDING booking limits per patron tier per resource type.
- * Source of truth: CLAUDE.md §7B. Admin/Staff have tier=null and bypass these checks.
+ * Source of truth: DEVELOPMENT.md §7B. Admin/Staff have tier=null and bypass these checks.
  */
 export const TIER_LIMITS: Record<number, Record<ResourceType, number>> = {
   1: { BOOK: 1, DEVICE: 1, ROOM: 1 },

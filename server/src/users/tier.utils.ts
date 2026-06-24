@@ -1,7 +1,7 @@
 /**
  * Tier floors - the minimum user points required to hold each tier.
  * Tier 1 (Restricted) is the lowest; Tier 5 (Elite) is the highest.
- * Source of truth: CLAUDE.md §7B.
+ * Source of truth: DEVELOPMENT.md §7B.
  *
  *   Tier 1 - Restricted  0–199
  *   Tier 2 - Basic       200–499
