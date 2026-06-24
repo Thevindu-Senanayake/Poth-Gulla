@@ -1,12 +1,12 @@
 # Release & deploy to the DigitalOcean dev droplet.
 #
 # Flow (triggered by pushing a signed tag `vX.Y.Z`):
-#   1. verify-tag — the git tag MUST be SSH-signed by an allowed signer.
-#   2. test       — backend unit + e2e tests. FAILS HERE => no build, no deploy.
-#   3. changes    — diff vs the previous tag to see which services changed.
-#   4. build      — per service: build/sign/attest ONLY if it changed; otherwise
+#   1. verify-tag - the git tag MUST be SSH-signed by an allowed signer.
+#   2. test       - backend unit + e2e tests. FAILS HERE => no build, no deploy.
+#   3. changes    - diff vs the previous tag to see which services changed.
+#   4. build      - per service: build/sign/attest ONLY if it changed; otherwise
 #                   carry forward the previous release's signed digest (Approach B).
-#   5. deploy     — SSH to the droplet, cosign-VERIFY both digests (fail closed),
+#   5. deploy     - SSH to the droplet, cosign-VERIFY both digests (fail closed),
 #                   then pull + up the full stack.
 #
 # Security notes:
@@ -57,7 +57,7 @@ jobs:
           git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
           echo "Verifying tag ${GITHUB_REF_NAME}…"
           if [ "$(git cat-file -t "${GITHUB_REF_NAME}")" != "tag" ]; then
-            echo "::error::${GITHUB_REF_NAME} is not an annotated tag — sign it with 'git tag -s'."
+            echo "::error::${GITHUB_REF_NAME} is not an annotated tag - sign it with 'git tag -s'."
             exit 1
           fi
           git verify-tag "${GITHUB_REF_NAME}"
@@ -105,7 +105,7 @@ jobs:
           PREV=$(git tag --list 'v*' --sort=-version:refname | grep -v "^${CURRENT}$" | head -n1 || true)
           echo "prev_tag=${PREV}" >> "$GITHUB_OUTPUT"
           if [ -z "${PREV}" ]; then
-            echo "No previous tag — building all services."
+            echo "No previous tag - building all services."
             echo "server=true" >> "$GITHUB_OUTPUT"
             echo "web=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
@@ -170,7 +170,7 @@ jobs:
           # Can only carry forward if the previous tag's image actually exists.
           if [ "$C" != "true" ] && [ -n "${PREV_TAG}" ]; then
             if ! docker buildx imagetools inspect "${IMAGE}:${PREV_TAG#v}" >/dev/null 2>&1; then
-              echo "Previous image ${IMAGE}:${PREV_TAG#v} not found — building."
+              echo "Previous image ${IMAGE}:${PREV_TAG#v} not found - building."
               C=true
             fi
           fi

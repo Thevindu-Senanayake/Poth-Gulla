@@ -1,4 +1,4 @@
-# Deployment — DigitalOcean dev droplet
+# Deployment - DigitalOcean dev droplet
 
 CI/CD: **GitHub Actions → GHCR (signed images) → droplet pull**. Pushing a
 **SSH-signed** tag `vX.Y.Z` builds production images, signs them with **cosign
@@ -23,7 +23,7 @@ enables `ufw` (22/80/3000/3001/9090) and `fail2ban`, and creates `~/poth-gulla`.
 Then:
 
 1. Add the CI deploy **public** key to `/home/deploy/.ssh/authorized_keys`.
-2. Harden `sshd` — `PermitRootLogin no`, `PasswordAuthentication no`, then
+2. Harden `sshd` - `PermitRootLogin no`, `PasswordAuthentication no`, then
    `systemctl restart ssh`.
 
 ---
@@ -53,7 +53,7 @@ git config user.signingkey "$(pwd)/tag_signing.pub"
 - Put the **public** key (`tag_signing.pub` contents) in secret `TAG_SIGNING_SSH_PUBLIC_KEY`.
 - Put the signer identity (the tagger email you'll use) in variable `TAG_SIGNER_IDENTITY`.
 
-CI runs `git verify-tag` against an `allowed_signers` built from those two — an
+CI runs `git verify-tag` against an `allowed_signers` built from those two - an
 unsigned or wrong-key tag **fails the pipeline** before anything is built.
 
 ---
@@ -62,28 +62,28 @@ unsigned or wrong-key tag **fails the pipeline** before anything is built.
 
 ### Secrets (Settings → Secrets and variables → Actions → Secrets)
 
-| Secret | What |
-|---|---|
-| `DROPLET_HOST` | droplet IP |
-| `DROPLET_USER` | `deploy` |
-| `DROPLET_SSH_KEY` | private deploy key (full PEM) |
-| `GHCR_PULL_TOKEN` | PAT with **read:packages** (droplet pulls private images) |
-| `TAG_SIGNING_SSH_PUBLIC_KEY` | the SSH **public** key allowed to sign tags |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | DB credentials |
-| `JWT_SECRET` | long random string |
-| `JWT_EXPIRES_IN` | e.g. `7d` |
-| `GRAFANA_ADMIN_PASSWORD` | Grafana admin password |
+| Secret                                                | What                                                      |
+| ----------------------------------------------------- | --------------------------------------------------------- |
+| `DROPLET_HOST`                                        | droplet IP                                                |
+| `DROPLET_USER`                                        | `deploy`                                                  |
+| `DROPLET_SSH_KEY`                                     | private deploy key (full PEM)                             |
+| `GHCR_PULL_TOKEN`                                     | PAT with **read:packages** (droplet pulls private images) |
+| `TAG_SIGNING_SSH_PUBLIC_KEY`                          | the SSH **public** key allowed to sign tags               |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | DB credentials                                            |
+| `JWT_SECRET`                                          | long random string                                        |
+| `JWT_EXPIRES_IN`                                      | e.g. `7d`                                                 |
+| `GRAFANA_ADMIN_PASSWORD`                              | Grafana admin password                                    |
 
 ### Variables
 
-| Variable | What |
-|---|---|
-| `VITE_API_URL` | `http://DROPLET_IP:3000/api` (baked into the web image at build) |
-| `TAG_SIGNER_IDENTITY` | tagger email used when signing (must match the tag) |
+| Variable              | What                                                             |
+| --------------------- | ---------------------------------------------------------------- |
+| `VITE_API_URL`        | `http://DROPLET_IP:3000/api` (baked into the web image at build) |
+| `TAG_SIGNER_IDENTITY` | tagger email used when signing (must match the tag)              |
 
 ### Environment
 
-Create an Environment named **`dev`** (the `deploy` job uses it — add required
+Create an Environment named **`dev`** (the `deploy` job uses it - add required
 reviewers here later if you want manual approval before a deploy).
 
 ---
@@ -97,13 +97,13 @@ git push origin v0.1.0
 
 Watch **Actions → release-deploy**. On success:
 
-| Service | URL |
-|---|---|
-| Web client | `http://DROPLET_IP/` |
-| API | `http://DROPLET_IP:3000/api` |
-| Swagger | `http://DROPLET_IP:3000/api/docs` |
-| Grafana | `http://DROPLET_IP:3001` |
-| Prometheus | `http://DROPLET_IP:9090` |
+| Service    | URL                               |
+| ---------- | --------------------------------- |
+| Web client | `http://DROPLET_IP/`              |
+| API        | `http://DROPLET_IP:3000/api`      |
+| Swagger    | `http://DROPLET_IP:3000/api/docs` |
+| Grafana    | `http://DROPLET_IP:3001`          |
+| Prometheus | `http://DROPLET_IP:9090`          |
 
 The DB schema is applied (`prisma db push`) and the idempotent seed runs on every
 deploy (demo accounts, password `Password123`).
@@ -114,25 +114,26 @@ deploy (demo accounts, password `Password123`).
 
 Deploys are pinned to an immutable image **digest** per tag. To roll back, re-run
 the `release-deploy` workflow for an older tag (Actions → select the previous
-tag's run → *Re-run all jobs*), or push a new tag built from the older commit.
+tag's run → _Re-run all jobs_), or push a new tag built from the older commit.
 
 ---
 
 ## 7. Security model
 
-- **Signed artifacts** — every image is cosign-signed (keyless, logged to Rekor);
+- **Signed artifacts** - every image is cosign-signed (keyless, logged to Rekor);
   the droplet runs `cosign verify` and refuses anything not signed by this repo's
   `release-deploy.yml` workflow identity.
-- **Signed releases** — the git tag itself must be SSH-signed by an allowed key.
-- **Provenance + SBOM** — each image carries a SLSA build-provenance attestation
+- **Signed releases** - the git tag itself must be SSH-signed by an allowed key.
+- **Provenance + SBOM** - each image carries a SLSA build-provenance attestation
   and an SPDX SBOM, both verifiable from the registry.
-- **Immutable deploys** — images are deployed by `@sha256:` digest, never a
+- **Immutable deploys** - images are deployed by `@sha256:` digest, never a
   mutable tag.
-- **Least privilege** — `GITHUB_TOKEN` is scoped per job; OIDC (`id-token`) only
+- **Least privilege** - `GITHUB_TOKEN` is scoped per job; OIDC (`id-token`) only
   in the build job; the droplet pulls with a read-only PAT.
-- **Host** — non-root `deploy` user, key-only SSH, `ufw`, `fail2ban`.
+- **Host** - non-root `deploy` user, key-only SSH, `ufw`, `fail2ban`.
 
 ### Hardening TODO (before treating this as production)
+
 - Pin every `uses:` in the workflow to a full commit SHA.
 - Add TLS (a Caddy/Traefik reverse proxy + a domain) instead of plain HTTP.
 - Don't publish Postgres/Redis/Prometheus to the host; put Grafana behind auth/proxy.
@@ -144,9 +145,9 @@ tag's run → *Re-run all jobs*), or push a new tag built from the older commit.
 
 Two workflows:
 
-- [`ci.yml`](../.github/workflows/ci.yml) — on every **pull request** (and push to
+- [`ci.yml`](../.github/workflows/ci.yml) - on every **pull request** (and push to
   `main`): backend unit tests (`yarn test`) + e2e smoke (`yarn test:e2e`) + web build.
-- [`release-deploy.yml`](../.github/workflows/release-deploy.yml) — the release runs
+- [`release-deploy.yml`](../.github/workflows/release-deploy.yml) - the release runs
   the **same tests as a gate**: the `build` job `needs` the `test` job, so **failing
   tests stop the release before anything is built or deployed**.
 
@@ -160,7 +161,7 @@ digest-pinned pair. Buildx GHA layer cache speeds up the builds that do run.
 
 ### Require tests on PRs (branch protection)
 
-The `ci.yml` check only *blocks* a merge if you make it a **required status check**:
+The `ci.yml` check only _blocks_ a merge if you make it a **required status check**:
 
 1. Repo **Settings → Branches → Add branch ruleset** (or Branch protection rule) for `main`.
 2. Enable **Require status checks to pass before merging**.

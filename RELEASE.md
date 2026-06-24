@@ -1,4 +1,4 @@
-# Release Process — Poth Gulla
+# Release Process - Poth Gulla
 
 This document describes how to cut a release and deploy to production.
 
@@ -8,9 +8,9 @@ This document describes how to cut a release and deploy to production.
 
 Follow Semantic Versioning: `MAJOR.MINOR.PATCH`
 
-- **MAJOR** — Breaking API changes, major feature additions (e.g. v0 → v1)
-- **MINOR** — New features, backward-compatible (e.g. v0.2 → v0.3)
-- **PATCH** — Bug fixes, hotfixes, no new features (e.g. v0.2.3 → v0.2.4)
+- **MAJOR** - Breaking API changes, major feature additions (e.g. v0 → v1)
+- **MINOR** - New features, backward-compatible (e.g. v0.2 → v0.3)
+- **PATCH** - Bug fixes, hotfixes, no new features (e.g. v0.2.3 → v0.2.4)
 
 Current version: **v0.2.4** (see `package.json`)
 
@@ -18,7 +18,7 @@ Current version: **v0.2.4** (see `package.json`)
 
 ## Pre-Release Checklist
 
-1. **All tests pass** — Run locally and verify GitHub Actions CI is green:
+1. **All tests pass** - Run locally and verify GitHub Actions CI is green:
 
    ```bash
    yarn lint:ci
@@ -27,14 +27,14 @@ Current version: **v0.2.4** (see `package.json`)
    cd web-client && yarn build
    ```
 
-2. **Code review complete** — All PRs targeting `main` are merged
+2. **Code review complete** - All PRs targeting `main` are merged
 
-3. **Documentation updated** — CLAUDE.md section 2, README.md, any architecture docs
+3. **Documentation updated** - CLAUDE.md section 2, README.md, any architecture docs
 
 4. **Decide version bump:**
-   - Patch fix (v0.2.3 → v0.2.4) — typo, small bug, docs
-   - Minor feature (v0.2.3 → v0.3.0) — new feature, backward-compatible
-   - Major (v0.2.3 → v1.0.0) — breaking changes
+   - Patch fix (v0.2.3 → v0.2.4) - typo, small bug, docs
+   - Minor feature (v0.2.3 → v0.3.0) - new feature, backward-compatible
+   - Major (v0.2.3 → v1.0.0) - breaking changes
 
 5. **Update `package.json` version** in the root (if not automated)
 
@@ -56,8 +56,8 @@ git tag -s v0.2.4 -m "Release v0.2.4: fix tier config loading bug"
 
 **Flags explained:**
 
-- `-s` — Sign the tag with your GPG key (required for CI/CD gate; the release workflow verifies the signature)
-- `-m` — Tag message (optional; describes what's in the release)
+- `-s` - Sign the tag with your GPG key (required for CI/CD gate; the release workflow verifies the signature)
+- `-m` - Tag message (optional; describes what's in the release)
 
 **Verify the tag was created:**
 
@@ -77,17 +77,17 @@ This triggers the `.github/workflows/release-deploy.yml` workflow automatically.
 
 ### Step 3: Monitor the release workflow
 
-Go to: [GitHub Actions — Release & Deploy](../../actions/workflows/release-deploy.yml)
+Go to: [GitHub Actions - Release & Deploy](../../actions/workflows/release-deploy.yml)
 
 The workflow will:
 
-1. **Verify the tag signature** — Confirms the tag is signed with a trusted key; fails if unsigned or invalid
-2. **Run all tests** — `yarn lint:ci`, `yarn test`, `yarn test:e2e`
-3. **Build all services** — Compile NestJS, web-client, and Docker images
-4. **Detect changes** — Compare this tag against the previous tag; identify which services changed (e.g. only `server` and `web-client`)
-5. **Build images** — Create Docker images only for changed services; tag as `vX.Y.Z`
-6. **Sign attestations** — Use cosign to sign the images with COSIGN_SIGNING_KEY
-7. **Deploy to dev** — Push signed images to the DigitalOcean dev droplet; verify signatures before running
+1. **Verify the tag signature** - Confirms the tag is signed with a trusted key; fails if unsigned or invalid
+2. **Run all tests** - `yarn lint:ci`, `yarn test`, `yarn test:e2e`
+3. **Build all services** - Compile NestJS, web-client, and Docker images
+4. **Detect changes** - Compare this tag against the previous tag; identify which services changed (e.g. only `server` and `web-client`)
+5. **Build images** - Create Docker images only for changed services; tag as `vX.Y.Z`
+6. **Sign attestations** - Use cosign to sign the images with COSIGN_SIGNING_KEY
+7. **Deploy to dev** - Push signed images to the DigitalOcean dev droplet; verify signatures before running
 
 ---
 
@@ -258,9 +258,9 @@ git push origin v0.2.4
 
 Check the GitHub Actions logs. Common causes:
 
-- Node version mismatch (should be v22+) — fix in `.github/workflows/release-deploy.yml`
-- Missing environment variables (JWT_SECRET, etc.) — ensure secrets are set in GitHub Settings → Secrets and Variables
-- Database/tests require a live connection — some e2e tests are skipped in CI; verify they're marked as `skip` or use mock databases
+- Node version mismatch (should be v22+) - fix in `.github/workflows/release-deploy.yml`
+- Missing environment variables (JWT_SECRET, etc.) - ensure secrets are set in GitHub Settings → Secrets and Variables
+- Database/tests require a live connection - some e2e tests are skipped in CI; verify they're marked as `skip` or use mock databases
 
 ---
 
@@ -285,8 +285,8 @@ To release, you need:
 - **Write access** to the repository (push tags to `origin`)
 - **GPG key** registered on GitHub (for signing tags)
 - **GitHub Actions secrets** configured for deployment (if deploying to cloud):
-  - `COSIGN_SIGNING_KEY` — Private key for signing Docker images
-  - `COSIGN_VERIFICATION_KEY` — Public key for verifying images
+  - `COSIGN_SIGNING_KEY` - Private key for signing Docker images
+  - `COSIGN_VERIFICATION_KEY` - Public key for verifying images
   - Cloud deployment credentials (SSH key, API token, etc.)
 
 Ask a maintainer if you don't have these.
@@ -295,6 +295,6 @@ Ask a maintainer if you don't have these.
 
 ## See Also
 
-- [CLAUDE.md](CLAUDE.md) — Project conventions, commit discipline
-- [.github/workflows/release-deploy.yml](.github/workflows/release-deploy.yml) — Full release workflow definition
-- [Conventional Commits](https://www.conventionalcommits.org/) — Commit message format standard
+- [CLAUDE.md](CLAUDE.md) - Project conventions, commit discipline
+- [.github/workflows/release-deploy.yml](.github/workflows/release-deploy.yml) - Full release workflow definition
+- [Conventional Commits](https://www.conventionalcommits.org/) - Commit message format standard

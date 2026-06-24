@@ -17,7 +17,7 @@ import {
   CreateBookTitleDto,
   UpdateBookTitleDto,
 } from '../services/book.service.js';
-@ApiTags('Catalogue — Books')
+@ApiTags('Catalogue - Books')
 @ApiBearerAuth('JWT')
 @Controller('catalogue')
 export class BookController {
@@ -62,7 +62,7 @@ export class BookController {
   }
   @ApiOperation({
     summary:
-      'Delete a book title — only if no copies, bookings, or reviews (Admin/Staff)',
+      'Delete a book title - only if no copies, bookings, or reviews (Admin/Staff)',
   })
   @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
   @Delete('books/:id')

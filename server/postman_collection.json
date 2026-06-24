@@ -157,7 +157,7 @@
           }
         },
         {
-          "name": "Login — already authenticated (expect 409)",
+          "name": "Login - already authenticated (expect 409)",
           "request": {
             "method": "POST",
             "header": [
@@ -273,12 +273,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/users?page=1&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "users"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["users"],
               "query": [
                 {
                   "key": "page",
@@ -324,12 +320,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/users?search=student&page=1&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "users"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["users"],
               "query": [
                 {
                   "key": "search",
@@ -348,7 +340,7 @@
           }
         },
         {
-          "name": "List users — filter by role",
+          "name": "List users - filter by role",
           "request": {
             "method": "GET",
             "header": [
@@ -359,12 +351,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/users?role=STUDENT&page=1&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "users"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["users"],
               "query": [
                 {
                   "key": "role",
@@ -383,7 +371,7 @@
           }
         },
         {
-          "name": "List users — filter by tier",
+          "name": "List users - filter by tier",
           "request": {
             "method": "GET",
             "header": [
@@ -394,12 +382,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/users?tier=3&page=1&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "users"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["users"],
               "query": [
                 {
                   "key": "tier",
@@ -418,7 +402,7 @@
           }
         },
         {
-          "name": "List users — disabled only",
+          "name": "List users - disabled only",
           "request": {
             "method": "GET",
             "header": [
@@ -429,12 +413,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/users?isActive=false",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "users"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["users"],
               "query": [
                 {
                   "key": "isActive",
@@ -531,7 +511,7 @@
       "name": "Bookings",
       "item": [
         {
-          "name": "Create booking — BOOK",
+          "name": "Create booking - BOOK",
           "event": [
             {
               "listen": "test",
@@ -563,7 +543,7 @@
           }
         },
         {
-          "name": "Create booking — DEVICE (tier 1-3, auto-APPROVED)",
+          "name": "Create booking - DEVICE (tier 1-3, auto-APPROVED)",
           "event": [
             {
               "listen": "test",
@@ -595,7 +575,7 @@
           }
         },
         {
-          "name": "Create booking — DEVICE (tier 4-5, expect PENDING)",
+          "name": "Create booking - DEVICE (tier 4-5, expect PENDING)",
           "event": [
             {
               "listen": "test",
@@ -627,7 +607,7 @@
           }
         },
         {
-          "name": "Create booking — ROOM",
+          "name": "Create booking - ROOM",
           "event": [
             {
               "listen": "test",
@@ -659,7 +639,7 @@
           }
         },
         {
-          "name": "Create booking — with waitlist message",
+          "name": "Create booking - with waitlist message",
           "event": [
             {
               "listen": "test",
@@ -691,7 +671,7 @@
           }
         },
         {
-          "name": "Create booking — exceeds duration cap (expect 400)",
+          "name": "Create booking - exceeds duration cap (expect 400)",
           "request": {
             "method": "POST",
             "header": [
@@ -723,13 +703,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/bookings/me?page=1&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "bookings",
-                "me"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "me"],
               "query": [
                 {
                   "key": "page",
@@ -765,12 +740,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/bookings?page=1&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "bookings"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["bookings"],
               "query": [
                 {
                   "key": "page",
@@ -994,13 +965,8 @@
                 ],
                 "url": {
                   "raw": "{{base_url}}/catalogue/categories",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "catalogue",
-                    "categories"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["catalogue", "categories"],
                   "query": [
                     {
                       "key": "type",
@@ -1093,13 +1059,8 @@
                 ],
                 "url": {
                   "raw": "{{base_url}}/catalogue/books?page=1&limit=20",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "catalogue",
-                    "books"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["catalogue", "books"],
                   "query": [
                     {
                       "key": "page",
@@ -1245,7 +1206,7 @@
               }
             },
             {
-              "name": "Retire copy — soft (admin/staff)",
+              "name": "Retire copy - soft (admin/staff)",
               "request": {
                 "method": "DELETE",
                 "header": [
@@ -1274,13 +1235,8 @@
                 ],
                 "url": {
                   "raw": "{{base_url}}/catalogue/devices?page=1&limit=20",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "catalogue",
-                    "devices"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["catalogue", "devices"],
                   "query": [
                     {
                       "key": "page",
@@ -1442,7 +1398,7 @@
               }
             },
             {
-              "name": "List rooms — available for slot",
+              "name": "List rooms - available for slot",
               "request": {
                 "method": "GET",
                 "header": [
@@ -1453,13 +1409,8 @@
                 ],
                 "url": {
                   "raw": "{{base_url}}/catalogue/rooms?startAt=2026-06-23T10:00:00.000Z&endAt=2026-06-23T12:00:00.000Z",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "catalogue",
-                    "rooms"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["catalogue", "rooms"],
                   "query": [
                     {
                       "key": "startAt",
@@ -1614,13 +1565,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/points/me?page=1&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "points",
-                "me"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["points", "me"],
               "query": [
                 {
                   "key": "page",
@@ -1646,13 +1592,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/points/{{user_id}}?page=1&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "points",
-                "{{user_id}}"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["points", "{{user_id}}"],
               "query": [
                 {
                   "key": "page",
@@ -1672,7 +1613,7 @@
       "name": "Scan",
       "item": [
         {
-          "name": "Checkout — bind asset to booking QR (admin/staff)",
+          "name": "Checkout - bind asset to booking QR (admin/staff)",
           "description": "Staff scan: booking QR from qrToken field + physical asset tag on the item.\nSet booking_qr to the qrToken value from an APPROVED booking.\nSet asset_tag to the assetTag of the matching copy or device.",
           "event": [
             {
@@ -1706,7 +1647,7 @@
           }
         },
         {
-          "name": "Room check-in — user scans door QR",
+          "name": "Room check-in - user scans door QR",
           "description": "User scans the room's door QR during their active booking window.\nSet room_qr to the roomQr value from the StudyRoom record.\nRequires an APPROVED booking whose startAt <= now <= endAt.",
           "event": [
             {
@@ -1740,7 +1681,7 @@
           }
         },
         {
-          "name": "Return — good condition (admin/staff)",
+          "name": "Return - good condition (admin/staff)",
           "description": "Staff scan asset tag on return. condition: GOOD | DAMAGED",
           "event": [
             {
@@ -1772,7 +1713,7 @@
           }
         },
         {
-          "name": "Return — damaged (admin/staff, expect extra -300 pts)",
+          "name": "Return - damaged (admin/staff, expect extra -300 pts)",
           "request": {
             "method": "POST",
             "header": [
@@ -1793,7 +1734,7 @@
           }
         },
         {
-          "name": "Return — invalid asset tag (expect 404)",
+          "name": "Return - invalid asset tag (expect 404)",
           "event": [
             {
               "listen": "test",
@@ -1879,13 +1820,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/notifications/me?page=1&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "notifications",
-                "me"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "me"],
               "query": [
                 {
                   "key": "page",
@@ -1905,7 +1841,7 @@
           }
         },
         {
-          "name": "My notifications — unread only",
+          "name": "My notifications - unread only",
           "request": {
             "method": "GET",
             "header": [
@@ -1916,13 +1852,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/notifications/me?unreadOnly=true&page=1&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "notifications",
-                "me"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "me"],
               "query": [
                 {
                   "key": "unreadOnly",
@@ -1993,14 +1924,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/reviews/book/{{book_title_id}}?page=1&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "reviews",
-                "book",
-                "{{book_title_id}}"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["reviews", "book", "{{book_title_id}}"],
               "query": [
                 {
                   "key": "page",
@@ -2049,7 +1974,7 @@
           }
         },
         {
-          "name": "Create review — duplicate (expect 409)",
+          "name": "Create review - duplicate (expect 409)",
           "event": [
             {
               "listen": "test",
@@ -2075,12 +2000,12 @@
             "url": "{{base_url}}/reviews/book/{{book_title_id}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"text\": \"Second review attempt — should be rejected.\"\n}"
+              "raw": "{\n  \"text\": \"Second review attempt - should be rejected.\"\n}"
             }
           }
         },
         {
-          "name": "Create review — no borrowing (expect 400)",
+          "name": "Create review - no borrowing (expect 400)",
           "description": "Attempt to review a book the user has never borrowed. Expects 400.",
           "event": [
             {
@@ -2107,7 +2032,7 @@
             "url": "{{base_url}}/reviews/book/00000000-0000-0000-0000-000000000000",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"text\": \"Should fail — never borrowed this book.\"\n}"
+              "raw": "{\n  \"text\": \"Should fail - never borrowed this book.\"\n}"
             }
           }
         },
@@ -2238,7 +2163,7 @@
           }
         },
         {
-          "name": "Health check — authenticated (shows auth field)",
+          "name": "Health check - authenticated (shows auth field)",
           "event": [
             {
               "listen": "test",
@@ -2265,7 +2190,7 @@
           }
         },
         {
-          "name": "Health check — as Admin (shows system info)",
+          "name": "Health check - as Admin (shows system info)",
           "event": [
             {
               "listen": "test",

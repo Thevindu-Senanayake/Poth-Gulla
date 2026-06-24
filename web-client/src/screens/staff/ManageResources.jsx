@@ -27,7 +27,8 @@ function SvgIcon({ path, color, size = 16 }) {
       stroke={color}
       strokeWidth="2"
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+    >
       {path
         .split("M")
         .filter(Boolean)
@@ -62,7 +63,8 @@ function ConfirmDialog({
         alignItems: "center",
         justifyContent: "center",
         animation: "pg-pop .15s ease both",
-      }}>
+      }}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -72,14 +74,16 @@ function ConfirmDialog({
           width: 400,
           maxWidth: "92vw",
           boxShadow: "0 20px 50px rgba(6,24,15,0.22)",
-        }}>
+        }}
+      >
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 10,
             marginBottom: 10,
-          }}>
+          }}
+        >
           <div
             style={{
               width: 36,
@@ -90,7 +94,8 @@ function ConfirmDialog({
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
-            }}>
+            }}
+          >
             <SvgIcon
               path="M12 9v4M12 17h.01M12 3l9.5 16.5H2.5z"
               color={confirmColor}
@@ -104,7 +109,8 @@ function ConfirmDialog({
               fontWeight: 700,
               color: "#1a1b2e",
               margin: 0,
-            }}>
+            }}
+          >
             {title}
           </h3>
         </div>
@@ -115,7 +121,8 @@ function ConfirmDialog({
             lineHeight: 1.65,
             margin: "0 0 20px",
             paddingLeft: 46,
-          }}>
+          }}
+        >
           {message}
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -130,7 +137,8 @@ function ConfirmDialog({
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             Cancel
           </button>
           <button
@@ -145,7 +153,8 @@ function ConfirmDialog({
               fontWeight: 700,
               cursor: "pointer",
               boxShadow: `0 2px 10px ${confirmColor}40`,
-            }}>
+            }}
+          >
             {confirmLabel}
           </button>
         </div>
@@ -176,7 +185,8 @@ function badge(status) {
         background: m.bg,
         borderRadius: 20,
         padding: "3px 10px",
-      }}>
+      }}
+    >
       {m.label}
     </span>
   );
@@ -373,7 +383,7 @@ export default function ManageResources() {
           c.id === copy.id ? { ...c, status: "AVAILABLE" } : c,
         ),
       }));
-      showToast("Copy restored — marked available");
+      showToast("Copy restored - marked available");
       refresh();
     } catch (e) {
       showToast(e?.response?.data?.message ?? "Could not restore copy");
@@ -433,7 +443,8 @@ export default function ManageResources() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       {/* Confirmation modal */}
       <ConfirmDialog
         open={confirm.open}
@@ -451,7 +462,8 @@ export default function ManageResources() {
           justifyContent: "space-between",
           alignItems: "flex-start",
           marginBottom: 22,
-        }}>
+        }}
+      >
         <div>
           <p style={{ fontSize: 12, color: "#7c7e93", margin: "0 0 3px" }}>
             Staff · Resources
@@ -463,7 +475,8 @@ export default function ManageResources() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: 0,
-            }}>
+            }}
+          >
             Manage resources
           </h1>
         </div>
@@ -504,7 +517,8 @@ export default function ManageResources() {
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = "translateY(0)";
             e.currentTarget.style.boxShadow = "0 3px 12px rgba(22,163,74,.28)";
-          }}>
+          }}
+        >
           <SvgIcon path="M12 5v14M5 12h14" color="#fff" size={15} />
           Add resource
         </button>
@@ -517,7 +531,8 @@ export default function ManageResources() {
           gap: 12,
           marginBottom: 22,
           flexWrap: "wrap",
-        }}>
+        }}
+      >
         {counts.map((s, i) => (
           <div
             key={i}
@@ -537,14 +552,16 @@ export default function ManageResources() {
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "scale(1)";
-            }}>
+            }}
+          >
             <span
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 16,
                 fontWeight: 800,
                 color: s.col,
-              }}>
+              }}
+            >
               {s.value}
             </span>
             <span style={{ fontSize: 12, color: s.col, fontWeight: 500 }}>
@@ -564,7 +581,8 @@ export default function ManageResources() {
           padding: 4,
           borderRadius: 10,
           width: "fit-content",
-        }}>
+        }}
+      >
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -581,7 +599,8 @@ export default function ManageResources() {
               boxShadow:
                 tab === t.key ? "0 2px 8px rgba(22,163,74,.25)" : "none",
               transition: "all 0.15s ease",
-            }}>
+            }}
+          >
             {t.label}
           </button>
         ))}
@@ -595,7 +614,8 @@ export default function ManageResources() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             overflow: "hidden",
-          }}>
+          }}
+        >
           {books.length === 0 ? (
             <Empty label="No books yet." />
           ) : (
@@ -611,7 +631,8 @@ export default function ManageResources() {
                   style={{
                     borderBottom:
                       i < books.length - 1 ? "1px solid #f3f3f8" : "none",
-                  }}>
+                  }}
+                >
                   <div
                     style={{
                       display: "flex",
@@ -625,7 +646,8 @@ export default function ManageResources() {
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = "transparent";
-                    }}>
+                    }}
+                  >
                     <div
                       style={{
                         width: 38,
@@ -643,7 +665,8 @@ export default function ManageResources() {
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = "scale(1)";
-                      }}>
+                      }}
+                    >
                       <SvgIcon
                         path={book.iconPath}
                         color="rgba(255,255,255,0.9)"
@@ -659,7 +682,8 @@ export default function ManageResources() {
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
-                        }}>
+                        }}
+                      >
                         {book.title}
                       </div>
                       <div style={{ fontSize: 11, color: "#7c7e93" }}>
@@ -674,7 +698,8 @@ export default function ManageResources() {
                         color: liveAvail > 0 ? "#16a34a" : "#ef4444",
                         width: 110,
                         textAlign: "right",
-                      }}>
+                      }}
+                    >
                       {liveAvail} available
                     </div>
                     <button
@@ -702,7 +727,8 @@ export default function ManageResources() {
                           e.currentTarget.style.background = "#f0f0f6";
                           e.currentTarget.style.borderColor = "#e7e7ef";
                         }
-                      }}>
+                      }}
+                    >
                       {isOpen ? "Hide copies" : "Manage copies"}
                     </button>
                   </div>
@@ -713,14 +739,16 @@ export default function ManageResources() {
                       style={{
                         padding: "4px 20px 18px 72px",
                         background: "#fafafb",
-                      }}>
+                      }}
+                    >
                       {copiesLoading && !copies[book.id] ? (
                         <div
                           style={{
                             fontSize: 13,
                             color: "#9b9db2",
                             padding: "10px 0",
-                          }}>
+                          }}
+                        >
                           Loading copies…
                         </div>
                       ) : (
@@ -730,7 +758,8 @@ export default function ManageResources() {
                               display: "flex",
                               gap: 8,
                               margin: "12px 0",
-                            }}>
+                            }}
+                          >
                             <input
                               value={newTag}
                               onChange={(e) => setNewTag(e.target.value)}
@@ -773,7 +802,8 @@ export default function ManageResources() {
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.background = "#16a34a";
-                              }}>
+                              }}
+                            >
                               Add copy
                             </button>
                           </div>
@@ -783,7 +813,8 @@ export default function ManageResources() {
                                 fontSize: 13,
                                 color: "#9b9db2",
                                 padding: "6px 0",
-                              }}>
+                              }}
+                            >
                               No copies registered yet.
                             </div>
                           ) : (
@@ -792,7 +823,8 @@ export default function ManageResources() {
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: 8,
-                              }}>
+                              }}
+                            >
                               {list.map((copy) => (
                                 <div
                                   key={copy.id}
@@ -817,13 +849,15 @@ export default function ManageResources() {
                                     e.currentTarget.style.boxShadow = "none";
                                     e.currentTarget.style.borderColor =
                                       "#e7e7ef";
-                                  }}>
+                                  }}
+                                >
                                   <div
                                     style={{
                                       fontFamily: "'IBM Plex Mono', monospace",
                                       fontSize: 13,
                                       color: "#16231b",
-                                    }}>
+                                    }}
+                                  >
                                     {copy.assetTag}
                                   </div>
                                   <div
@@ -831,7 +865,8 @@ export default function ManageResources() {
                                       display: "flex",
                                       alignItems: "center",
                                       gap: 10,
-                                    }}>
+                                    }}
+                                  >
                                     {badge(copy.status)}
                                     {copy.status === "RETIRED" && (
                                       <button
@@ -868,7 +903,8 @@ export default function ManageResources() {
                                             "#fff";
                                           e.currentTarget.style.borderColor =
                                             "#bbf7d0";
-                                        }}>
+                                        }}
+                                      >
                                         Mark found
                                       </button>
                                     )}
@@ -908,7 +944,8 @@ export default function ManageResources() {
                                               "#fff";
                                             e.currentTarget.style.borderColor =
                                               "#fecaca";
-                                          }}>
+                                          }}
+                                        >
                                           Mark lost
                                         </button>
                                       )}
@@ -922,7 +959,8 @@ export default function ManageResources() {
                               fontSize: 11,
                               color: "#9b9db2",
                               marginTop: 10,
-                            }}>
+                            }}
+                          >
                             Borrowed copies can't be retired until they're
                             returned. Lost copies can be marked found to restore
                             availability.
@@ -946,7 +984,8 @@ export default function ManageResources() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             overflow: "hidden",
-          }}>
+          }}
+        >
           <div
             style={{
               display: "grid",
@@ -954,7 +993,8 @@ export default function ManageResources() {
               padding: "12px 20px",
               background: "#f8f8fc",
               borderBottom: "1px solid #e7e7ef",
-            }}>
+            }}
+          >
             {["Device", "Serial", "Tier", "Status", "Maintenance"].map(
               (h, i) => (
                 <div
@@ -965,7 +1005,8 @@ export default function ManageResources() {
                     color: "#7c7e93",
                     textTransform: "uppercase",
                     letterSpacing: 0.6,
-                  }}>
+                  }}
+                >
                   {h}
                 </div>
               ),
@@ -995,9 +1036,11 @@ export default function ManageResources() {
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "transparent";
-                  }}>
+                  }}
+                >
                   <div
-                    style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}>
+                    style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}
+                  >
                     {d.title}
                   </div>
                   <div
@@ -1005,7 +1048,8 @@ export default function ManageResources() {
                       fontFamily: "'IBM Plex Mono', monospace",
                       fontSize: 12,
                       color: "#5a5c74",
-                    }}>
+                    }}
+                  >
                     {d.serial}
                   </div>
                   <div style={{ fontSize: 12, color: "#3a3b4e" }}>
@@ -1060,7 +1104,8 @@ export default function ManageResources() {
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = "translateY(0)";
                         e.currentTarget.style.boxShadow = "none";
-                      }}>
+                      }}
+                    >
                       {under ? "Set available" : "Set maintenance"}
                     </button>
                   </div>
@@ -1079,7 +1124,8 @@ export default function ManageResources() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             overflow: "hidden",
-          }}>
+          }}
+        >
           <div
             style={{
               display: "grid",
@@ -1087,7 +1133,8 @@ export default function ManageResources() {
               padding: "12px 20px",
               background: "#f8f8fc",
               borderBottom: "1px solid #e7e7ef",
-            }}>
+            }}
+          >
             {["Room", "Capacity", "Status", "Maintenance"].map((h, i) => (
               <div
                 key={i}
@@ -1097,7 +1144,8 @@ export default function ManageResources() {
                   color: "#7c7e93",
                   textTransform: "uppercase",
                   letterSpacing: 0.6,
-                }}>
+                }}
+              >
                 {h}
               </div>
             ))}
@@ -1125,9 +1173,11 @@ export default function ManageResources() {
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "transparent";
-                  }}>
+                  }}
+                >
                   <div
-                    style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}>
+                    style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}
+                  >
                     {r.title}
                   </div>
                   <div style={{ fontSize: 12, color: "#3a3b4e" }}>
@@ -1171,7 +1221,8 @@ export default function ManageResources() {
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = "translateY(0)";
                         e.currentTarget.style.boxShadow = "none";
-                      }}>
+                      }}
+                    >
                       {under ? "Set available" : "Set maintenance"}
                     </button>
                   </div>
@@ -1190,7 +1241,8 @@ export default function ManageResources() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             overflow: "hidden",
-          }}>
+          }}
+        >
           <div
             style={{
               display: "grid",
@@ -1198,7 +1250,8 @@ export default function ManageResources() {
               padding: "12px 20px",
               background: "#f8f8fc",
               borderBottom: "1px solid #e7e7ef",
-            }}>
+            }}
+          >
             {["Device", "Serial", "Borrowed by", "Due", "Manage"].map(
               (h, i) => (
                 <div
@@ -1209,7 +1262,8 @@ export default function ManageResources() {
                     color: "#7c7e93",
                     textTransform: "uppercase",
                     letterSpacing: 0.6,
-                  }}>
+                  }}
+                >
                   {h}
                 </div>
               ),
@@ -1235,9 +1289,11 @@ export default function ManageResources() {
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = "transparent";
-                }}>
+                }}
+              >
                 <div
-                  style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}>
+                  style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}
+                >
                   {ln.device.title}
                 </div>
                 <div
@@ -1245,7 +1301,8 @@ export default function ManageResources() {
                     fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: 12,
                     color: "#5a5c74",
-                  }}>
+                  }}
+                >
                   {ln.device.serial}
                 </div>
                 <div style={{ fontSize: 13, color: "#3a3b4e" }}>
@@ -1261,7 +1318,8 @@ export default function ManageResources() {
                         padding: "3px 10px",
                         color: ln.overdue ? "#ef4444" : "#2563eb",
                         background: ln.overdue ? "#fee2e2" : "#dbeafe",
-                      }}>
+                      }}
+                    >
                       {ln.overdue ? "Overdue · " : ""}
                       {ln.due.toLocaleDateString(undefined, {
                         month: "short",
@@ -1269,7 +1327,7 @@ export default function ManageResources() {
                       })}
                     </span>
                   ) : (
-                    <span style={{ fontSize: 12, color: "#9b9db2" }}>—</span>
+                    <span style={{ fontSize: 12, color: "#9b9db2" }}>-</span>
                   )}
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1287,7 +1345,8 @@ export default function ManageResources() {
                       background: "#fff",
                       cursor: "pointer",
                       outline: "none",
-                    }}>
+                    }}
+                  >
                     <option value="GOOD">Good</option>
                     <option value="DAMAGED">Damaged</option>
                   </select>
@@ -1320,7 +1379,8 @@ export default function ManageResources() {
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = "#16a34a";
                       e.currentTarget.style.transform = "translateY(0)";
-                    }}>
+                    }}
+                  >
                     Process return
                   </button>
                 </div>
@@ -1333,7 +1393,8 @@ export default function ManageResources() {
               color: "#9b9db2",
               padding: "12px 20px",
               borderTop: "1px solid #f3f3f8",
-            }}>
+            }}
+          >
             Returning frees the device, applies point scoring (late/damage), and
             auto-promotes the next waitlist entry.
           </div>

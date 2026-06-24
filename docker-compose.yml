@@ -58,7 +58,7 @@ services:
       - /app/generated
 
   # ---- Frontend: Vite web client (all roles) ----
-  # Also "full" profile — the web client runs natively via Turbo in normal dev.
+  # Also "full" profile - the web client runs natively via Turbo in normal dev.
   web:
     profiles: ["full"]
     build:

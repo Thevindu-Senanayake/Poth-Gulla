@@ -1,11 +1,11 @@
 # Deploy stack for the DigitalOcean dev droplet.
 # Images are pre-built, signed (cosign) and pushed to GHCR by CI; this file only
-# PULLS them — there is no `build:` and no bind-mounted source. The exact,
+# PULLS them - there is no `build:` and no bind-mounted source. The exact,
 # digest-pinned image refs and all secrets are provided via the rendered `.env`.
 #
-#   SERVER_IMAGE / WEB_IMAGE  — ghcr.io/<owner>/<repo>-{server,web}@sha256:<digest>
+#   SERVER_IMAGE / WEB_IMAGE  - ghcr.io/<owner>/<repo>-{server,web}@sha256:<digest>
 #
-# Plain HTTP, published by IP (no TLS/reverse proxy) — this is a dev box.
+# Plain HTTP, published by IP (no TLS/reverse proxy) - this is a dev box.
 
 services:
   postgres:
@@ -23,7 +23,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    # Not published to the host — internal network only.
+    # Not published to the host - internal network only.
 
   redis:
     image: redis:7-alpine

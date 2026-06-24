@@ -14,7 +14,8 @@ function SvgIcon({ path, color, size = 16 }) {
       stroke={color}
       strokeWidth="2"
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+    >
       {path
         .split("M")
         .filter(Boolean)
@@ -81,14 +82,16 @@ export default function Overdue() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
           marginBottom: 22,
-        }}>
+        }}
+      >
         <div>
           <p style={{ fontSize: 12, color: "#7c7e93", margin: "0 0 3px" }}>
             Staff · Overdue
@@ -100,7 +103,8 @@ export default function Overdue() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: 0,
-            }}>
+            }}
+          >
             Overdue follow-ups
           </h1>
         </div>
@@ -127,7 +131,8 @@ export default function Overdue() {
           onMouseLeave={(e) => {
             e.currentTarget.style.background = sweeping ? "#86efac" : "#16a34a";
             e.currentTarget.style.transform = "translateY(0)";
-          }}>
+          }}
+        >
           {sweeping ? "Running…" : "Run overdue sweep"}
         </button>
       </div>
@@ -142,7 +147,8 @@ export default function Overdue() {
             display: "flex",
             gap: 6,
             alignItems: "center",
-          }}>
+          }}
+        >
           <div
             style={{
               width: 8,
@@ -157,7 +163,8 @@ export default function Overdue() {
               fontWeight: 700,
               color: "#ef4444",
               fontFamily: "'IBM Plex Mono', monospace",
-            }}>
+            }}
+          >
             {items.length}
           </span>
           <span style={{ fontSize: 12, color: "#dc2626" }}>active alerts</span>
@@ -173,7 +180,8 @@ export default function Overdue() {
             flexDirection: "column",
             gap: 12,
             marginBottom: 26,
-          }}>
+          }}
+        >
           {items.map((n) => {
             const c = TYPE_COL[n.type] || TYPE_COL.default;
             return (
@@ -195,14 +203,16 @@ export default function Overdue() {
                 onMouseLeave={(e) => {
                   e.currentTarget.style.boxShadow = "none";
                   e.currentTarget.style.transform = "translateY(0)";
-                }}>
+                }}
+              >
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "flex-start",
                     gap: 12,
-                  }}>
+                  }}
+                >
                   <div style={{ flex: 1 }}>
                     <span
                       style={{
@@ -212,7 +222,8 @@ export default function Overdue() {
                         fontWeight: 700,
                         borderRadius: 20,
                         padding: "3px 10px",
-                      }}>
+                      }}
+                    >
                       {n.type.replace(/_/g, " ")}
                     </span>
                     <div
@@ -221,12 +232,14 @@ export default function Overdue() {
                         color: "#4b4d63",
                         lineHeight: 1.6,
                         marginTop: 8,
-                      }}>
+                      }}
+                    >
                       {n.message}
                     </div>
                   </div>
                   <div
-                    style={{ fontSize: 11, color: "#9b9db2", flexShrink: 0 }}>
+                    style={{ fontSize: 11, color: "#9b9db2", flexShrink: 0 }}
+                  >
                     {fmt(n.createdAt)}
                   </div>
                 </div>
@@ -244,7 +257,8 @@ export default function Overdue() {
           display: "flex",
           gap: 14,
           alignItems: "flex-start",
-        }}>
+        }}
+      >
         <div
           style={{
             background: "rgba(255,255,255,0.12)",
@@ -255,7 +269,8 @@ export default function Overdue() {
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-          }}>
+          }}
+        >
           <SvgIcon
             path="M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z"
             color="#86efac"
@@ -268,7 +283,8 @@ export default function Overdue() {
               fontWeight: 700,
               color: "#86efac",
               marginBottom: 4,
-            }}>
+            }}
+          >
             Automated overdue job
           </div>
           <div
@@ -276,9 +292,10 @@ export default function Overdue() {
               fontSize: 12,
               color: "rgba(255,255,255,0.7)",
               lineHeight: 1.6,
-            }}>
+            }}
+          >
             The sweep marks late items, applies point penalties, sets recall
-            flags at day 2, and escalates to admin at day 7 — notifying
+            flags at day 2, and escalates to admin at day 7 - notifying
             borrowers and staff. Run it manually here or let the scheduled job
             handle it.
           </div>

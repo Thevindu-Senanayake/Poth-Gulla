@@ -45,7 +45,7 @@ export class JwtAuthGuard implements CanActivate {
           }
         }
       } catch {
-        // silently ignore — public route, caller stays unauthenticated
+        // silently ignore - public route, caller stays unauthenticated
       }
       return true;
     }

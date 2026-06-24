@@ -19,14 +19,16 @@ function RecCard({ item }) {
         border: "1px solid #e7e7ef",
         borderRadius: 14,
         padding: "18px 20px",
-      }}>
+      }}
+    >
       <div
         style={{
           display: "flex",
           alignItems: "flex-start",
           gap: 14,
           marginBottom: 12,
-        }}>
+        }}
+      >
         <div
           style={{
             width: 46,
@@ -37,7 +39,8 @@ function RecCard({ item }) {
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-          }}>
+          }}
+        >
           <svg
             width="20"
             height="20"
@@ -46,7 +49,8 @@ function RecCard({ item }) {
             stroke="rgba(255,255,255,0.85)"
             strokeWidth="1.7"
             strokeLinecap="round"
-            strokeLinejoin="round">
+            strokeLinejoin="round"
+          >
             <path d="M5 4a1 1 0 0 1 1-1h11v15H6a1 1 0 0 0-1 1z" />
           </svg>
         </div>
@@ -58,14 +62,16 @@ function RecCard({ item }) {
               gap: 8,
               flexWrap: "wrap",
               marginBottom: 4,
-            }}>
+            }}
+          >
             <div
               style={{
                 fontSize: 14,
                 fontWeight: 700,
                 color: "#1a1b2e",
                 lineHeight: 1.3,
-              }}>
+              }}
+            >
               {item.title}
             </div>
             <span
@@ -77,7 +83,8 @@ function RecCard({ item }) {
                 borderRadius: 5,
                 padding: "2px 7px",
                 flexShrink: 0,
-              }}>
+              }}
+            >
               {item.available > 0 ? "Available" : "Waitlist"}
             </span>
           </div>
@@ -90,7 +97,8 @@ function RecCard({ item }) {
           color: "#5a5c74",
           lineHeight: 1.65,
           margin: "0 0 14px",
-        }}>
+        }}
+      >
         {item.blurb ||
           `Matches your reading history${item.tags?.length ? " · " + item.tags.slice(0, 3).join(", ") : ""}.`}
       </p>
@@ -105,7 +113,8 @@ function RecCard({ item }) {
           fontSize: 12,
           fontWeight: 700,
           cursor: "pointer",
-        }}>
+        }}
+      >
         View &amp; Book
       </button>
     </div>
@@ -128,7 +137,8 @@ export default function Recommendations() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       <div style={{ marginBottom: 28 }}>
         <h1
           style={{
@@ -137,7 +147,8 @@ export default function Recommendations() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: "0 0 4px",
-          }}>
+          }}
+        >
           Recommendations
         </h1>
         <p style={{ color: "#7c7e93", fontSize: 13, margin: 0 }}>
@@ -146,10 +157,11 @@ export default function Recommendations() {
       </div>
 
       {recs.length === 0 ? (
-        <Empty label="No recommendations yet — borrow and return a few books to get tailored picks." />
+        <Empty label="No recommendations yet - borrow and return a few books to get tailored picks." />
       ) : (
         <div
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
+        >
           {recs.map((item) => (
             <RecCard key={item.id} item={item} />
           ))}

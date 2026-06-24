@@ -155,7 +155,8 @@ export default function StaffModal() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-      }}>
+      }}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -166,7 +167,8 @@ export default function StaffModal() {
           maxHeight: "92vh",
           overflowY: "auto",
           boxShadow: "0 24px 60px rgba(6,24,15,0.22)",
-        }}>
+        }}
+      >
         {/* Header */}
         <div
           style={{
@@ -175,7 +177,8 @@ export default function StaffModal() {
             alignItems: "center",
             padding: "20px 24px 16px",
             borderBottom: "1px solid #f0f0f6",
-          }}>
+          }}
+        >
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -183,7 +186,8 @@ export default function StaffModal() {
               fontWeight: 700,
               color: "#1a1b2e",
               margin: 0,
-            }}>
+            }}
+          >
             Add resource
           </h2>
           <button
@@ -194,7 +198,8 @@ export default function StaffModal() {
               cursor: "pointer",
               padding: 4,
               borderRadius: 6,
-            }}>
+            }}
+          >
             <svg
               width="18"
               height="18"
@@ -203,7 +208,8 @@ export default function StaffModal() {
               stroke="#9b9db2"
               strokeWidth="2"
               strokeLinecap="round"
-              strokeLinejoin="round">
+              strokeLinejoin="round"
+            >
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
@@ -230,7 +236,8 @@ export default function StaffModal() {
                     fontSize: 12,
                     fontWeight: 700,
                     cursor: "pointer",
-                  }}>
+                  }}
+                >
                   {t}
                 </button>
               ))}
@@ -276,7 +283,8 @@ export default function StaffModal() {
             <select
               value={cat}
               onChange={(e) => setCat(e.target.value)}
-              style={{ ...inputStyle, cursor: "pointer" }}>
+              style={{ ...inputStyle, cursor: "pointer" }}
+            >
               <option value="">Select category...</option>
               {catOptions.map((c) => (
                 <option key={c} value={c}>
@@ -297,7 +305,7 @@ export default function StaffModal() {
             />
           </Field>
 
-          {/* Serial number — only for Device (maps to the backend assetTag) */}
+          {/* Serial number - only for Device (maps to the backend assetTag) */}
           {type === "Device" && (
             <Field label="Serial number">
               <input
@@ -313,7 +321,7 @@ export default function StaffModal() {
             </Field>
           )}
 
-          {/* Device tier — only for Device */}
+          {/* Device tier - only for Device */}
           {type === "Device" && (
             <Field label="Device tier (1–5)">
               <div style={{ display: "flex", gap: 8 }}>
@@ -331,7 +339,8 @@ export default function StaffModal() {
                       fontSize: 13,
                       fontWeight: 700,
                       cursor: "pointer",
-                    }}>
+                    }}
+                  >
                     T{n}
                   </button>
                 ))}
@@ -344,7 +353,8 @@ export default function StaffModal() {
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              style={{ ...inputStyle, cursor: "pointer" }}>
+              style={{ ...inputStyle, cursor: "pointer" }}
+            >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
@@ -368,7 +378,8 @@ export default function StaffModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             Cancel
           </button>
           <button
@@ -384,7 +395,8 @@ export default function StaffModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: busy ? "default" : "pointer",
-            }}>
+            }}
+          >
             {busy ? "Adding…" : "Add to catalogue"}
           </button>
         </div>

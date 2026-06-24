@@ -136,7 +136,8 @@ export default function Dashboard() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       <div style={{ marginBottom: 26 }}>
         <h1
           style={{
@@ -145,7 +146,8 @@ export default function Dashboard() {
             fontWeight: 700,
             color: "#1a1b2e",
             margin: "0 0 4px",
-          }}>
+          }}
+        >
           Admin Dashboard
         </h1>
         <p style={{ fontSize: 13, color: "#7c7e93", margin: 0 }}>
@@ -159,7 +161,8 @@ export default function Dashboard() {
           gridTemplateColumns: "repeat(4,1fr)",
           gap: 14,
           marginBottom: 24,
-        }}>
+        }}
+      >
         {adminStats.map((stat, i) => (
           <div
             key={i}
@@ -180,7 +183,8 @@ export default function Dashboard() {
               e.currentTarget.style.transform = "none";
               e.currentTarget.style.boxShadow = "none";
               e.currentTarget.style.borderColor = "#e7e7ef";
-            }}>
+            }}
+          >
             <div
               style={{
                 background: stat.iconBg,
@@ -191,7 +195,8 @@ export default function Dashboard() {
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 10,
-              }}>
+              }}
+            >
               <svg
                 width="18"
                 height="18"
@@ -200,7 +205,8 @@ export default function Dashboard() {
                 stroke={stat.iconColor}
                 strokeWidth="2"
                 strokeLinecap="round"
-                strokeLinejoin="round">
+                strokeLinejoin="round"
+              >
                 {stat.iconPath
                   .split("M")
                   .filter(Boolean)
@@ -216,14 +222,16 @@ export default function Dashboard() {
                 fontWeight: 700,
                 color: "#1a1b2e",
                 marginBottom: 2,
-              }}>
+              }}
+            >
               {stat.value}
             </div>
             <div style={{ fontSize: 12, color: "#7c7e93", marginBottom: 4 }}>
               {stat.label}
             </div>
             <div
-              style={{ fontSize: 11, color: stat.trendColor, fontWeight: 600 }}>
+              style={{ fontSize: 11, color: stat.trendColor, fontWeight: 600 }}
+            >
               {stat.trend}
             </div>
           </div>
@@ -236,14 +244,16 @@ export default function Dashboard() {
           gridTemplateColumns: "1.5fr 1fr",
           gap: 18,
           marginBottom: 18,
-        }}>
+        }}
+      >
         <div
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             padding: "22px 24px",
-          }}>
+          }}
+        >
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -251,8 +261,9 @@ export default function Dashboard() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: "0 0 20px",
-            }}>
-            Bookings — last 7 days
+            }}
+          >
+            Bookings - last 7 days
           </h2>
           <div
             style={{
@@ -260,7 +271,8 @@ export default function Dashboard() {
               alignItems: "flex-end",
               gap: 10,
               height: 130,
-            }}>
+            }}
+          >
             {days.map((bar, i) => (
               <div
                 key={i}
@@ -270,13 +282,15 @@ export default function Dashboard() {
                   flexDirection: "column",
                   alignItems: "center",
                   gap: 6,
-                }}>
+                }}
+              >
                 <span
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: 10,
                     color: "#9b9db2",
-                  }}>
+                  }}
+                >
                   {bar.n}
                 </span>
                 <div
@@ -293,7 +307,8 @@ export default function Dashboard() {
                     fontSize: 10,
                     color: "#9b9db2",
                     fontWeight: 600,
-                  }}>
+                  }}
+                >
                   {bar.label}
                 </span>
               </div>
@@ -307,7 +322,8 @@ export default function Dashboard() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             padding: "22px 24px",
-          }}>
+          }}
+        >
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -315,7 +331,8 @@ export default function Dashboard() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: "0 0 18px",
-            }}>
+            }}
+          >
             Member tier distribution
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -326,9 +343,11 @@ export default function Dashboard() {
                     display: "flex",
                     justifyContent: "space-between",
                     marginBottom: 5,
-                  }}>
+                  }}
+                >
                   <span
-                    style={{ fontSize: 12, color: "#3a3b4e", fontWeight: 600 }}>
+                    style={{ fontSize: 12, color: "#3a3b4e", fontWeight: 600 }}
+                  >
                     {tier.tier}
                   </span>
                   <span
@@ -337,7 +356,8 @@ export default function Dashboard() {
                       fontSize: 11,
                       color: tier.col,
                       fontWeight: 700,
-                    }}>
+                    }}
+                  >
                     {tier.pct}
                   </span>
                 </div>
@@ -347,7 +367,8 @@ export default function Dashboard() {
                     borderRadius: 20,
                     height: 7,
                     overflow: "hidden",
-                  }}>
+                  }}
+                >
                   <div
                     style={{
                       width: tier.w,
@@ -370,7 +391,8 @@ export default function Dashboard() {
           border: "1px solid #e7e7ef",
           borderRadius: 14,
           padding: "22px 24px",
-        }}>
+        }}
+      >
         <h2
           style={{
             fontFamily: "'Spectral', serif",
@@ -378,7 +400,8 @@ export default function Dashboard() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: "0 0 18px",
-          }}>
+          }}
+        >
           Bookings by status
         </h2>
         <div
@@ -386,7 +409,8 @@ export default function Dashboard() {
             display: "grid",
             gridTemplateColumns: "repeat(5,1fr)",
             gap: 12,
-          }}>
+          }}
+        >
           {statusBreak.map((h, i) => (
             <div
               key={i}
@@ -410,7 +434,8 @@ export default function Dashboard() {
                 e.currentTarget.style.boxShadow = "none";
                 e.currentTarget.style.borderColor = "#e7e7ef";
                 e.currentTarget.style.background = "#f8f8fc";
-              }}>
+              }}
+            >
               <div
                 style={{
                   fontFamily: "'IBM Plex Mono', monospace",
@@ -418,7 +443,8 @@ export default function Dashboard() {
                   fontWeight: 800,
                   color: "#1a1b2e",
                   marginBottom: 2,
-                }}>
+                }}
+              >
                 {h.n}
               </div>
               <div style={{ fontSize: 12, color: "#7c7e93", fontWeight: 600 }}>
