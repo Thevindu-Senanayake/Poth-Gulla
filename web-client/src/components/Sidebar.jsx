@@ -1,42 +1,43 @@
+import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../App";
 
 const BOOK_SVG = "M5 4a1 1 0 0 1 1-1h11v15H6a1 1 0 0 0-1 1z";
 
 const NAV_STUDENT = [
   {
-    key: "dashboard",
+    path: "/dashboard",
     label: "Dashboard",
     d: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
   },
   {
-    key: "search",
+    path: "/catalogue",
     label: "Catalogue",
     d: "M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z",
   },
   {
-    key: "mybookings",
+    path: "/my-bookings",
     label: "My Bookings",
     d: "M4 5h16v15H4zM4 9h16M9 3v4M15 3v4",
   },
   {
-    key: "waitlist",
+    path: "/waitlist",
     label: "Waitlist",
     d: "M4 7h16M4 12h16M4 17h10",
     badge: "1",
   },
   {
-    key: "recommend",
+    path: "/recommendations",
     label: "Recommendations",
     d: "M12 3l2.5 5 5.5.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.5-.8z",
   },
   {
-    key: "points",
+    path: "/points",
     label: "Points & Tier",
     d: "M12 17.5l-5 3 1.5-5.5-4.5-3.5 5.5-.5L12 6l2 5.5 5.5.5-4.5 3.5 1.5 5.5z",
   },
-  { key: "rooms", label: "Study Rooms", d: "M3 3h18v18H3zM9 3v18" },
+  { path: "/rooms", label: "Study Rooms", d: "M3 3h18v18H3zM9 3v18" },
   {
-    key: "profile",
+    path: "/profile",
     label: "Profile",
     d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
   },
@@ -44,38 +45,38 @@ const NAV_STUDENT = [
 
 const NAV_LECTURER = [
   {
-    key: "dashboard",
+    path: "/dashboard",
     label: "Dashboard",
     d: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
   },
   {
-    key: "search",
+    path: "/catalogue",
     label: "Catalogue",
     d: "M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z",
   },
   {
-    key: "mybookings",
+    path: "/my-bookings",
     label: "My Bookings",
     d: "M4 5h16v15H4zM4 9h16M9 3v4M15 3v4",
   },
   {
-    key: "waitlist",
+    path: "/waitlist",
     label: "Waitlist",
     d: "M4 7h16M4 12h16M4 17h10",
     badge: "1",
   },
   {
-    key: "recommend",
+    path: "/recommendations",
     label: "Recommendations",
     d: "M12 3l2.5 5 5.5.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.5-.8z",
   },
   {
-    key: "points",
+    path: "/points",
     label: "Points & Tier",
     d: "M12 17.5l-5 3 1.5-5.5-4.5-3.5 5.5-.5L12 6l2 5.5 5.5.5-4.5 3.5 1.5 5.5z",
   },
   {
-    key: "profile",
+    path: "/profile",
     label: "Profile",
     d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
   },
@@ -83,36 +84,40 @@ const NAV_LECTURER = [
 
 const NAV_STAFF = [
   {
-    key: "staffDash",
+    path: "/staff/dashboard",
     label: "Dashboard",
     d: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
   },
   {
-    key: "checkout",
+    path: "/staff/checkout",
     label: "Checkout / Return",
     d: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6",
   },
   {
-    key: "waitlistReview",
+    path: "/staff/waitlist-review",
     label: "Waitlist Review",
     d: "M4 5h16v11H7l-3 3z",
     badge: "2",
   },
   {
-    key: "approvals",
+    path: "/staff/approvals",
     label: "Device Approvals",
     d: "M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z",
     badge: "2",
   },
   {
-    key: "overdue",
+    path: "/staff/overdue",
     label: "Overdue",
     d: "M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z",
     badge: "23",
   },
-  { key: "manage", label: "Manage Resources", d: "M4 7h16M4 12h16M4 17h10" },
   {
-    key: "profile",
+    path: "/staff/manage",
+    label: "Manage Resources",
+    d: "M4 7h16M4 12h16M4 17h10",
+  },
+  {
+    path: "/profile",
     label: "Profile",
     d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
   },
@@ -120,32 +125,32 @@ const NAV_STAFF = [
 
 const NAV_ADMIN = [
   {
-    key: "adminDash",
+    path: "/admin/dashboard",
     label: "Overview",
     d: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
   },
   {
-    key: "users",
+    path: "/admin/users",
     label: "Users",
     d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6",
   },
   {
-    key: "audit",
+    path: "/admin/audit",
     label: "Audit Log",
     d: "M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11",
   },
   {
-    key: "config",
+    path: "/admin/config",
     label: "Config",
     d: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
   },
   {
-    key: "adminResources",
+    path: "/admin/resources",
     label: "Resources",
     d: "M5 4a1 1 0 0 1 1-1h11v15H6a1 1 0 0 0-1 1z",
   },
   {
-    key: "profile",
+    path: "/profile",
     label: "Profile",
     d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
   },
@@ -161,19 +166,7 @@ const ROLE_LABEL_MAP = {
 function NavItem({ item, active, onClick }) {
   return (
     <button
-      onClick={() => onClick(item.key)}
-      onMouseEnter={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = "#f0f5f1";
-          e.currentTarget.style.color = "#16a34a";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = "transparent";
-          e.currentTarget.style.color = "#5c5e72";
-        }
-      }}
+      onClick={() => onClick(item.path)}
       style={{
         display: "flex",
         alignItems: "center",
@@ -235,7 +228,9 @@ function NavItem({ item, active, onClick }) {
 }
 
 export default function Sidebar() {
-  const { currentRole, page, setPage, user, logout } = useApp();
+  const { currentRole, user, logout } = useApp();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const navMap = {
     student: NAV_STUDENT,
@@ -250,6 +245,17 @@ export default function Sidebar() {
   const avatarBg = user?.avatarBg || "#7c7e93";
   const userName = user?.name || "User";
   const roleLabel = ROLE_LABEL_MAP[currentRole] || "User";
+
+  // Determine active nav item based on current URL path
+  function isActive(itemPath) {
+    const current = location.pathname;
+    // Exact match for most routes
+    if (current === itemPath) return true;
+    // For /catalogue, also match /catalogue/:id
+    if (itemPath === "/catalogue" && current.startsWith("/catalogue/"))
+      return true;
+    return false;
+  }
 
   return (
     <div
@@ -338,10 +344,10 @@ export default function Sidebar() {
       >
         {navItems.map((item) => (
           <NavItem
-            key={item.key}
+            key={item.path}
             item={item}
-            active={page === item.key}
-            onClick={setPage}
+            active={isActive(item.path)}
+            onClick={(path) => navigate(path)}
           />
         ))}
       </div>
