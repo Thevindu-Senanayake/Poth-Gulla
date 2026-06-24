@@ -1,0 +1,48 @@
+# CI — runs on every pull request (and pushes to main) so tests must pass before a
+# merge. Enforcement requires a branch-protection rule that marks "test-and-build"
+# as a required status check (see deploy/DEPLOY.md → "Require tests on PRs").
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # Prisma 7 requires Node >= 22
+          cache: yarn
+
+      - name: Install workspace deps
+        # Plain install fallback: this Yarn-workspaces repo's per-package lockfiles
+        # drift from package.json (deps resolve against the root lockfile).
+        run: yarn install --frozen-lockfile || yarn install
+
+      - name: Generate Prisma client
+        working-directory: server
+        run: yarn prisma generate
+
+      - name: Backend unit tests
+        working-directory: server
+        run: yarn test
+
+      - name: Backend e2e smoke tests
+        working-directory: server
+        run: yarn test:e2e
+
+      - name: Web client build
+        working-directory: web-client
+        run: yarn build
