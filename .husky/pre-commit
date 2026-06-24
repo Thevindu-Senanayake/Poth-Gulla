@@ -1,0 +1,5 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run lint-staged on staged files; fail the commit if lint errors remain
+yarn lint-staged
