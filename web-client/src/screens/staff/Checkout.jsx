@@ -112,7 +112,6 @@ export default function Checkout() {
       <div
         style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 18 }}>
         <div
-          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
@@ -336,6 +335,17 @@ export default function Checkout() {
               fontWeight: 700,
               cursor: busy ? "default" : "pointer",
               boxShadow: "0 3px 12px rgba(22,163,74,.3)",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              if (!busy) {
+                e.currentTarget.style.background = "#15803d";
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = busy ? "#86efac" : "#16a34a";
+              e.currentTarget.style.transform = "translateY(0)";
             }}>
             {busy
               ? "Processing…"
@@ -375,7 +385,6 @@ export default function Checkout() {
 
         {/* Right panel: how it works */}
         <div
-          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",

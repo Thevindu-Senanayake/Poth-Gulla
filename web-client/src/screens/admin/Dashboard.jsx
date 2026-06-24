@@ -163,12 +163,23 @@ export default function Dashboard() {
         {adminStats.map((stat, i) => (
           <div
             key={i}
-            className="pg-card-stat"
             style={{
               background: "#fff",
               border: "1px solid #e7e7ef",
               borderRadius: 13,
               padding: "18px 20px",
+              transition: "transform .15s, box-shadow .15s, border-color .15s",
+              cursor: "default",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-3px)";
+              e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
+              e.currentTarget.style.borderColor = "#d4d4e4";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "none";
+              e.currentTarget.style.boxShadow = "none";
+              e.currentTarget.style.borderColor = "#e7e7ef";
             }}>
             <div
               style={{
@@ -227,7 +238,6 @@ export default function Dashboard() {
           marginBottom: 18,
         }}>
         <div
-          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
@@ -292,7 +302,6 @@ export default function Dashboard() {
         </div>
 
         <div
-          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
@@ -356,7 +365,6 @@ export default function Dashboard() {
       </div>
 
       <div
-        className="pg-card"
         style={{
           background: "#fff",
           border: "1px solid #e7e7ef",
@@ -382,12 +390,26 @@ export default function Dashboard() {
           {statusBreak.map((h, i) => (
             <div
               key={i}
-              className="pg-card-stat"
               style={{
                 background: "#f8f8fc",
                 border: "1px solid #e7e7ef",
                 borderRadius: 10,
                 padding: "14px 16px",
+                transition:
+                  "transform .15s, box-shadow .15s, border-color .15s",
+                cursor: "default",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,0.07)";
+                e.currentTarget.style.borderColor = "#d4d4e4";
+                e.currentTarget.style.background = "#fff";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "none";
+                e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.borderColor = "#e7e7ef";
+                e.currentTarget.style.background = "#f8f8fc";
               }}>
               <div
                 style={{

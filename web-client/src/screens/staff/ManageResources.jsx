@@ -8,6 +8,7 @@ import {
   getBook,
   addCopy,
   retireCopy,
+  restoreCopy,
   setDeviceMaintenance,
   setRoomMaintenance,
 } from "../../api/catalogue";
@@ -34,6 +35,122 @@ function SvgIcon({ path, color, size = 16 }) {
           <path key={i} d={"M" + d} />
         ))}
     </svg>
+  );
+}
+
+/* ── Confirmation dialog ── */
+function ConfirmDialog({
+  open,
+  title,
+  message,
+  confirmLabel,
+  confirmColor,
+  onConfirm,
+  onCancel,
+}) {
+  if (!open) return null;
+  return (
+    <div
+      onClick={onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(6,24,15,0.48)",
+        backdropFilter: "blur(4px)",
+        zIndex: 2000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        animation: "pg-pop .15s ease both",
+      }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: "28px 28px 22px",
+          width: 400,
+          maxWidth: "92vw",
+          boxShadow: "0 20px 50px rgba(6,24,15,0.22)",
+        }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 10,
+          }}>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: `${confirmColor}18`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}>
+            <SvgIcon
+              path="M12 9v4M12 17h.01M12 3l9.5 16.5H2.5z"
+              color={confirmColor}
+              size={18}
+            />
+          </div>
+          <h3
+            style={{
+              fontFamily: "'Spectral', serif",
+              fontSize: 17,
+              fontWeight: 700,
+              color: "#1a1b2e",
+              margin: 0,
+            }}>
+            {title}
+          </h3>
+        </div>
+        <p
+          style={{
+            fontSize: 13,
+            color: "#5a5c74",
+            lineHeight: 1.65,
+            margin: "0 0 20px",
+            paddingLeft: 46,
+          }}>
+          {message}
+        </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: "9px 20px",
+              borderRadius: 9,
+              border: "1.5px solid #e7e7ef",
+              background: "#fff",
+              color: "#3a3b4e",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}>
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: "9px 20px",
+              borderRadius: 9,
+              border: "none",
+              background: confirmColor,
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: `0 2px 10px ${confirmColor}40`,
+            }}>
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -73,9 +190,6 @@ const TABS = [
 ];
 
 async function loadAll() {
-  // Borrowings have no list endpoint, so we reconstruct active device loans from:
-  //  - devices currently BORROWED, + the latest COMPLETED device booking (borrower + due date),
-  //  - the user list for names.
   const [books, devices, rooms, completed, users] = await Promise.all([
     listBooks({ limit: 100 }),
     listDevices({ limit: 100 }),
@@ -92,17 +206,56 @@ async function loadAll() {
   };
 }
 
+/* ── Row hover style helper ── */
+const rowHoverStyle = {
+  transition: "background 0.15s ease, box-shadow 0.15s ease",
+  cursor: "default",
+};
+
 export default function ManageResources() {
   const { setStaffModal, showToast, refresh } = useApp();
   const { data, loading, error, reload } = useFetch(() => loadAll(), []);
 
   const [tab, setTab] = useState("books");
-  const [openBook, setOpenBook] = useState(null); // bookId whose copies panel is open
-  const [copies, setCopies] = useState({}); // { [bookId]: copy[] }
+  const [openBook, setOpenBook] = useState(null);
+  const [copies, setCopies] = useState({});
   const [copiesLoading, setCopiesLoading] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [working, setWorking] = useState(false);
-  const [cond, setCond] = useState({}); // { [deviceId]: 'GOOD' | 'DAMAGED' }
+  const [cond, setCond] = useState({});
+
+  // Confirmation dialog state
+  const [confirm, setConfirm] = useState({
+    open: false,
+    title: "",
+    message: "",
+    confirmLabel: "Confirm",
+    confirmColor: "#16a34a",
+    onConfirm: () => {},
+  });
+
+  function askConfirm({
+    title,
+    message,
+    confirmLabel,
+    confirmColor,
+    onConfirm,
+  }) {
+    setConfirm({
+      open: true,
+      title,
+      message,
+      confirmLabel: confirmLabel || "Confirm",
+      confirmColor: confirmColor || "#16a34a",
+      onConfirm: () => {
+        setConfirm((c) => ({ ...c, open: false }));
+        onConfirm();
+      },
+    });
+  }
+  function closeConfirm() {
+    setConfirm((c) => ({ ...c, open: false }));
+  }
 
   if (loading) return <Loading label="Loading resources…" />;
   if (error) return <ErrorState error={error} onRetry={reload} />;
@@ -113,7 +266,7 @@ export default function ManageResources() {
 
   // ---- Derive active device loans ----
   const userName = new Map((data?.users || []).map((u) => [u.id, u.name]));
-  const latestBookingFor = new Map(); // deviceId -> most recent COMPLETED booking
+  const latestBookingFor = new Map();
   (data?.deviceBookings || []).forEach((b) => {
     const did = b.resourceId;
     const prev = latestBookingFor.get(did);
@@ -210,6 +363,25 @@ export default function ManageResources() {
     }
   }
 
+  async function doRestore(bookId, copy) {
+    setWorking(true);
+    try {
+      await restoreCopy(copy.id);
+      setCopies((prev) => ({
+        ...prev,
+        [bookId]: prev[bookId].map((c) =>
+          c.id === copy.id ? { ...c, status: "AVAILABLE" } : c,
+        ),
+      }));
+      showToast("Copy restored — marked available");
+      refresh();
+    } catch (e) {
+      showToast(e?.response?.data?.message ?? "Could not restore copy");
+    } finally {
+      setWorking(false);
+    }
+  }
+
   async function toggleMaintenance(kind, item) {
     const under = item.raw?.status !== "UNDER_MAINTENANCE";
     setWorking(true);
@@ -262,6 +434,17 @@ export default function ManageResources() {
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
       }}>
+      {/* Confirmation modal */}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        confirmLabel={confirm.confirmLabel}
+        confirmColor={confirm.confirmColor}
+        onConfirm={confirm.onConfirm}
+        onCancel={closeConfirm}
+      />
+
       <div
         style={{
           display: "flex",
@@ -312,6 +495,15 @@ export default function ManageResources() {
             fontWeight: 700,
             cursor: "pointer",
             boxShadow: "0 3px 12px rgba(22,163,74,.28)",
+            transition: "transform 0.15s ease, box-shadow 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 5px 18px rgba(22,163,74,.35)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 3px 12px rgba(22,163,74,.28)";
           }}>
           <SvgIcon path="M12 5v14M5 12h14" color="#fff" size={15} />
           Add resource
@@ -337,6 +529,14 @@ export default function ManageResources() {
               display: "flex",
               alignItems: "center",
               gap: 8,
+              transition: "transform 0.15s ease",
+              cursor: "default",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "scale(1.04)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "scale(1)";
             }}>
             <span
               style={{
@@ -380,6 +580,7 @@ export default function ManageResources() {
               color: tab === t.key ? "#fff" : "#7c7e93",
               boxShadow:
                 tab === t.key ? "0 2px 8px rgba(22,163,74,.25)" : "none",
+              transition: "all 0.15s ease",
             }}>
             {t.label}
           </button>
@@ -389,7 +590,6 @@ export default function ManageResources() {
       {/* ---- BOOKS: copy-level management ---- */}
       {tab === "books" && (
         <div
-          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
@@ -418,6 +618,13 @@ export default function ManageResources() {
                       alignItems: "center",
                       gap: 14,
                       padding: "14px 20px",
+                      ...rowHoverStyle,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#f8faf9";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
                     }}>
                     <div
                       style={{
@@ -429,6 +636,13 @@ export default function ManageResources() {
                         alignItems: "center",
                         justifyContent: "center",
                         flexShrink: 0,
+                        transition: "transform 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "scale(1.08)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "scale(1)";
                       }}>
                       <SvgIcon
                         path={book.iconPath}
@@ -475,6 +689,19 @@ export default function ManageResources() {
                         fontWeight: 600,
                         cursor: "pointer",
                         whiteSpace: "nowrap",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isOpen) {
+                          e.currentTarget.style.background = "#e8e8f0";
+                          e.currentTarget.style.borderColor = "#d0d0de";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isOpen) {
+                          e.currentTarget.style.background = "#f0f0f6";
+                          e.currentTarget.style.borderColor = "#e7e7ef";
+                        }
                       }}>
                       {isOpen ? "Hide copies" : "Manage copies"}
                     </button>
@@ -518,6 +745,13 @@ export default function ManageResources() {
                                 fontFamily: "'IBM Plex Mono', monospace",
                                 outline: "none",
                                 background: "#fff",
+                                transition: "border-color 0.15s ease",
+                              }}
+                              onFocus={(e) => {
+                                e.currentTarget.style.borderColor = "#16a34a";
+                              }}
+                              onBlur={(e) => {
+                                e.currentTarget.style.borderColor = "#e7e7ef";
                               }}
                             />
                             <button
@@ -532,6 +766,13 @@ export default function ManageResources() {
                                 fontSize: 13,
                                 fontWeight: 700,
                                 cursor: "pointer",
+                                transition: "background 0.15s ease",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "#15803d";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "#16a34a";
                               }}>
                               Add copy
                             </button>
@@ -563,6 +804,19 @@ export default function ManageResources() {
                                     borderRadius: 9,
                                     border: "1px solid #e7e7ef",
                                     background: "#fff",
+                                    transition:
+                                      "box-shadow 0.15s ease, border-color 0.15s ease",
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.boxShadow =
+                                      "0 2px 8px rgba(0,0,0,0.06)";
+                                    e.currentTarget.style.borderColor =
+                                      "#d0d0de";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.boxShadow = "none";
+                                    e.currentTarget.style.borderColor =
+                                      "#e7e7ef";
                                   }}>
                                   <div
                                     style={{
@@ -579,11 +833,57 @@ export default function ManageResources() {
                                       gap: 10,
                                     }}>
                                     {badge(copy.status)}
+                                    {copy.status === "RETIRED" && (
+                                      <button
+                                        onClick={() =>
+                                          askConfirm({
+                                            title: "Mark copy as found?",
+                                            message: `Restore copy "${copy.assetTag}" to available status? This will make it borrowable again.`,
+                                            confirmLabel: "Mark found",
+                                            confirmColor: "#16a34a",
+                                            onConfirm: () =>
+                                              doRestore(book.id, copy),
+                                          })
+                                        }
+                                        disabled={working}
+                                        style={{
+                                          background: "#fff",
+                                          border: "1px solid #bbf7d0",
+                                          color: "#16a34a",
+                                          borderRadius: 7,
+                                          padding: "4px 10px",
+                                          fontSize: 11,
+                                          fontWeight: 600,
+                                          cursor: "pointer",
+                                          transition: "all 0.15s ease",
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.background =
+                                            "#f0fdf4";
+                                          e.currentTarget.style.borderColor =
+                                            "#86efac";
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.background =
+                                            "#fff";
+                                          e.currentTarget.style.borderColor =
+                                            "#bbf7d0";
+                                        }}>
+                                        Mark found
+                                      </button>
+                                    )}
                                     {copy.status !== "RETIRED" &&
                                       copy.status !== "BORROWED" && (
                                         <button
                                           onClick={() =>
-                                            doRetire(book.id, copy)
+                                            askConfirm({
+                                              title: "Mark copy as lost?",
+                                              message: `Are you sure you want to mark "${copy.assetTag}" as lost/retired? You can restore it later if found.`,
+                                              confirmLabel: "Mark lost",
+                                              confirmColor: "#dc2626",
+                                              onConfirm: () =>
+                                                doRetire(book.id, copy),
+                                            })
                                           }
                                           disabled={working}
                                           style={{
@@ -595,6 +895,19 @@ export default function ManageResources() {
                                             fontSize: 11,
                                             fontWeight: 600,
                                             cursor: "pointer",
+                                            transition: "all 0.15s ease",
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            e.currentTarget.style.background =
+                                              "#fef2f2";
+                                            e.currentTarget.style.borderColor =
+                                              "#fca5a5";
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.currentTarget.style.background =
+                                              "#fff";
+                                            e.currentTarget.style.borderColor =
+                                              "#fecaca";
                                           }}>
                                           Mark lost
                                         </button>
@@ -611,7 +924,8 @@ export default function ManageResources() {
                               marginTop: 10,
                             }}>
                             Borrowed copies can't be retired until they're
-                            returned.
+                            returned. Lost copies can be marked found to restore
+                            availability.
                           </div>
                         </>
                       )}
@@ -627,7 +941,6 @@ export default function ManageResources() {
       {/* ---- DEVICES: maintenance ---- */}
       {tab === "devices" && (
         <div
-          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
@@ -675,6 +988,13 @@ export default function ManageResources() {
                     borderBottom:
                       i < devices.length - 1 ? "1px solid #f3f3f8" : "none",
                     alignItems: "center",
+                    ...rowHoverStyle,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#f8faf9";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
                   }}>
                   <div
                     style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}>
@@ -694,7 +1014,21 @@ export default function ManageResources() {
                   <div>{badge(status)}</div>
                   <div>
                     <button
-                      onClick={() => toggleMaintenance("device", d)}
+                      onClick={() =>
+                        askConfirm({
+                          title: under
+                            ? "Set device available?"
+                            : "Set device to maintenance?",
+                          message: under
+                            ? `Mark "${d.title}" as available again? Members will be able to borrow it.`
+                            : `Mark "${d.title}" as under maintenance? It won't be available for borrowing.`,
+                          confirmLabel: under
+                            ? "Set available"
+                            : "Set maintenance",
+                          confirmColor: under ? "#16a34a" : "#d97706",
+                          onConfirm: () => toggleMaintenance("device", d),
+                        })
+                      }
                       disabled={borrowed || working}
                       title={
                         borrowed
@@ -714,6 +1048,18 @@ export default function ManageResources() {
                         fontSize: 12,
                         fontWeight: 700,
                         cursor: borrowed ? "not-allowed" : "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!borrowed) {
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                          e.currentTarget.style.boxShadow =
+                            "0 2px 8px rgba(0,0,0,0.08)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "none";
                       }}>
                       {under ? "Set available" : "Set maintenance"}
                     </button>
@@ -728,7 +1074,6 @@ export default function ManageResources() {
       {/* ---- ROOMS: maintenance ---- */}
       {tab === "rooms" && (
         <div
-          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
@@ -773,6 +1118,13 @@ export default function ManageResources() {
                     borderBottom:
                       i < rooms.length - 1 ? "1px solid #f3f3f8" : "none",
                     alignItems: "center",
+                    ...rowHoverStyle,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#f8faf9";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
                   }}>
                   <div
                     style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}>
@@ -784,7 +1136,21 @@ export default function ManageResources() {
                   <div>{badge(status)}</div>
                   <div>
                     <button
-                      onClick={() => toggleMaintenance("room", r)}
+                      onClick={() =>
+                        askConfirm({
+                          title: under
+                            ? "Set room available?"
+                            : "Set room to maintenance?",
+                          message: under
+                            ? `Mark "${r.title}" as available again? Members will be able to reserve it.`
+                            : `Mark "${r.title}" as under maintenance? It won't be available for reservation.`,
+                          confirmLabel: under
+                            ? "Set available"
+                            : "Set maintenance",
+                          confirmColor: under ? "#16a34a" : "#d97706",
+                          onConfirm: () => toggleMaintenance("room", r),
+                        })
+                      }
                       disabled={working}
                       style={{
                         background: under ? "#16a34a" : "#fff",
@@ -795,6 +1161,16 @@ export default function ManageResources() {
                         fontSize: 12,
                         fontWeight: 700,
                         cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                        e.currentTarget.style.boxShadow =
+                          "0 2px 8px rgba(0,0,0,0.08)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "none";
                       }}>
                       {under ? "Set available" : "Set maintenance"}
                     </button>
@@ -809,7 +1185,6 @@ export default function ManageResources() {
       {/* ---- LOANED DEVICES: who has what, return management ---- */}
       {tab === "loans" && (
         <div
-          className="pg-card"
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
@@ -853,6 +1228,13 @@ export default function ManageResources() {
                   borderBottom:
                     i < loans.length - 1 ? "1px solid #f3f3f8" : "none",
                   alignItems: "center",
+                  ...rowHoverStyle,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f8faf9";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
                 }}>
                 <div
                   style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}>
@@ -910,7 +1292,15 @@ export default function ManageResources() {
                     <option value="DAMAGED">Damaged</option>
                   </select>
                   <button
-                    onClick={() => doReturn(ln.device)}
+                    onClick={() =>
+                      askConfirm({
+                        title: "Process return?",
+                        message: `Return "${ln.device.title}" from ${ln.borrower}? Condition: ${cond[ln.device.id] || "GOOD"}. Points will be scored automatically.`,
+                        confirmLabel: "Process return",
+                        confirmColor: "#16a34a",
+                        onConfirm: () => doReturn(ln.device),
+                      })
+                    }
                     disabled={working}
                     style={{
                       background: "#16a34a",
@@ -921,6 +1311,15 @@ export default function ManageResources() {
                       fontSize: 12,
                       fontWeight: 700,
                       cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#15803d";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#16a34a";
+                      e.currentTarget.style.transform = "translateY(0)";
                     }}>
                     Process return
                   </button>
