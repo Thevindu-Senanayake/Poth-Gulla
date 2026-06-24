@@ -1,0 +1,254 @@
+# Release & deploy to the DigitalOcean dev droplet.
+#
+# Flow (triggered by pushing a signed tag `vX.Y.Z`):
+#   1. verify-tag      — the git tag MUST be SSH-signed by an allowed signer.
+#   2. build           — build prod images, push to GHCR, cosign-sign (keyless),
+#                        + SLSA provenance + SBOM attestations.
+#   3. deploy          — SSH to the droplet, cosign-VERIFY the signed images
+#                        (fail closed), then pull + up the full stack.
+#
+# Security notes:
+#   - Least-privilege GITHUB_TOKEN; OIDC (id-token) only where signing happens.
+#   - Images are deployed by immutable digest (never a mutable tag).
+#   - HARDENING TODO: pin every `uses:` to a full commit SHA before production.
+name: release-deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ── 1. Require an SSH-signed git tag ───────────────────────────────────────
+  verify-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify the tag is SSH-signed by an allowed signer
+        env:
+          SIGNER_IDENTITY: ${{ vars.TAG_SIGNER_IDENTITY }}
+          SIGNER_PUBKEY: ${{ secrets.TAG_SIGNING_SSH_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SIGNER_IDENTITY}" ] || [ -z "${SIGNER_PUBKEY}" ]; then
+            echo "::error::TAG_SIGNER_IDENTITY (var) and TAG_SIGNING_SSH_PUBLIC_KEY (secret) must be set."
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          # allowed_signers: "<principal> <key-type> <key>"
+          echo "${SIGNER_IDENTITY} ${SIGNER_PUBKEY}" > ~/.ssh/allowed_signers
+          git config gpg.format ssh
+          git config gpg.ssh.allowedSignersFile ~/.ssh/allowed_signers
+          echo "Verifying tag ${GITHUB_REF_NAME}…"
+          git verify-tag "${GITHUB_REF_NAME}"
+          echo "✓ Tag signature is valid."
+
+  # ── 2. Build, push, sign, attest (matrix: server + web) ────────────────────
+  build:
+    needs: verify-tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write       # push to GHCR
+      id-token: write        # cosign keyless + attestations (OIDC)
+      attestations: write    # SLSA provenance / SBOM attestations
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - component: server
+            context: ./server
+            dockerfile: ./server/Dockerfile.prod
+          - component: web
+            context: ./web-client
+            dockerfile: ./web-client/Dockerfile.prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute lowercase image name
+        run: |
+          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE=ghcr.io/${REPO_LC}-${{ matrix.component }}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata (tags + labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=sha,prefix=sha-
+
+      - name: Build & push (linux/amd64)
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: false   # we attest provenance natively below (cleaner cosign subject)
+          build-args: |
+            ${{ matrix.component == 'web' && format('VITE_API_URL={0}', vars.VITE_API_URL) || '' }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign image (cosign keyless)
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"
+
+      - name: SLSA build provenance attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Generate SBOM (SPDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Attest SBOM
+        uses: actions/attest-sbom@v1
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          sbom-path: sbom.spdx.json
+          push-to-registry: true
+
+      - name: Record digest-pinned image ref
+        run: echo "${IMAGE}@${{ steps.build.outputs.digest }}" > image-ref.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imageref-${{ matrix.component }}
+          path: image-ref.txt
+          retention-days: 7
+
+  # ── 3. Deploy to the droplet (verify signatures, then pull + up) ───────────
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Collect image refs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: imageref-*
+          path: refs
+
+      - name: Resolve image refs
+        run: |
+          echo "SERVER_IMAGE=$(cat refs/imageref-server/image-ref.txt)" >> "$GITHUB_ENV"
+          echo "WEB_IMAGE=$(cat refs/imageref-web/image-ref.txt)" >> "$GITHUB_ENV"
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DROPLET_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "${{ secrets.DROPLET_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Render .env (from secrets)
+        run: |
+          umask 077
+          cat > deploy.env <<EOF
+          SERVER_IMAGE=${SERVER_IMAGE}
+          WEB_IMAGE=${WEB_IMAGE}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          DOCKER_DATABASE_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/${{ secrets.POSTGRES_DB }}?schema=public
+          DOCKER_REDIS_URL=redis://redis:6379
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
+          GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+          EOF
+
+      - name: Copy stack files to droplet
+        env:
+          HOST: ${{ secrets.DROPLET_HOST }}
+          USER: ${{ secrets.DROPLET_USER }}
+        run: |
+          SSH="ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes ${USER}@${HOST}"
+          SCP="scp -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes"
+          $SSH 'mkdir -p ~/poth-gulla/grafana'
+          $SCP deploy.env "${USER}@${HOST}:~/poth-gulla/.env"
+          $SCP deploy/docker-compose.deploy.yml "${USER}@${HOST}:~/poth-gulla/docker-compose.yml"
+          $SCP deploy/prometheus.yml "${USER}@${HOST}:~/poth-gulla/prometheus.yml"
+          $SCP -r infra/grafana/provisioning "${USER}@${HOST}:~/poth-gulla/grafana/provisioning"
+
+      - name: Verify signatures & deploy on droplet
+        env:
+          HOST: ${{ secrets.DROPLET_HOST }}
+          USER: ${{ secrets.DROPLET_USER }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes "${USER}@${HOST}" \
+            SERVER_IMAGE="${SERVER_IMAGE}" WEB_IMAGE="${WEB_IMAGE}" \
+            GHCR_USER="${GHCR_USER}" GHCR_TOKEN="${GHCR_TOKEN}" REPO="${REPO}" \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
+          cd ~/poth-gulla
+          echo "==> Logging in to GHCR"
+          echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
+
+          IDENTITY_RE="^https://github.com/${REPO}/.github/workflows/release-deploy.yml@refs/tags/"
+          ISSUER="https://token.actions.githubusercontent.com"
+          for IMG in "${SERVER_IMAGE}" "${WEB_IMAGE}"; do
+            echo "==> cosign verify ${IMG}"
+            cosign verify \
+              --certificate-identity-regexp "${IDENTITY_RE}" \
+              --certificate-oidc-issuer "${ISSUER}" \
+              "${IMG}" > /dev/null
+          done
+          echo "✓ Both images verified."
+
+          echo "==> Pulling & starting the stack"
+          docker compose --env-file .env pull
+          docker compose --env-file .env up -d --remove-orphans
+          docker image prune -f
+          docker logout ghcr.io
+          REMOTE
+
+      - name: Health check
+        env:
+          HOST: ${{ secrets.DROPLET_HOST }}
+        run: |
+          echo "Waiting for the API to report healthy…"
+          for _ in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://${HOST}:3000/api" || true)
+            if [ "$code" = "200" ]; then echo "✓ API healthy"; exit 0; fi
+            sleep 5
+          done
+          echo "::error::API did not become healthy in time."
+          exit 1
