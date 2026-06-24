@@ -1,43 +1,11 @@
-import { useApp } from "../../App";
-import { useFetch } from "../../hooks/useFetch";
-import { myBookings, cancelBooking } from "../../api/bookings";
-import { BOOK_ICON, DEVICE_ICON, ROOM_ICON } from "../../api/adapters";
-import { Loading, ErrorState, Empty } from "../../components/States";
+import { useApp } from '../../App';
+import { useFetch } from '../../hooks/useFetch';
+import { myBookings, cancelBooking } from '../../api/bookings';
+import { Loading, ErrorState, Empty } from '../../components/States';
+import ResourceImage from '../../components/ResourceImage';
 
-const ICON = { BOOK: BOOK_ICON, DEVICE: DEVICE_ICON, ROOM: ROOM_ICON };
-
-function Cover({ resourceType, color, w = 52, h = 64 }) {
-  const path = ICON[resourceType] || BOOK_ICON;
-  return (
-    <div
-      style={{
-        width: w,
-        height: h,
-        background: color,
-        borderRadius: 7,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-      }}>
-      <svg
-        width={w * 0.44}
-        height={h * 0.36}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="rgba(255,255,255,0.85)"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round">
-        {path
-          .split("M")
-          .filter(Boolean)
-          .map((d, j) => (
-            <path key={j} d={"M" + d} />
-          ))}
-      </svg>
-    </div>
-  );
+function Cover({ imageUrl, resourceType, color, w = 52, h = 64 }) {
+  return <ResourceImage imageUrl={imageUrl} resourceType={resourceType} color={color} w={w} h={h} radius={7} />;
 }
 
 function fmt(d) {
@@ -59,13 +27,10 @@ export default function MyBookings() {
   if (error) return <ErrorState error={error} onRetry={reload} />;
 
   const all = data?.items || [];
-  const active = all.filter((b) => b.status === "APPROVED");
-  const upcoming = all.filter(
-    (b) => b.status === "PENDING" || b.status === "WAITLIST",
-  );
-  const history = all.filter((b) =>
-    ["COMPLETED", "CANCELLED", "REJECTED"].includes(b.status),
-  );
+  // APPROVED = ready for pickup, CHECKED_OUT = currently on loan — both are "active".
+  const active = all.filter((b) => b.status === 'APPROVED' || b.status === 'CHECKED_OUT');
+  const upcoming = all.filter((b) => b.status === 'PENDING' || b.status === 'WAITLIST');
+  const history = all.filter((b) => ['COMPLETED', 'CANCELLED', 'REJECTED'].includes(b.status));
 
   function showQR(b) {
     setBookingModal({

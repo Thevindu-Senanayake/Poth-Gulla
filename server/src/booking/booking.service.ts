@@ -208,8 +208,8 @@ export class BookingService {
         return this.prisma.booking.findUnique({
             where: { id },
             include: {
-                bookTitle: { select: { title: true } },
-                device: { select: { name: true } },
+                bookTitle: { select: { title: true, imageUrl: true } },
+                device: { select: { name: true, imageUrl: true } },
                 studyRoom: { select: { name: true } },
                 user: { select: { id: true, name: true } },
             },
@@ -230,8 +230,8 @@ export class BookingService {
                 take: limit,
                 orderBy: { createdAt: 'desc' },
                 include: {
-                    bookTitle: { select: { title: true } },
-                    device: { select: { name: true } },
+                    bookTitle: { select: { title: true, imageUrl: true } },
+                    device: { select: { name: true, imageUrl: true } },
                     studyRoom: { select: { name: true } },
                     user: { select: { id: true, name: true } },
                 },
@@ -257,8 +257,8 @@ export class BookingService {
                 take: limit,
                 orderBy: { createdAt: 'desc' },
                 include: {
-                    bookTitle: { select: { title: true } },
-                    device: { select: { name: true } },
+                    bookTitle: { select: { title: true, imageUrl: true } },
+                    device: { select: { name: true, imageUrl: true } },
                     studyRoom: { select: { name: true } },
                     user: { select: { id: true, name: true } },
                 },

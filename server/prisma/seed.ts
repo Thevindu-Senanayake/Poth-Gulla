@@ -120,10 +120,16 @@ async function seedBooks() {
     ];
 
     for (const { copies, ...titleData } of titles) {
+        // Store a cover URL in imageUrl (issue #24). OpenLibrary serves real covers
+        // by ISBN; the frontend falls back to the icon if it 404s. update: backfills
+        // existing rows on re-seed.
+        const imageUrl = titleData.isbn
+            ? `https://covers.openlibrary.org/b/isbn/${titleData.isbn.replace(/-/g, '')}-L.jpg`
+            : null;
         const title = await prisma.bookTitle.upsert({
             where: { isbn: titleData.isbn },
-            update: {},
-            create: { ...titleData, language: 'English' },
+            update: { imageUrl },
+            create: { ...titleData, language: 'English', imageUrl },
         });
 
         for (const assetTag of copies) {
@@ -161,10 +167,12 @@ async function seedDevices() {
     ];
 
     for (const d of devices) {
+        // Placeholder device photo, deterministic per asset tag (issue #24).
+        const imageUrl = `https://picsum.photos/seed/${d.assetTag}/600/400`;
         await prisma.device.upsert({
             where: { assetTag: d.assetTag },
-            update: {},
-            create: { ...d, status: ItemStatus.AVAILABLE },
+            update: { imageUrl },
+            create: { ...d, status: ItemStatus.AVAILABLE, imageUrl },
         });
     }
     console.log('  ✓ Devices');

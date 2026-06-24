@@ -1,0 +1,13 @@
+# Keep the host's workspace node_modules and build output out of the image.
+node_modules
+dist
+generated
+.env
+.env.*
+.git
+.gitignore
+coverage
+*.log
+Dockerfile
+Dockerfile.prod
+.dockerignore
