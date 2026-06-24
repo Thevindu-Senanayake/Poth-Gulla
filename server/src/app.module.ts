@@ -5,6 +5,7 @@ import { AuditModule } from './audit/audit.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BookingModule } from './booking/booking.module.js';
 import { CatalogueModule } from './catalogue/catalogue.module.js';
+import { SystemConfigModule } from './config/system-config.module.js';
 import { MetricsModule } from './metrics/metrics.module.js';
 import { OverdueModule } from './overdue/overdue.module.js';
 import { PointsModule } from './points/points.module.js';
@@ -31,6 +32,7 @@ import { WaitlistModule } from './waitlist/waitlist.module.js';
         ReviewModule,
         RecommendationModule,
         AuditModule,
+        SystemConfigModule,
     ],
     controllers: [AppController],
     providers: [],
