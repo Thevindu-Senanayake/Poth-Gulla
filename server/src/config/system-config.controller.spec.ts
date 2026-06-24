@@ -15,9 +15,10 @@ describe('SystemConfigController', () => {
         expect(config.get).toHaveBeenCalled();
     });
 
-    it('PUT /config forwards the patch', () => {
+    it('PUT /config forwards the patch with actorId', () => {
         const dto = { tiers: [{ tier: 'Tier 2', threshold: 250 }] } as any;
-        controller.update(dto);
-        expect(config.update).toHaveBeenCalledWith(dto);
+        const user = { id: 'admin-user-123' };
+        controller.update(dto, user);
+        expect(config.update).toHaveBeenCalledWith(dto, 'admin-user-123');
     });
 });
