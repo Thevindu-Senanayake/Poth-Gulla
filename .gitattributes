@@ -1,4 +1,4 @@
-# These run inside Linux containers — force LF so a Windows checkout (autocrlf)
+# These run inside Linux containers - force LF so a Windows checkout (autocrlf)
 # can't corrupt the shebang / shell parsing.
 *.sh            text eol=lf
 docker-entrypoint.sh text eol=lf
