@@ -1,19 +1,18 @@
+import { useNavigate } from "react-router-dom";
 import { useApp } from "../../App";
 import { useFetch } from "../../hooks/useFetch";
 import { myRecommendations } from "../../api/misc";
 import { Loading, ErrorState, Empty } from "../../components/States";
 
 function RecCard({ item }) {
-  const { setSelectedResource, setPage } = useApp();
+  const navigate = useNavigate();
 
   function viewBook() {
-    setSelectedResource(item);
-    setPage("resource");
+    navigate(`/catalogue/${item.id}`);
   }
 
   return (
     <div
-      className="pg-card-interactive"
       style={{
         background: "#fff",
         border: "1px solid #e7e7ef",

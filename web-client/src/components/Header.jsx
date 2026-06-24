@@ -1,59 +1,69 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useApp } from "../App";
 
+// Map URL paths to page titles and subtitles
 const PAGE_META = {
-  dashboard: { title: "Dashboard", sub: null },
-  search: { title: "Catalogue", sub: "Browse books, devices & study rooms" },
-  mybookings: {
+  "/dashboard": { title: "Dashboard", sub: null },
+  "/catalogue": {
+    title: "Catalogue",
+    sub: "Browse books, devices & study rooms",
+  },
+  "/my-bookings": {
     title: "My Bookings",
     sub: "Manage your active loans and reservations",
   },
-  waitlist: { title: "Waitlist", sub: "Your position and priority score" },
-  recommend: {
+  "/waitlist": { title: "Waitlist", sub: "Your position and priority score" },
+  "/recommendations": {
     title: "Recommendations",
     sub: "Personalised suggestions for you",
   },
-  points: { title: "Points & Tier", sub: "Your standing and how to grow it" },
-  rooms: { title: "Study Rooms", sub: "Book a quiet space to focus" },
-  profile: { title: "Profile", sub: "Your account and activity log" },
-  staffDash: { title: "Operations Dashboard", sub: "Today's desk overview" },
-  checkout: {
+  "/points": {
+    title: "Points & Tier",
+    sub: "Your standing and how to grow it",
+  },
+  "/rooms": { title: "Study Rooms", sub: "Book a quiet space to focus" },
+  "/profile": { title: "Profile", sub: "Your account and activity log" },
+  "/staff/dashboard": {
+    title: "Operations Dashboard",
+    sub: "Today's desk overview",
+  },
+  "/staff/checkout": {
     title: "Checkout / Return",
     sub: "Scan a QR code to process a loan",
   },
-  waitlistReview: {
+  "/staff/waitlist-review": {
     title: "Waitlist Review",
     sub: "Message-flagged entries need your decision",
   },
-  approvals: {
+  "/staff/approvals": {
     title: "Device Approvals",
     sub: "High-value Tier 4–5 device requests",
   },
-  overdue: { title: "Overdue Management", sub: "Items past their return date" },
-  manage: {
+  "/staff/overdue": {
+    title: "Overdue Management",
+    sub: "Items past their return date",
+  },
+  "/staff/manage": {
     title: "Manage Resources",
     sub: "Add, update status, manage copies",
   },
-  adminDash: {
+  "/admin/dashboard": {
     title: "System Overview",
     sub: "Platform-wide health and activity",
   },
-  users: {
+  "/admin/users": {
     title: "User Management",
     sub: "Filter, sort, edit and add members",
   },
-  audit: { title: "Audit Log", sub: "Append-only system event trail" },
-  config: {
+  "/admin/audit": { title: "Audit Log", sub: "Append-only system event trail" },
+  "/admin/config": {
     title: "System Config",
     sub: "Edit rules, thresholds and feature switches",
   },
-  adminResources: {
+  "/admin/resources": {
     title: "Resource Catalogue",
     sub: "Books, devices and rooms - copy-level management",
-  },
-  resource: {
-    title: "Resource Detail",
-    sub: "Full resource information and booking",
   },
 };
 
@@ -65,21 +75,30 @@ function getGreeting() {
 }
 
 export default function Header() {
-  const {
-    page,
-    setPage,
-    searchQuery,
-    setSearchQuery,
-    notifOpen,
-    setNotifOpen,
-    user,
-  } = useApp();
+  const { searchQuery, setSearchQuery, notifOpen, setNotifOpen, user } =
+    useApp();
+  const location = useLocation();
   const [focused, setFocused] = useState(false);
 
-  const meta = PAGE_META[page] || { title: "Dashboard", sub: null };
+  // Resolve meta from path — for /catalogue/:id use resource detail
+  let pathname = location.pathname;
+  let meta = PAGE_META[pathname];
+  if (!meta && pathname.startsWith("/catalogue/")) {
+    meta = {
+      title: "Resource Detail",
+      sub: "Full resource information and booking",
+    };
+  }
+  if (!meta) {
+    meta = { title: "Dashboard", sub: null };
+  }
 
+  const isDashboard =
+    pathname === "/dashboard" ||
+    pathname === "/staff/dashboard" ||
+    pathname === "/admin/dashboard";
   const subtitle =
-    page === "dashboard"
+    isDashboard && pathname === "/dashboard"
       ? `Good ${getGreeting()}, ${user?.name?.split(" ")[0] ?? "there"}`
       : meta.sub;
 
@@ -159,13 +178,7 @@ export default function Header() {
           type="text"
           placeholder="Search resources…"
           value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            if (page !== "search" && e.target.value.trim()) setPage("search");
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && page !== "search") setPage("search");
-          }}
+          onChange={(e) => setSearchQuery(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={{
