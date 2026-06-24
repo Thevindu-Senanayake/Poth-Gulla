@@ -1,0 +1,102 @@
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { BadRequestException } from '@nestjs/common';
+import { BookingService } from './booking.service.js';
+
+const DAY = 24 * 60 * 60 * 1000;
+const HOUR = 60 * 60 * 1000;
+const iso = (ms: number) => new Date(Date.now() + ms).toISOString();
+
+describe('BookingService.create (routing, limits, caps)', () => {
+    let service: BookingService;
+    let prisma: any;
+    let waitlist: { enqueue: jest.Mock };
+    let points: Record<string, jest.Mock>;
+
+    beforeEach(() => {
+        prisma = {
+            user: { findUniqueOrThrow: jest.fn() },
+            booking: {
+                count: jest.fn(async () => 0), // under tier limit by default
+                create: jest.fn(async ({ data }: any) => ({ id: 'b1', ...data })),
+                findFirst: jest.fn(async () => null), // no room clash by default
+            },
+            bookCopy: { count: jest.fn() },
+            device: { findUnique: jest.fn() },
+        };
+        waitlist = { enqueue: jest.fn() };
+        points = { apply: jest.fn(), applyFixed: jest.fn() };
+        service = new BookingService(prisma as any, waitlist as any, points as any);
+    });
+
+    const tier3 = { id: 'u1', tier: 3, role: 'STUDENT' };
+
+    function book(overrides: any = {}) {
+        return service.create('u1', {
+            resourceType: 'BOOK', resourceId: 'r1',
+            startAt: iso(0), endAt: iso(DAY), ...overrides,
+        } as any);
+    }
+
+    it('BOOK with a free copy -> APPROVED', async () => {
+        prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
+        prisma.bookCopy.count.mockResolvedValue(1);
+        const b = await book();
+        expect(b.status).toBe('APPROVED');
+        expect(b.qrToken).toBeTruthy();
+    });
+
+    it('BOOK with no free copy -> WAITLIST and enqueues', async () => {
+        prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
+        prisma.bookCopy.count.mockResolvedValue(0);
+        const b = await book({ message: 'need it' });
+        expect(b.status).toBe('WAITLIST');
+        expect(b.qrToken).toBeNull();
+        expect(waitlist.enqueue).toHaveBeenCalled();
+    });
+
+    it('DEVICE tier 1-3 available -> APPROVED', async () => {
+        prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
+        prisma.device.findUnique.mockResolvedValue({ id: 'r1', status: 'AVAILABLE', deviceTier: 3 });
+        const b = await service.create('u1', {
+            resourceType: 'DEVICE', resourceId: 'r1', startAt: iso(0), endAt: iso(DAY),
+        } as any);
+        expect(b.status).toBe('APPROVED');
+    });
+
+    it('DEVICE tier 4-5 available -> PENDING (staff approval)', async () => {
+        prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
+        prisma.device.findUnique.mockResolvedValue({ id: 'r1', status: 'AVAILABLE', deviceTier: 5 });
+        const b = await service.create('u1', {
+            resourceType: 'DEVICE', resourceId: 'r1', startAt: iso(0), endAt: iso(DAY),
+        } as any);
+        expect(b.status).toBe('PENDING');
+    });
+
+    it('DEVICE unavailable -> WAITLIST', async () => {
+        prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
+        prisma.device.findUnique.mockResolvedValue({ id: 'r1', status: 'BORROWED', deviceTier: 3 });
+        const b = await service.create('u1', {
+            resourceType: 'DEVICE', resourceId: 'r1', startAt: iso(0), endAt: iso(DAY),
+        } as any);
+        expect(b.status).toBe('WAITLIST');
+    });
+
+    it('ROOM with no overlap -> APPROVED', async () => {
+        prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
+        const b = await service.create('u1', {
+            resourceType: 'ROOM', resourceId: 'r1', startAt: iso(0), endAt: iso(2 * HOUR),
+        } as any);
+        expect(b.status).toBe('APPROVED');
+    });
+
+    it('rejects when over the tier concurrency limit', async () => {
+        prisma.user.findUniqueOrThrow.mockResolvedValue({ id: 'u1', tier: 1 }); // BOOK limit = 1
+        prisma.booking.count.mockResolvedValue(1);
+        await expect(book()).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects when the duration exceeds the cap', async () => {
+        prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
+        await expect(book({ endAt: iso(20 * DAY) })).rejects.toThrow(BadRequestException); // > 14d book cap
+    });
+});
