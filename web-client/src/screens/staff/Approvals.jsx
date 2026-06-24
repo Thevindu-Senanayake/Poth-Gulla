@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useApp } from "../../App";
 import { useFetch } from "../../hooks/useFetch";
 import { allBookings, approveBooking, rejectBooking } from "../../api/bookings";
@@ -22,6 +23,122 @@ function SvgIcon({ path, color, size = 16 }) {
           <path key={i} d={"M" + d} />
         ))}
     </svg>
+  );
+}
+
+/* ── Confirmation dialog ── */
+function ConfirmDialog({
+  open,
+  title,
+  message,
+  confirmLabel,
+  confirmColor,
+  onConfirm,
+  onCancel,
+}) {
+  if (!open) return null;
+  return (
+    <div
+      onClick={onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(6,24,15,0.48)",
+        backdropFilter: "blur(4px)",
+        zIndex: 2000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        animation: "pg-pop .15s ease both",
+      }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: "28px 28px 22px",
+          width: 400,
+          maxWidth: "92vw",
+          boxShadow: "0 20px 50px rgba(6,24,15,0.22)",
+        }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 10,
+          }}>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: `${confirmColor}18`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}>
+            <SvgIcon
+              path="M12 9v4M12 17h.01M12 3l9.5 16.5H2.5z"
+              color={confirmColor}
+              size={18}
+            />
+          </div>
+          <h3
+            style={{
+              fontFamily: "'Spectral', serif",
+              fontSize: 17,
+              fontWeight: 700,
+              color: "#1a1b2e",
+              margin: 0,
+            }}>
+            {title}
+          </h3>
+        </div>
+        <p
+          style={{
+            fontSize: 13,
+            color: "#5a5c74",
+            lineHeight: 1.65,
+            margin: "0 0 20px",
+            paddingLeft: 46,
+          }}>
+          {message}
+        </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: "9px 20px",
+              borderRadius: 9,
+              border: "1.5px solid #e7e7ef",
+              background: "#fff",
+              color: "#3a3b4e",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}>
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: "9px 20px",
+              borderRadius: 9,
+              border: "none",
+              background: confirmColor,
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: `0 2px 10px ${confirmColor}40`,
+            }}>
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -51,7 +168,6 @@ function fmt(d) {
 
 export default function Approvals() {
   const { showToast, refresh } = useApp();
-  // Pending device approvals = PENDING device bookings (Tier 4–5).
   const { data, loading, error, reload } = useFetch(
     () =>
       Promise.all([
@@ -60,6 +176,39 @@ export default function Approvals() {
       ]).then(([b, lk]) => ({ items: b.items, lk })),
     [],
   );
+
+  // Confirmation dialog state
+  const [confirm, setConfirm] = useState({
+    open: false,
+    title: "",
+    message: "",
+    confirmLabel: "Confirm",
+    confirmColor: "#16a34a",
+    onConfirm: () => {},
+  });
+
+  function askConfirm({
+    title,
+    message,
+    confirmLabel,
+    confirmColor,
+    onConfirm,
+  }) {
+    setConfirm({
+      open: true,
+      title,
+      message,
+      confirmLabel: confirmLabel || "Confirm",
+      confirmColor: confirmColor || "#16a34a",
+      onConfirm: () => {
+        setConfirm((c) => ({ ...c, open: false }));
+        onConfirm();
+      },
+    });
+  }
+  function closeConfirm() {
+    setConfirm((c) => ({ ...c, open: false }));
+  }
 
   if (loading) return <Loading label="Loading approvals…" />;
   if (error) return <ErrorState error={error} onRetry={reload} />;
@@ -96,6 +245,17 @@ export default function Approvals() {
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
       }}>
+      {/* Confirmation modal */}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        confirmLabel={confirm.confirmLabel}
+        confirmColor={confirm.confirmColor}
+        onConfirm={confirm.onConfirm}
+        onCancel={closeConfirm}
+      />
+
       <div style={{ marginBottom: 22 }}>
         <p style={{ fontSize: 12, color: "#7c7e93", margin: "0 0 3px" }}>
           Staff · Devices
@@ -186,6 +346,18 @@ export default function Approvals() {
                 border: "1px solid #e7e7ef",
                 borderRadius: 14,
                 padding: "20px 22px",
+                transition:
+                  "box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.07)";
+                e.currentTarget.style.borderColor = "#d0d0de";
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.borderColor = "#e7e7ef";
+                e.currentTarget.style.transform = "translateY(0)";
               }}>
               <div
                 style={{
@@ -292,14 +464,22 @@ export default function Approvals() {
                         borderRadius: 8,
                         padding: "8px 12px",
                       }}>
-                      “{entry.message}”
+                      \u201c{entry.message}\u201d
                     </div>
                   )}
                 </div>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button
-                  onClick={() => reject(entry.id)}
+                  onClick={() =>
+                    askConfirm({
+                      title: "Reject this request?",
+                      message: `Reject the device pickup request from ${entry.userName || "this member"} for "${entry.title}"? The request will be freed and the member will be notified.`,
+                      confirmLabel: "Reject",
+                      confirmColor: "#ef4444",
+                      onConfirm: () => reject(entry.id),
+                    })
+                  }
                   style={{
                     flex: 1,
                     padding: "10px 0",
@@ -310,11 +490,28 @@ export default function Approvals() {
                     fontSize: 13,
                     fontWeight: 700,
                     cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#fef2f2";
+                    e.currentTarget.style.borderColor = "#fecaca";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#fff";
+                    e.currentTarget.style.borderColor = "#e7e7ef";
                   }}>
                   Reject
                 </button>
                 <button
-                  onClick={() => approve(entry.id)}
+                  onClick={() =>
+                    askConfirm({
+                      title: "Approve pickup?",
+                      message: `Approve the device pickup for ${entry.userName || "this member"}? A QR token will be issued for "${entry.title}".`,
+                      confirmLabel: "Approve",
+                      confirmColor: "#16a34a",
+                      onConfirm: () => approve(entry.id),
+                    })
+                  }
                   style={{
                     flex: 2,
                     padding: "10px 0",
@@ -326,6 +523,19 @@ export default function Approvals() {
                     fontWeight: 700,
                     cursor: "pointer",
                     boxShadow: "0 2px 10px rgba(22,163,74,.25)",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#15803d";
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                    e.currentTarget.style.boxShadow =
+                      "0 4px 14px rgba(22,163,74,.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#16a34a";
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow =
+                      "0 2px 10px rgba(22,163,74,.25)";
                   }}>
                   Approve pickup
                 </button>
