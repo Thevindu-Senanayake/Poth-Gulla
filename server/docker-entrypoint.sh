@@ -7,7 +7,9 @@
 set -e
 
 echo "[entrypoint] Applying schema with 'prisma db push'…"
-yarn prisma db push --skip-generate --accept-data-loss
+# Prisma 7's `db push` dropped --skip-generate; it only takes
+# --config/--schema/--url/--accept-data-loss/--force-reset.
+yarn prisma db push --accept-data-loss
 
 echo "[entrypoint] Seeding (idempotent upserts)…"
 if yarn tsx prisma/seed.ts; then
