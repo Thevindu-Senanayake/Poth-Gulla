@@ -11,6 +11,7 @@ describe('BookingService.create (routing, limits, caps)', () => {
     let prisma: any;
     let waitlist: { enqueue: jest.Mock };
     let points: Record<string, jest.Mock>;
+    let systemConfig: { get: jest.Mock };
 
     beforeEach(() => {
         prisma = {
@@ -25,15 +26,31 @@ describe('BookingService.create (routing, limits, caps)', () => {
         };
         waitlist = { enqueue: jest.fn() };
         points = { apply: jest.fn(), applyFixed: jest.fn() };
-        service = new BookingService(prisma as any, waitlist as any, points as any);
+        systemConfig = {
+            get: jest.fn().mockResolvedValue({
+                tiers: [
+                    { tier: 'Tier 1', threshold: 0, books: 1, devices: 1, rooms: 1 },
+                    { tier: 'Tier 2', threshold: 200, books: 2, devices: 1, rooms: 1 },
+                    { tier: 'Tier 3', threshold: 500, books: 3, devices: 2, rooms: 1 },
+                    { tier: 'Tier 4', threshold: 1000, books: 4, devices: 3, rooms: 2 },
+                    { tier: 'Tier 5', threshold: 2000, books: 5, devices: 3, rooms: 2 },
+                ],
+                penalties: [],
+                toggles: [],
+            }),
+        };
+        service = new BookingService(prisma as any, waitlist as any, points as any, systemConfig as any);
     });
 
     const tier3 = { id: 'u1', tier: 3, role: 'STUDENT' };
 
     function book(overrides: any = {}) {
         return service.create('u1', {
-            resourceType: 'BOOK', resourceId: 'r1',
-            startAt: iso(0), endAt: iso(DAY), ...overrides,
+            resourceType: 'BOOK',
+            resourceId: 'r1',
+            startAt: iso(0),
+            endAt: iso(DAY),
+            ...overrides,
         } as any);
     }
 
@@ -56,27 +73,48 @@ describe('BookingService.create (routing, limits, caps)', () => {
 
     it('DEVICE tier 1-3 available -> APPROVED', async () => {
         prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
-        prisma.device.findUnique.mockResolvedValue({ id: 'r1', status: 'AVAILABLE', deviceTier: 3 });
+        prisma.device.findUnique.mockResolvedValue({
+            id: 'r1',
+            status: 'AVAILABLE',
+            deviceTier: 3,
+        });
         const b = await service.create('u1', {
-            resourceType: 'DEVICE', resourceId: 'r1', startAt: iso(0), endAt: iso(DAY),
+            resourceType: 'DEVICE',
+            resourceId: 'r1',
+            startAt: iso(0),
+            endAt: iso(DAY),
         } as any);
         expect(b.status).toBe('APPROVED');
     });
 
     it('DEVICE tier 4-5 available -> PENDING (staff approval)', async () => {
         prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
-        prisma.device.findUnique.mockResolvedValue({ id: 'r1', status: 'AVAILABLE', deviceTier: 5 });
+        prisma.device.findUnique.mockResolvedValue({
+            id: 'r1',
+            status: 'AVAILABLE',
+            deviceTier: 5,
+        });
         const b = await service.create('u1', {
-            resourceType: 'DEVICE', resourceId: 'r1', startAt: iso(0), endAt: iso(DAY),
+            resourceType: 'DEVICE',
+            resourceId: 'r1',
+            startAt: iso(0),
+            endAt: iso(DAY),
         } as any);
         expect(b.status).toBe('PENDING');
     });
 
     it('DEVICE unavailable -> WAITLIST', async () => {
         prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
-        prisma.device.findUnique.mockResolvedValue({ id: 'r1', status: 'BORROWED', deviceTier: 3 });
+        prisma.device.findUnique.mockResolvedValue({
+            id: 'r1',
+            status: 'BORROWED',
+            deviceTier: 3,
+        });
         const b = await service.create('u1', {
-            resourceType: 'DEVICE', resourceId: 'r1', startAt: iso(0), endAt: iso(DAY),
+            resourceType: 'DEVICE',
+            resourceId: 'r1',
+            startAt: iso(0),
+            endAt: iso(DAY),
         } as any);
         expect(b.status).toBe('WAITLIST');
     });
@@ -84,7 +122,10 @@ describe('BookingService.create (routing, limits, caps)', () => {
     it('ROOM with no overlap -> APPROVED', async () => {
         prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
         const b = await service.create('u1', {
-            resourceType: 'ROOM', resourceId: 'r1', startAt: iso(0), endAt: iso(2 * HOUR),
+            resourceType: 'ROOM',
+            resourceId: 'r1',
+            startAt: iso(0),
+            endAt: iso(2 * HOUR),
         } as any);
         expect(b.status).toBe('APPROVED');
     });
