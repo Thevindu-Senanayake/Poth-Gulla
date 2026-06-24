@@ -2,7 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { Role, User } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
-import { pointsFloorForTier, tierFromPoints } from './tier.utils.js';
+import {
+    pointsFloorForTier,
+    pointsFloorForTierWithConfig,
+    tierFromPoints,
+    tierFromPointsWithConfig,
+} from './tier.utils.js';
+import { SystemConfigService } from '../config/system-config.service.js';
 
 const OPERATIONAL_ROLES = new Set<Role>([Role.ADMIN, Role.LIBRARY_STAFF]);
 const isOperational = (role: Role) => OPERATIONAL_ROLES.has(role);
@@ -18,7 +24,10 @@ export type UserListParams = {
 
 @Injectable()
 export class UsersService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private systemConfig: SystemConfigService,
+    ) {}
 
     findByEmail(email: string): Promise<User | null> {
         return this.prisma.user.findUnique({ where: { email } });
@@ -59,7 +68,7 @@ export class UsersService {
         ]);
     }
 
-    create(data: {
+    async create(data: {
         email: string;
         name: string;
         passwordHash: string;
@@ -68,8 +77,14 @@ export class UsersService {
     }): Promise<User> {
         const points = data.userPoints ?? 500;
         const role = data.role ?? Role.STUDENT;
+
         // Operational roles (ADMIN, LIBRARY_STAFF) carry no tier.
-        const tier = isOperational(role) ? null : tierFromPoints(points);
+        let tier: number | null = null;
+        if (!isOperational(role)) {
+            const config = await this.systemConfig.get();
+            tier = tierFromPointsWithConfig(points, config.tiers);
+        }
+
         return this.prisma.user.create({
             data: { ...data, role, userPoints: points, tier },
         });
@@ -87,6 +102,7 @@ export class UsersService {
         const current = await this.prisma.user.findUniqueOrThrow({ where: { id } });
         const effectiveRole = role ?? current.role;
         const operational = isOperational(effectiveRole);
+        const config = await this.systemConfig.get();
 
         let finalPoints: number | undefined;
         let finalTier: number | null | undefined;
@@ -95,16 +111,16 @@ export class UsersService {
             finalTier = null;
             finalPoints = userPoints;
         } else if (tier !== undefined) {
-            finalPoints = pointsFloorForTier(tier);
+            finalPoints = pointsFloorForTierWithConfig(tier, config.tiers);
             finalTier = tier;
         } else if (userPoints !== undefined) {
             finalPoints = userPoints;
-            finalTier = tierFromPoints(userPoints);
+            finalTier = tierFromPointsWithConfig(userPoints, config.tiers);
         } else if (role !== undefined && !isOperational(current.role)) {
             // Role changed between patron types — no points/tier adjustment needed.
         } else if (role !== undefined && isOperational(current.role) && !operational) {
             // Operational → patron role change: derive tier from existing points.
-            finalTier = tierFromPoints(current.userPoints);
+            finalTier = tierFromPointsWithConfig(current.userPoints, config.tiers);
         }
 
         return this.prisma.user.update({
