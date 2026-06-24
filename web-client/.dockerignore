@@ -1,0 +1,14 @@
+# Never copy the host's workspace node_modules (symlinks resolve to the monorepo
+# root and break inside the image) or build output / local env into the image.
+node_modules
+dist
+.vite
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+*.log
+Dockerfile
+Dockerfile.prod
+.dockerignore
