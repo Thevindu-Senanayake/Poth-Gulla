@@ -44,11 +44,10 @@ export default function Login() {
         overflow: "hidden",
         padding: 24,
         backgroundColor: "#0c2a1a",
-        backgroundImage: `linear-gradient(150deg, rgba(12,42,26,0.92) 0%, rgba(22,101,52,0.82) 55%, rgba(34,197,94,0.72) 100%), url("${LIBRARY_IMG}")`,
+        backgroundImage: `linear-gradient(150deg, rgba(12,42,26,0.92) 0%))`,
         backgroundSize: "cover",
         backgroundPosition: "center",
-      }}
-    >
+      }}>
       {/* Decorative soft blobs */}
       <div
         style={{
@@ -86,8 +85,7 @@ export default function Login() {
           padding: "40px 38px 32px",
           boxShadow: "0 30px 70px rgba(0,0,0,.35)",
           backdropFilter: "blur(4px)",
-        }}
-      >
+        }}>
         {/* Logo + brand, centered */}
         <div
           style={{
@@ -95,8 +93,7 @@ export default function Login() {
             flexDirection: "column",
             alignItems: "center",
             marginBottom: 26,
-          }}
-        >
+          }}>
           <div
             style={{
               width: 58,
@@ -108,8 +105,7 @@ export default function Login() {
               justifyContent: "center",
               boxShadow: "0 6px 18px rgba(22,163,74,.35)",
               marginBottom: 14,
-            }}
-          >
+            }}>
             <svg
               width="28"
               height="28"
@@ -118,8 +114,7 @@ export default function Login() {
               stroke="#fff"
               strokeWidth="2"
               strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+              strokeLinejoin="round">
               <path d={BOOK_SVG} />
               <path d="M5 19a1 1 0 0 1 1-1h13" />
             </svg>
@@ -130,8 +125,7 @@ export default function Login() {
               fontWeight: 700,
               fontSize: 24,
               color: "#16231b",
-            }}
-          >
+            }}>
             Poth Gulla
           </div>
           <div
@@ -142,8 +136,7 @@ export default function Login() {
               letterSpacing: ".16em",
               textTransform: "uppercase",
               marginTop: 3,
-            }}
-          >
+            }}>
             Smart Library Management System
           </div>
         </div>
@@ -155,8 +148,7 @@ export default function Login() {
             color: "#16231b",
             marginBottom: 4,
             textAlign: "center",
-          }}
-        >
+          }}>
           Welcome back
         </div>
         <div
@@ -165,8 +157,7 @@ export default function Login() {
             color: "#7c7e93",
             marginBottom: 24,
             textAlign: "center",
-          }}
-        >
+          }}>
           Sign in to your account
         </div>
 
@@ -179,8 +170,7 @@ export default function Login() {
               color: "#5c5e72",
               display: "block",
               marginBottom: 6,
-            }}
-          >
+            }}>
             Email address
           </label>
           <input
@@ -203,8 +193,7 @@ export default function Login() {
               color: "#5c5e72",
               display: "block",
               marginBottom: 6,
-            }}
-          >
+            }}>
             Password
           </label>
           <input
@@ -227,8 +216,7 @@ export default function Login() {
               padding: "9px 13px",
               fontSize: 12.5,
               marginBottom: 16,
-            }}
-          >
+            }}>
             {error}
           </div>
         )}
@@ -249,8 +237,7 @@ export default function Login() {
             fontWeight: 700,
             cursor: loading ? "default" : "pointer",
             boxShadow: "0 6px 18px rgba(22,163,74,.32)",
-          }}
-        >
+          }}>
           {loading ? "Signing in…" : "Sign in"}
         </button>
 
@@ -260,8 +247,7 @@ export default function Login() {
             marginTop: 20,
             fontSize: 11.5,
             color: "#9b9db2",
-          }}
-        >
+          }}>
           Informatics Institute of Technology · Poth Gulla
         </div>
       </div>

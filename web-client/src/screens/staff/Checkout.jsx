@@ -12,8 +12,7 @@ function SvgIcon({ path, color, size = 18 }) {
       stroke={color}
       strokeWidth="2"
       strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+      strokeLinejoin="round">
       {path
         .split("M")
         .filter(Boolean)
@@ -39,7 +38,9 @@ const inputStyle = {
 
 export default function Checkout() {
   const { staffScan, setStaffScan, showToast } = useApp();
-  const [bookingQr, setBookingQr] = useState("");
+  // The printed QR on every resource IS its asset tag, so checkout and
+  // return both need only one input. The booking QR / token is no longer a
+  // separate piece of paper to scan.
   const [assetTag, setAssetTag] = useState("");
   const [condition, setCondition] = useState("GOOD");
   const [busy, setBusy] = useState(false);
@@ -50,7 +51,6 @@ export default function Checkout() {
   function setMode(mode) {
     setStaffScan((prev) => ({ ...prev, mode, stage: "ready" }));
     setResult(null);
-    setBookingQr("");
     setAssetTag("");
   }
 
@@ -58,25 +58,25 @@ export default function Checkout() {
     setBusy(true);
     setResult(null);
     try {
+      const tag = assetTag.trim();
+      if (!tag) throw new Error("Scan or enter the asset tag");
       if (isCheckout) {
-        if (!bookingQr.trim() || !assetTag.trim())
-          throw new Error("Enter booking QR token and asset tag");
-        const b = await scanCheckout(bookingQr.trim(), assetTag.trim());
+        // Asset tag doubles as the booking QR — backend resolves the
+        // pending APPROVED booking from the asset.
+        const b = await scanCheckout(tag, tag);
         setResult({
           ok: true,
           msg: `Checked out · booking ${String(b.id).slice(0, 8)}`,
         });
         showToast("Checked out successfully");
       } else {
-        if (!assetTag.trim()) throw new Error("Enter the asset tag to return");
-        const b = await scanReturn(assetTag.trim(), condition);
+        const b = await scanReturn(tag, condition);
         setResult({
           ok: true,
           msg: `Return processed · borrowing ${String(b.id).slice(0, 8)}`,
         });
         showToast("Return processed");
       }
-      setBookingQr("");
       setAssetTag("");
     } catch (e) {
       const msg = e?.response?.data?.message ?? e?.message ?? "Scan failed";
@@ -93,8 +93,7 @@ export default function Checkout() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}
-    >
+      }}>
       <div style={{ marginBottom: 26 }}>
         <p style={{ fontSize: 12, color: "#7c7e93", margin: "0 0 3px" }}>
           Staff · Desk
@@ -106,23 +105,20 @@ export default function Checkout() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: 0,
-          }}
-        >
+          }}>
           Checkout / Return desk
         </h1>
       </div>
 
       <div
-        style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 18 }}
-      >
+        style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 18 }}>
         <div
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             padding: "24px 26px",
-          }}
-        >
+          }}>
           <div
             style={{
               display: "flex",
@@ -131,8 +127,7 @@ export default function Checkout() {
               padding: 4,
               gap: 4,
               marginBottom: 26,
-            }}
-          >
+            }}>
             {["checkout", "return"].map((mode) => (
               <button
                 key={mode}
@@ -152,8 +147,7 @@ export default function Checkout() {
                     staffScan.mode === mode
                       ? "0 2px 8px rgba(22,163,74,.25)"
                       : "none",
-                }}
-              >
+                }}>
                 {mode === "checkout" ? "Check out" : "Return"}
               </button>
             ))}
@@ -165,8 +159,7 @@ export default function Checkout() {
               display: "flex",
               justifyContent: "center",
               marginBottom: 22,
-            }}
-          >
+            }}>
             <div
               style={{
                 width: 180,
@@ -175,8 +168,7 @@ export default function Checkout() {
                 borderRadius: 14,
                 position: "relative",
                 overflow: "hidden",
-              }}
-            >
+              }}>
               {[
                 {
                   top: 12,
@@ -230,7 +222,9 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* Manual entry - the desk scanner writes into these fields */}
+          {/* Manual entry - the desk scanner writes into this single field.
+              The asset-tag QR on each item is the only code needed; backend
+              resolves the booking from it. */}
           {isCheckout ? (
             <>
               <label
@@ -240,33 +234,25 @@ export default function Checkout() {
                   color: "#5c5e72",
                   display: "block",
                   marginBottom: 6,
-                }}
-              >
-                Booking QR token
-              </label>
-              <input
-                value={bookingQr}
-                onChange={(e) => setBookingQr(e.target.value)}
-                placeholder="qrToken from the member's booking"
-                style={{ ...inputStyle, marginBottom: 14 }}
-              />
-              <label
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "#5c5e72",
-                  display: "block",
-                  marginBottom: 6,
-                }}
-              >
+                }}>
                 Asset tag
               </label>
               <input
                 value={assetTag}
                 onChange={(e) => setAssetTag(e.target.value)}
-                placeholder="e.g. BK-CC-001 / DEV-MBP-001"
-                style={{ ...inputStyle, marginBottom: 18 }}
+                placeholder="Scan the QR on the book / device"
+                autoFocus
+                style={{ ...inputStyle, marginBottom: 8 }}
               />
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "#9b9db2",
+                  marginBottom: 18,
+                }}>
+                One scan is enough — the QR encodes the asset tag, which the
+                system uses to find the member's approved booking.
+              </div>
             </>
           ) : (
             <>
@@ -277,14 +263,14 @@ export default function Checkout() {
                   color: "#5c5e72",
                   display: "block",
                   marginBottom: 6,
-                }}
-              >
+                }}>
                 Asset tag
               </label>
               <input
                 value={assetTag}
                 onChange={(e) => setAssetTag(e.target.value)}
                 placeholder="Scan the item's asset tag"
+                autoFocus
                 style={{ ...inputStyle, marginBottom: 14 }}
               />
               <label
@@ -294,8 +280,7 @@ export default function Checkout() {
                   color: "#5c5e72",
                   display: "block",
                   marginBottom: 6,
-                }}
-              >
+                }}>
                 Condition
               </label>
               <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
@@ -326,8 +311,7 @@ export default function Checkout() {
                             ? "#16a34a"
                             : "#ef4444"
                           : "#7c7e93",
-                    }}
-                  >
+                    }}>
                     {c === "GOOD" ? "Good" : "Damaged"}
                   </button>
                 ))}
@@ -360,8 +344,7 @@ export default function Checkout() {
             onMouseLeave={(e) => {
               e.currentTarget.style.background = busy ? "#86efac" : "#16a34a";
               e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
+            }}>
             {busy
               ? "Processing…"
               : isCheckout
@@ -380,8 +363,7 @@ export default function Checkout() {
                 borderRadius: 9,
                 background: result.ok ? "#dcfce7" : "#fee2e2",
                 border: `1px solid ${result.ok ? "#bbf7d0" : "#fecaca"}`,
-              }}
-            >
+              }}>
               <SvgIcon
                 path={result.ok ? "M5 12l4 4L19 6" : "M18 6L6 18M6 6l12 12"}
                 color={result.ok ? "#16a34a" : "#ef4444"}
@@ -392,8 +374,7 @@ export default function Checkout() {
                   fontSize: 13,
                   fontWeight: 600,
                   color: result.ok ? "#15803d" : "#b91c1c",
-                }}
-              >
+                }}>
                 {result.msg}
               </span>
             </div>
@@ -407,8 +388,7 @@ export default function Checkout() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             padding: "22px 24px",
-          }}
-        >
+          }}>
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -416,8 +396,7 @@ export default function Checkout() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: "0 0 16px",
-            }}
-          >
+            }}>
             How the desk works
           </h2>
           <ol
@@ -427,8 +406,7 @@ export default function Checkout() {
               color: "#4b4d63",
               fontSize: 13,
               lineHeight: 1.9,
-            }}
-          >
+            }}>
             <li>
               <strong>Checkout</strong> - scan the member's <em>booking QR</em>{" "}
               (an APPROVED booking) then the item's <em>asset tag</em>. The
@@ -453,8 +431,7 @@ export default function Checkout() {
               border: "1px solid #e7e7ef",
               borderRadius: 9,
               padding: "12px 14px",
-            }}
-          >
+            }}>
             A hardware scanner simply types into the fields on the left - no
             camera integration required.
           </div>

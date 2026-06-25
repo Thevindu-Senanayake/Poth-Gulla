@@ -1,9 +1,18 @@
+import { useState } from "react";
 import { useApp } from "../../App";
 import { useFetch } from "../../hooks/useFetch";
+import { usePaginated } from "../../hooks/usePaginated";
 import { listUsers, disableUser, enableUser } from "../../api/users";
 import { Loading, ErrorState } from "../../components/States";
+import Pagination from "../../components/Pagination";
 
-const ROLE_CHIPS = ["All", "Student", "Lecturer", "Staff", "Admin"];
+const ROLE_CHIPS = [
+  { label: "All", key: "All" },
+  { label: "Student", key: "student" },
+  { label: "Lecturer", key: "lecturer" },
+  { label: "Staff", key: "staff" },
+  { label: "Admin", key: "admin" },
+];
 const TIER_CHIPS = ["All", "T1", "T2", "T3", "T4", "T5"];
 const SORT_OPTS = ["Name", "Points", "Tier"];
 
@@ -27,8 +36,54 @@ export default function Users() {
     setAdminModal,
     showToast,
     refresh,
+    searchQuery,
   } = useApp();
-  const { data, loading, error, reload } = useFetch(() => listUsers(), []);
+  const { data, loading, error, reload } = useFetch(
+    () => listUsers({ limit: 500 }),
+    [],
+  );
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(30);
+
+  // Build base list with all filters applied — hooks must stay above guards.
+  const usersList = data?.items || [];
+  const tierMap = {
+    T1: "Tier 1",
+    T2: "Tier 2",
+    T3: "Tier 3",
+    T4: "Tier 4",
+    T5: "Tier 5",
+  };
+  const q = (searchQuery || "").trim().toLowerCase();
+
+  let filtered = usersList;
+  if (userFilter && userFilter !== "All") {
+    // Filter by stable internal role key, not the display label — fixes
+    // "Staff"/"Admin"/"Lecturer" returning zero results.
+    filtered = filtered.filter((u) => u.roleKey === userFilter);
+  }
+  if (tierFilter !== "All")
+    filtered = filtered.filter((u) => u.tier === tierMap[tierFilter]);
+  if (q) {
+    filtered = filtered.filter(
+      (u) =>
+        (u.name || "").toLowerCase().includes(q) ||
+        (u.email || "").toLowerCase().includes(q),
+    );
+  }
+  filtered = [...filtered].sort((a, b) => {
+    if (sortOpt === "Name") return a.name.localeCompare(b.name);
+    if (sortOpt === "Points") return b.pts - a.pts;
+    if (sortOpt === "Tier")
+      return (TIER_ORDER[b.tier] || 0) - (TIER_ORDER[a.tier] || 0);
+    return 0;
+  });
+
+  const paged = usePaginated(filtered, page, pageSize);
+
+  if (loading) return <Loading label="Loading users…" />;
+  if (error) return <ErrorState error={error} onRetry={reload} />;
 
   async function handleToggleActive(u) {
     try {
@@ -40,6 +95,7 @@ export default function Users() {
         showToast(`${u.name} enabled`);
       }
       refresh();
+      reload();
     } catch (e) {
       showToast(e?.response?.data?.message ?? "Update failed");
     }
@@ -71,49 +127,20 @@ export default function Users() {
     });
   }
 
-  if (loading) return <Loading label="Loading users…" />;
-  if (error) return <ErrorState error={error} onRetry={reload} />;
-
-  const usersList = data?.items || [];
-  const tierMap = {
-    T1: "Tier 1",
-    T2: "Tier 2",
-    T3: "Tier 3",
-    T4: "Tier 4",
-    T5: "Tier 5",
-  };
-
-  let filtered = usersList;
-  if (userFilter !== "All")
-    filtered = filtered.filter((u) => u.role === userFilter);
-  if (tierFilter !== "All")
-    filtered = filtered.filter((u) => u.tier === tierMap[tierFilter]);
-
-  filtered = [...filtered].sort((a, b) => {
-    if (sortOpt === "Name") return a.name.localeCompare(b.name);
-    if (sortOpt === "Points") return b.pts - a.pts;
-    if (sortOpt === "Tier")
-      return (TIER_ORDER[b.tier] || 0) - (TIER_ORDER[a.tier] || 0);
-    return 0;
-  });
-
   return (
     <div
       style={{
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}
-    >
-      {/* Header */}
+      }}>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
           marginBottom: 22,
-        }}
-      >
+        }}>
         <div>
           <h1
             style={{
@@ -122,12 +149,11 @@ export default function Users() {
               fontWeight: 700,
               color: "#1a1b2e",
               margin: "0 0 4px",
-            }}
-          >
+            }}>
             Users
           </h1>
           <p style={{ fontSize: 13, color: "#7c7e93", margin: 0 }}>
-            {usersList.length} members registered
+            {usersList.length} members registered · {filtered.length} shown
           </p>
         </div>
         <button
@@ -142,13 +168,11 @@ export default function Users() {
             fontWeight: 700,
             cursor: "pointer",
             letterSpacing: 0.2,
-          }}
-        >
+          }}>
           + Add user
         </button>
       </div>
 
-      {/* Filters - dropdowns for role, tier and sort */}
       <div
         style={{
           display: "flex",
@@ -156,18 +180,19 @@ export default function Users() {
           marginBottom: 20,
           flexWrap: "wrap",
           alignItems: "flex-end",
-        }}
-      >
+        }}>
         <div>
           <label style={dropLabel}>Role</label>
           <select
             value={userFilter}
-            onChange={(e) => setUserFilter(e.target.value)}
-            style={dropStyle}
-          >
+            onChange={(e) => {
+              setUserFilter(e.target.value);
+              setPage(1);
+            }}
+            style={dropStyle}>
             {ROLE_CHIPS.map((r) => (
-              <option key={r} value={r}>
-                {r === "All" ? "All roles" : r}
+              <option key={r.key} value={r.key}>
+                {r.key === "All" ? "All roles" : r.label}
               </option>
             ))}
           </select>
@@ -176,9 +201,11 @@ export default function Users() {
           <label style={dropLabel}>Tier</label>
           <select
             value={tierFilter}
-            onChange={(e) => setTierFilter(e.target.value)}
-            style={dropStyle}
-          >
+            onChange={(e) => {
+              setTierFilter(e.target.value);
+              setPage(1);
+            }}
+            style={dropStyle}>
             {TIER_CHIPS.map((t) => (
               <option key={t} value={t}>
                 {t === "All" ? "All tiers" : "Tier " + t.replace("T", "")}
@@ -191,8 +218,7 @@ export default function Users() {
           <select
             value={sortOpt}
             onChange={(e) => setSortOpt(e.target.value)}
-            style={dropStyle}
-          >
+            style={dropStyle}>
             {SORT_OPTS.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -202,17 +228,13 @@ export default function Users() {
         </div>
       </div>
 
-      {/* Table */}
       <div
-        className="pg-card"
         style={{
           background: "#fff",
           border: "1px solid #e7e7ef",
           borderRadius: 14,
           overflow: "hidden",
-        }}
-      >
-        {/* Table header */}
+        }}>
         <div
           style={{
             display: "grid",
@@ -220,8 +242,7 @@ export default function Users() {
             padding: "10px 20px",
             background: "#f8f8fc",
             borderBottom: "1px solid #e7e7ef",
-          }}
-        >
+          }}>
           {["Member", "Role", "Tier", "Points", "Status", "Actions"].map(
             (col) => (
               <span
@@ -232,28 +253,25 @@ export default function Users() {
                   color: "#9b9db2",
                   textTransform: "uppercase",
                   letterSpacing: 0.5,
-                }}
-              >
+                }}>
                 {col}
               </span>
             ),
           )}
         </div>
 
-        {/* Rows */}
-        {filtered.length === 0 && (
+        {paged.slice.length === 0 && (
           <div
             style={{
               padding: "40px 20px",
               textAlign: "center",
               color: "#9b9db2",
               fontSize: 13,
-            }}
-          >
+            }}>
             No users match these filters.
           </div>
         )}
-        {filtered.map((u, i) => (
+        {paged.slice.map((u, i) => (
           <div
             key={u.id}
             style={{
@@ -261,11 +279,9 @@ export default function Users() {
               gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 100px",
               padding: "14px 20px",
               borderBottom:
-                i < filtered.length - 1 ? "1px solid #f0f0f6" : "none",
+                i < paged.slice.length - 1 ? "1px solid #f0f0f6" : "none",
               alignItems: "center",
-            }}
-          >
-            {/* Member */}
+            }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div
                 style={{
@@ -280,8 +296,7 @@ export default function Users() {
                   fontWeight: 700,
                   color: "#fff",
                   flexShrink: 0,
-                }}
-              >
+                }}>
                 {u.name
                   .split(" ")
                   .map((n) => n[0])
@@ -290,41 +305,30 @@ export default function Users() {
               </div>
               <div>
                 <div
-                  style={{ fontSize: 13, fontWeight: 600, color: "#1a1b2e" }}
-                >
+                  style={{ fontSize: 13, fontWeight: 600, color: "#1a1b2e" }}>
                   {u.name}
                 </div>
                 <div style={{ fontSize: 11, color: "#9b9db2" }}>{u.email}</div>
               </div>
             </div>
-
-            {/* Role */}
             <span style={{ fontSize: 12, color: "#3a3b4e" }}>{u.role}</span>
-
-            {/* Tier */}
             <span
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 12,
                 color: "#3a3b4e",
-              }}
-            >
+              }}>
               {u.tier}
             </span>
-
-            {/* Points */}
             <span
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 13,
                 fontWeight: 700,
                 color: "#16a34a",
-              }}
-            >
+              }}>
               {u.pts > 0 ? u.pts.toLocaleString() : "-"}
             </span>
-
-            {/* Status */}
             <span
               style={{
                 display: "inline-block",
@@ -335,12 +339,9 @@ export default function Users() {
                 fontSize: 11,
                 fontWeight: 700,
                 width: "fit-content",
-              }}
-            >
+              }}>
               {u.status}
             </span>
-
-            {/* Actions */}
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 onClick={() => handleEdit(u)}
@@ -355,8 +356,7 @@ export default function Users() {
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
-                }}
-              >
+                }}>
                 <svg
                   width="14"
                   height="14"
@@ -365,8 +365,7 @@ export default function Users() {
                   stroke="#3a3b4e"
                   strokeWidth="2"
                   strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                  strokeLinejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
@@ -384,8 +383,7 @@ export default function Users() {
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
-                }}
-              >
+                }}>
                 <svg
                   width="14"
                   height="14"
@@ -394,8 +392,7 @@ export default function Users() {
                   stroke={u.isActive ? "#dc2626" : "#16a34a"}
                   strokeWidth="2"
                   strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                  strokeLinejoin="round">
                   {u.isActive ? (
                     <path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10" />
                   ) : (
@@ -406,6 +403,18 @@ export default function Users() {
             </div>
           </div>
         ))}
+
+        <Pagination
+          page={paged.page}
+          pageSize={pageSize}
+          total={paged.total}
+          onPageChange={setPage}
+          onPageSizeChange={(s) => {
+            setPageSize(s);
+            setPage(1);
+          }}
+          pageSizes={[10, 30, 50, 100]}
+        />
       </div>
     </div>
   );

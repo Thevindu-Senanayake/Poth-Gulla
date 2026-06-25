@@ -1,4 +1,19 @@
-@import url("https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Spectral:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+/* Font links live in index.html so the browser can preconnect early.
+   Fraunces (display) + Inter (UI) + JetBrains Mono (numbers/asset tags). */
+
+:root {
+  --font-display: "Fraunces", "Spectral", Georgia, serif;
+  --font-body:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+    sans-serif;
+  --font-mono:
+    "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Brand wordmark + welcome-back greeting use a modern geometric sans
+     instead of the literary serif — the serif felt too formal for the
+     logo and for short codes like "ST01". */
+  --font-brand: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+}
 
 * {
   box-sizing: border-box;
@@ -11,20 +26,96 @@ body,
   height: 100%;
 }
 body {
-  font-family: "Public Sans", system-ui, sans-serif;
+  font-family: var(--font-body);
   background: #eeeef4;
   color: #16231b;
+  font-size: 14px;
+  line-height: 1.55;
+  font-feature-settings: "cv11", "ss01", "ss03";
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
-button {
-  font-family: inherit;
-  color: inherit;
+
+h1,
+h2,
+h3,
+h4,
+[style*="Spectral"] {
+  font-family: var(--font-display) !important;
+  font-variation-settings: "opsz" 96;
+  letter-spacing: -0.005em;
+  line-height: 1.2;
 }
+
+[style*="fontWeight: 800"],
+[style*="font-weight: 800"] {
+  font-weight: 700 !important;
+}
+
+[style*="IBM Plex Mono"] {
+  font-family: var(--font-mono) !important;
+  font-feature-settings: "calt", "ss01", "ss02";
+}
+
+[style*="Public Sans"] {
+  font-family: var(--font-body) !important;
+}
+
+button,
 input,
 textarea,
 select {
   font-family: inherit;
+  color: inherit;
 }
+
+.pg-num,
+[style*="IBM Plex Mono"] {
+  font-variant-numeric: tabular-nums;
+}
+
+[style*="textTransform"][style*="uppercase"] {
+  font-weight: 600 !important;
+}
+
+/* === Brand wordmark & welcome greeting ====================================
+   Override the global serif rule for these two specific spots. The brand
+   wants a confident geometric wordmark; the welcome heading is usually a
+   short username / code where a sans reads cleaner. */
+.pg-brand {
+  font-family: var(--font-brand) !important;
+  font-variation-settings: normal !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  font-style: normal !important;
+}
+.pg-welcome-name {
+  font-family: var(--font-brand) !important;
+  font-variation-settings: normal !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* === Sidebar nav hover ====================================================
+   Track the cursor with a soft green wash + green accent. Active items
+   already have the gradient pill so we only style the non-active state. */
+.pg-nav-item {
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease;
+}
+.pg-nav-item:not(.is-active):hover {
+  background: #f0fdf4 !important;
+  color: #16a34a !important;
+  transform: translateX(2px);
+}
+.pg-nav-item:not(.is-active):hover svg {
+  opacity: 1 !important;
+  stroke: #16a34a !important;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

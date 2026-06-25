@@ -2,26 +2,82 @@ import { useState } from "react";
 import { useApp } from "../../App";
 import { useFetch } from "../../hooks/useFetch";
 import { usePaginated } from "../../hooks/usePaginated";
-import { listBooks, deleteBook } from "../../api/catalogue";
+import {
+  listBooks,
+  listDevices,
+  listRooms,
+  deleteBook,
+  deleteDevice,
+  deleteRoom,
+  getBook,
+  retireCopy,
+} from "../../api/catalogue";
 import { Loading, ErrorState } from "../../components/States";
 import Pagination from "../../components/Pagination";
 import ResourceImage from "../../components/ResourceImage";
 
-export default function Resources() {
-  const { setAdminModal, setStaffModal, showToast, user } = useApp();
-  const { data, loading, error, reload } = useFetch(
-    () => listBooks({ limit: 100 }),
-    [],
-  );
+const TABS = [
+  { key: "books", label: "Books" },
+  { key: "devices", label: "Devices" },
+  { key: "rooms", label: "Study Rooms" },
+];
 
-  // All hooks must run on every render — declare them before any early return.
+// Show the actual backend message + HTTP status so QA can match the failure
+// to a server-side log line.
+function backendError(e, fallback) {
+  const data = e?.response?.data;
+  const status = e?.response?.status;
+  const msg =
+    (typeof data === "string" && data) ||
+    data?.message ||
+    data?.error ||
+    e?.message ||
+    fallback;
+  return status ? `${msg} (HTTP ${status})` : msg;
+}
+
+async function loadAll() {
+  const [books, devices, rooms] = await Promise.all([
+    listBooks({ limit: 500 }),
+    listDevices({ limit: 500 }),
+    listRooms(),
+  ]);
+  return {
+    books: books.items,
+    devices: devices.items,
+    rooms: rooms.items,
+  };
+}
+
+export default function Resources() {
+  const { setAdminModal, setStaffModal, showToast, user, searchQuery } =
+    useApp();
+  const { data, loading, error, reload } = useFetch(() => loadAll(), []);
+
+  const [tab, setTab] = useState("books");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [confirm, setConfirm] = useState(null); // { id, title }
+  const [pageSize, setPageSize] = useState(30);
+  const [confirm, setConfirm] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const books = data?.items || [];
-  const paged = usePaginated(books, page, pageSize);
+  const all =
+    tab === "books"
+      ? data?.books || []
+      : tab === "devices"
+        ? data?.devices || []
+        : data?.rooms || [];
+
+  const q = (searchQuery || "").trim().toLowerCase();
+  const items = q
+    ? all.filter(
+        (r) =>
+          (r.title || "").toLowerCase().includes(q) ||
+          (r.author || "").toLowerCase().includes(q) ||
+          (r.cat || "").toLowerCase().includes(q),
+      )
+    : all;
+
+  const paged = usePaginated(items, page, pageSize);
 
   if (loading) return <Loading label="Loading resources…" />;
   if (error) return <ErrorState error={error} onRetry={reload} />;
@@ -30,41 +86,235 @@ export default function Resources() {
   const canDelete =
     role === "admin" ||
     role === "head_librarian" ||
-    role === "library_staff" ||
-    role === "staff";
+    role === "staff" ||
+    role === "library_staff";
+  const canEdit = canDelete;
+
+  const books = data?.books || [];
+  const devices = data?.devices || [];
+  const rooms = data?.rooms || [];
 
   const stats = [
-    { value: books.length, label: "Book titles", col: "#16a34a" },
     {
-      value: books.reduce((s, b) => s + (b.available || 0), 0),
-      label: "Available copies",
-      col: "#3b82f6",
+      value: books.length + devices.length + rooms.length,
+      label: "Total resources",
+      col: "#16a34a",
     },
-    {
-      value: books.filter((b) => (b.available || 0) === 0).length,
-      label: "Fully on loan",
-      col: "#f59e0b",
-    },
-    {
-      value: new Set(books.map((b) => b.cat)).size,
-      label: "Categories",
-      col: "#7c3aed",
-    },
+    { value: books.length, label: "Book titles", col: "#3b82f6" },
+    { value: devices.length, label: "Devices", col: "#7c3aed" },
+    { value: rooms.length, label: "Study rooms", col: "#f59e0b" },
   ];
+
+  function changeTab(next) {
+    setTab(next);
+    setPage(1);
+  }
+
+  function openEdit(item) {
+    const type =
+      tab === "devices" ? "device" : tab === "rooms" ? "room" : "book";
+    setStaffModal({
+      open: true,
+      type,
+      editItem: item,
+      rf: {
+        rtitle: item.title || "",
+        rauthor: item.author || "",
+        rcat: item.cat || "",
+        rcopies: item.capacity || 1,
+        rtier: item.tier || 1,
+        rstatus: "available",
+      },
+    });
+  }
+
+  async function askDeleteBook(book) {
+    try {
+      const fresh = await getBook(book.id);
+      const copies = fresh.raw?.copies || [];
+      setConfirm({ kind: "book", id: book.id, title: book.title, copies });
+    } catch {
+      setConfirm({ kind: "book", id: book.id, title: book.title, copies: [] });
+    }
+  }
 
   async function handleDelete() {
     if (!confirm) return;
     setDeleting(true);
     try {
-      await deleteBook(confirm.id);
-      showToast(`Deleted “${confirm.title}”`);
+      if (confirm.kind === "book") {
+        const live = (confirm.copies || []).filter(
+          (c) => c.status !== "RETIRED",
+        );
+        const onLoan = live.filter((c) => c.status === "BORROWED");
+        if (onLoan.length > 0) {
+          showToast(
+            `Cannot delete — ${onLoan.length} copy${onLoan.length > 1 ? "ies are" : " is"} currently on loan.`,
+          );
+          setDeleting(false);
+          return;
+        }
+        for (const c of live) {
+          try {
+            await retireCopy(c.id);
+          } catch (re) {
+            showToast(backendError(re, `Could not retire copy ${c.assetTag}`));
+            setDeleting(false);
+            return;
+          }
+        }
+        await deleteBook(confirm.id);
+      } else if (confirm.kind === "device") {
+        await deleteDevice(confirm.id);
+      } else {
+        await deleteRoom(confirm.id);
+      }
+      showToast(`Deleted "${confirm.title}"`);
       setConfirm(null);
       reload();
     } catch (e) {
-      showToast(e?.response?.data?.message ?? "Could not delete resource");
+      showToast(backendError(e, "Could not delete resource"));
     } finally {
       setDeleting(false);
     }
+  }
+
+  const rowGrid = "3fr 1fr 1fr 320px";
+
+  function renderRow(item, i, last) {
+    const isBook = tab === "books";
+    const hasAvail = (item.available || 0) > 0;
+    const availLabel = isBook
+      ? `${item.available} available`
+      : hasAvail
+        ? "Available"
+        : "Unavailable";
+
+    const onManageCopies = () =>
+      setAdminModal({
+        open: true,
+        mode: "copies",
+        editUser: null,
+        uf: {
+          uname: "",
+          uemail: "",
+          ubatch: "",
+          uphone: "",
+          urole: "student",
+        },
+        copiesBook: item,
+      });
+
+    const askDelete = () => {
+      if (isBook) askDeleteBook(item);
+      else
+        setConfirm({
+          kind: tab === "devices" ? "device" : "room",
+          id: item.id,
+          title: item.title,
+          copies: [],
+        });
+    };
+
+    return (
+      <div
+        key={item.id}
+        style={{
+          display: "grid",
+          gridTemplateColumns: rowGrid,
+          padding: "16px 20px",
+          borderBottom: i < last ? "1px solid #f0f0f6" : "none",
+          alignItems: "center",
+          gap: 12,
+        }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <ResourceImage
+            imageUrl={item.imageUrl}
+            resourceType={(item.type || "").toUpperCase() || "BOOK"}
+            iconPath={item.iconPath}
+            color={item.color}
+            w={44}
+            h={54}
+            radius={6}
+          />
+          <div>
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: "#1a1b2e",
+                marginBottom: 2,
+              }}>
+              {item.title}
+            </div>
+            <div style={{ fontSize: 12, color: "#9b9db2" }}>{item.author}</div>
+          </div>
+        </div>
+        <span style={{ fontSize: 12, color: "#3a3b4e" }}>{item.cat}</span>
+        <div>
+          <span
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 12,
+              fontWeight: 700,
+              color: hasAvail ? "#16a34a" : "#ef4444",
+            }}>
+            {availLabel}
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          {isBook && (
+            <button
+              onClick={onManageCopies}
+              style={{
+                background: "#f0f0f6",
+                color: "#3a3b4e",
+                border: "1px solid #e7e7ef",
+                borderRadius: 8,
+                padding: "7px 12px",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}>
+              Manage copies
+            </button>
+          )}
+          {canEdit && (
+            <button
+              onClick={() => openEdit(item)}
+              style={{
+                background: "#fff",
+                color: "#16a34a",
+                border: "1px solid #bbf7d0",
+                borderRadius: 8,
+                padding: "7px 12px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}>
+              Edit
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={askDelete}
+              style={{
+                background: "#fff",
+                color: "#ef4444",
+                border: "1px solid #fecaca",
+                borderRadius: 8,
+                padding: "7px 10px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}>
+              Delete
+            </button>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -93,14 +343,25 @@ export default function Resources() {
             Resources
           </h1>
           <p style={{ fontSize: 13, color: "#7c7e93", margin: 0 }}>
-            Click any title to manage its individual copies.
+            Books, devices and study rooms — copy-level management.
+            {q && (
+              <span style={{ marginLeft: 8 }}>
+                · {items.length} match "{searchQuery}"
+              </span>
+            )}
           </p>
         </div>
         <button
           onClick={() =>
             setStaffModal({
               open: true,
-              type: "book",
+              type:
+                tab === "devices"
+                  ? "device"
+                  : tab === "rooms"
+                    ? "room"
+                    : "book",
+              editItem: null,
               rf: {
                 rtitle: "",
                 rauthor: "",
@@ -130,11 +391,10 @@ export default function Resources() {
           display: "grid",
           gridTemplateColumns: "repeat(4,1fr)",
           gap: 14,
-          marginBottom: 24,
+          marginBottom: 18,
         }}>
         {stats.map((stat, i) => (
           <div
-            className="pg-card-stat"
             key={i}
             style={{
               background: "#fff",
@@ -161,7 +421,38 @@ export default function Resources() {
       </div>
 
       <div
-        className="pg-card"
+        style={{
+          display: "flex",
+          gap: 6,
+          marginBottom: 14,
+          borderBottom: "1px solid #e7e7ef",
+        }}>
+        {TABS.map((t) => {
+          const active = t.key === tab;
+          return (
+            <button
+              key={t.key}
+              onClick={() => changeTab(t.key)}
+              style={{
+                background: "none",
+                border: "none",
+                padding: "10px 14px",
+                fontSize: 13,
+                fontWeight: 700,
+                color: active ? "#16a34a" : "#7c7e93",
+                cursor: "pointer",
+                borderBottom: active
+                  ? "2px solid #16a34a"
+                  : "2px solid transparent",
+                marginBottom: -1,
+              }}>
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div
         style={{
           background: "#fff",
           border: "1px solid #e7e7ef",
@@ -171,14 +462,14 @@ export default function Resources() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "3fr 1fr 1fr 260px",
+            gridTemplateColumns: rowGrid,
             padding: "10px 20px",
             background: "#f8f8fc",
             borderBottom: "1px solid #e7e7ef",
           }}>
-          {["Title", "Category", "Availability", "Actions"].map((col, i) => (
+          {["Title", "Category", "Availability", "Actions"].map((c) => (
             <span
-              key={i}
+              key={c}
               style={{
                 fontSize: 11,
                 fontWeight: 700,
@@ -186,12 +477,12 @@ export default function Resources() {
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
               }}>
-              {col}
+              {c}
             </span>
           ))}
         </div>
 
-        {paged.slice.length === 0 && (
+        {paged.slice.length === 0 ? (
           <div
             style={{
               padding: "40px 20px",
@@ -199,116 +490,11 @@ export default function Resources() {
               color: "#9b9db2",
               fontSize: 13,
             }}>
-            No resources to show.
+            {q ? `No ${tab} match "${searchQuery}".` : `No ${tab} yet.`}
           </div>
+        ) : (
+          paged.slice.map((item, i) => renderRow(item, i, paged.slice.length))
         )}
-
-        {paged.slice.map((book, i) => {
-          const hasAvailable = (book.available || 0) > 0;
-          return (
-            <div
-              key={book.id}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "3fr 1fr 1fr 260px",
-                padding: "16px 20px",
-                borderBottom:
-                  i < paged.slice.length - 1 ? "1px solid #f0f0f6" : "none",
-                alignItems: "center",
-                gap: 12,
-              }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <ResourceImage
-                  imageUrl={book.imageUrl}
-                  resourceType="BOOK"
-                  color={book.color}
-                  w={44}
-                  h={54}
-                  radius={6}
-                />
-                <div>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: "#1a1b2e",
-                      marginBottom: 2,
-                    }}>
-                    {book.title}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#9b9db2" }}>
-                    {book.author}
-                  </div>
-                </div>
-              </div>
-              <span style={{ fontSize: 12, color: "#3a3b4e" }}>{book.cat}</span>
-              <div>
-                <span
-                  style={{
-                    fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: hasAvailable ? "#16a34a" : "#ef4444",
-                  }}>
-                  {book.available} available
-                </span>
-              </div>
-              <div
-                style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                <button
-                  onClick={() =>
-                    setAdminModal({
-                      open: true,
-                      mode: "copies",
-                      editUser: null,
-                      uf: {
-                        uname: "",
-                        uemail: "",
-                        ubatch: "",
-                        uphone: "",
-                        urole: "student",
-                      },
-                      copiesBook: book,
-                    })
-                  }
-                  style={{
-                    background: "#f0f0f6",
-                    color: "#3a3b4e",
-                    border: "1px solid #e7e7ef",
-                    borderRadius: 8,
-                    padding: "7px 14px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                  }}>
-                  Manage copies
-                </button>
-                {canDelete && (
-                  <button
-                    onClick={() =>
-                      setConfirm({ id: book.id, title: book.title })
-                    }
-                    title="Delete resource"
-                    aria-label={`Delete ${book.title}`}
-                    style={{
-                      background: "#fff",
-                      color: "#ef4444",
-                      border: "1px solid #fecaca",
-                      borderRadius: 8,
-                      padding: "7px 10px",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}>
-                    Delete
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
 
         <Pagination
           page={paged.page}
@@ -319,83 +505,139 @@ export default function Resources() {
             setPageSize(s);
             setPage(1);
           }}
+          pageSizes={[10, 30, 50, 100]}
         />
       </div>
 
       {confirm && (
-        <div
-          onClick={() => !deleting && setConfirm(null)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(6,24,15,0.58)",
-            backdropFilter: "blur(6px)",
-            zIndex: 1100,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}>
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#fff",
-              borderRadius: 16,
-              width: 400,
-              maxWidth: "92vw",
-              padding: 24,
-              boxShadow: "0 24px 60px rgba(6,24,15,0.22)",
-              fontFamily: "'Public Sans', sans-serif",
-            }}>
-            <h3
-              style={{
-                fontFamily: "'Spectral', serif",
-                fontSize: 18,
-                margin: "0 0 8px",
-                color: "#1a1b2e",
-              }}>
-              Delete this resource?
-            </h3>
-            <p style={{ fontSize: 13, color: "#7c7e93", margin: "0 0 18px" }}>
-              “{confirm.title}” and all of its copies will be permanently
-              removed. This cannot be undone.
-            </p>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button
-                onClick={() => setConfirm(null)}
-                disabled={deleting}
-                style={{
-                  flex: 1,
-                  background: "#f0f0f6",
-                  color: "#3a3b4e",
-                  border: "none",
-                  borderRadius: 9,
-                  padding: "11px",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: deleting ? "default" : "pointer",
-                }}>
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                style={{
-                  flex: 1,
-                  background: deleting ? "#fca5a5" : "#ef4444",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 9,
-                  padding: "11px",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: deleting ? "default" : "pointer",
-                }}>
-                {deleting ? "Deleting…" : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDelete
+          confirm={confirm}
+          deleting={deleting}
+          onCancel={() => !deleting && setConfirm(null)}
+          onConfirm={handleDelete}
+        />
       )}
+    </div>
+  );
+}
+
+function ConfirmDelete({ confirm, deleting, onCancel, onConfirm }) {
+  const isBook = confirm.kind === "book";
+  const liveCopies = (confirm.copies || []).filter(
+    (c) => c.status !== "RETIRED",
+  );
+  const onLoan = liveCopies.filter((c) => c.status === "BORROWED");
+  const willAutoRetire = liveCopies.length - onLoan.length;
+
+  return (
+    <div
+      onClick={onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(6,24,15,0.58)",
+        backdropFilter: "blur(6px)",
+        zIndex: 1100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          width: 440,
+          maxWidth: "92vw",
+          padding: 24,
+          boxShadow: "0 24px 60px rgba(6,24,15,0.22)",
+          fontFamily: "'Public Sans', sans-serif",
+        }}>
+        <h3
+          style={{
+            fontFamily: "'Spectral', serif",
+            fontSize: 18,
+            margin: "0 0 8px",
+            color: "#1a1b2e",
+          }}>
+          Delete this {confirm.kind === "room" ? "study room" : confirm.kind}?
+        </h3>
+        <p style={{ fontSize: 13, color: "#7c7e93", margin: "0 0 14px" }}>
+          "{confirm.title}" will be permanently removed. This cannot be undone.
+        </p>
+
+        {isBook && onLoan.length > 0 && (
+          <div
+            style={{
+              background: "#fef2f2",
+              border: "1px solid #fecaca",
+              color: "#b91c1c",
+              borderRadius: 9,
+              padding: "10px 12px",
+              fontSize: 12,
+              marginBottom: 14,
+            }}>
+            {onLoan.length} copy{onLoan.length > 1 ? "ies are" : " is"}{" "}
+            currently on loan — return them first.
+          </div>
+        )}
+        {isBook && willAutoRetire > 0 && onLoan.length === 0 && (
+          <div
+            style={{
+              background: "#fef9c3",
+              border: "1px solid #fde68a",
+              color: "#854d0e",
+              borderRadius: 9,
+              padding: "10px 12px",
+              fontSize: 12,
+              marginBottom: 14,
+            }}>
+            {willAutoRetire} non-retired cop
+            {willAutoRetire > 1 ? "ies" : "y"} will be retired automatically.
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={onCancel}
+            disabled={deleting}
+            style={{
+              flex: 1,
+              background: "#f0f0f6",
+              color: "#3a3b4e",
+              border: "none",
+              borderRadius: 9,
+              padding: "11px",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: deleting ? "default" : "pointer",
+            }}>
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={deleting || (isBook && onLoan.length > 0)}
+            style={{
+              flex: 1,
+              background:
+                deleting || (isBook && onLoan.length > 0)
+                  ? "#fca5a5"
+                  : "#ef4444",
+              color: "#fff",
+              border: "none",
+              borderRadius: 9,
+              padding: "11px",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor:
+                deleting || (isBook && onLoan.length > 0)
+                  ? "default"
+                  : "pointer",
+            }}>
+            {deleting ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -23,6 +23,7 @@ import Toast from "./components/Toast";
 import { generateQRCells } from "./data/mockData";
 import * as authApi from "./api/auth";
 import { ROLE_MAP, ROLE_LABEL } from "./api/auth";
+import { useBadgeCounts } from "./hooks/useBadgeCounts";
 
 // Lazy-load all screens
 import StudentDashboard from "./screens/student/Dashboard";
@@ -34,6 +35,8 @@ import Waitlist from "./screens/student/Waitlist";
 import Recommendations from "./screens/student/Recommendations";
 import Points from "./screens/student/Points";
 import Profile from "./screens/student/Profile";
+import SelfCheckout from "./screens/student/SelfCheckout";
+import RoomCheckin from "./screens/student/RoomCheckin";
 import StaffDashboard from "./screens/staff/Dashboard";
 import Checkout from "./screens/staff/Checkout";
 import WaitlistReview from "./screens/staff/WaitlistReview";
@@ -151,6 +154,9 @@ export default function App() {
 
   // Refresh-all trigger for screens after a mutation.
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+
+  // Live sidebar badge counts; refetches on refresh and polls every 60s.
+  const badges = useBadgeCounts(user ? currentRole : null, refreshKey);
 
   // --- Auth bootstrap: validate an existing token on load ---
   useEffect(() => {
@@ -271,6 +277,7 @@ export default function App() {
     showToast,
     openBooking,
     qrCells,
+    badges,
   };
 
   if (authLoading) {
@@ -284,8 +291,7 @@ export default function App() {
           fontFamily: "'Public Sans', sans-serif",
           color: "#16a34a",
           fontWeight: 700,
-        }}
-      >
+        }}>
         Loading…
       </div>
     );
@@ -299,8 +305,7 @@ export default function App() {
           flexDirection: "column",
           height: "100vh",
           overflow: "hidden",
-        }}
-      >
+        }}>
         <Routes>
           {/* Public route */}
           <Route
@@ -320,8 +325,7 @@ export default function App() {
               <ProtectedRoute>
                 <DesktopApp />
               </ProtectedRoute>
-            }
-          >
+            }>
             {/* Root redirect */}
             <Route index element={<RoleRedirect />} />
 
@@ -391,6 +395,22 @@ export default function App() {
               }
             />
             <Route path="profile" element={<Profile />} />
+            <Route
+              path="self-checkout"
+              element={
+                <ProtectedRoute roles={["student", "lecturer"]}>
+                  <SelfCheckout />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="room-checkin"
+              element={
+                <ProtectedRoute roles={["student", "lecturer"]}>
+                  <RoomCheckin />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Staff routes */}
             <Route

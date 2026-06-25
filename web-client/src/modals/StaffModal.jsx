@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "../App";
 import {
   createBook,
   addCopy,
   createDevice,
   createRoom,
+  updateBook,
+  updateDevice,
+  updateRoom,
 } from "../api/catalogue";
 
 const TYPES = ["Book", "Device", "Study Room"];
@@ -20,7 +23,7 @@ const CATS_DEVICE = ["Computing", "Tablet", "Audio", "Peripherals", "Other"];
 const CATS_ROOM = ["Study Room", "Pod", "Conference", "Other"];
 const STATUSES = ["available", "on_loan", "maintenance"];
 
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2 MB
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 const inputStyle = {
@@ -64,10 +67,19 @@ function fileToDataUrl(file) {
   });
 }
 
+// Map incoming staffModal.type / staffModal.editItem.type to the UI dropdown.
+function typeFromProps(t) {
+  if (t === "device") return "Device";
+  if (t === "room") return "Study Room";
+  return "Book";
+}
+
 export default function StaffModal() {
   const { staffModal, setStaffModal, showToast, refresh } = useApp();
+  const editItem = staffModal.editItem || null;
+  const isEdit = Boolean(editItem);
 
-  const [type, setType] = useState("Book");
+  const [type, setType] = useState(typeFromProps(staffModal.type));
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [cat, setCat] = useState("");
@@ -79,8 +91,23 @@ export default function StaffModal() {
   const [imageName, setImageName] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // Prefill once when entering edit mode.
+  useEffect(() => {
+    if (!isEdit) return;
+    setType(typeFromProps(editItem.type || staffModal.type));
+    setTitle(editItem.title || "");
+    setAuthor(editItem.author || "");
+    setCat(editItem.cat || "");
+    setCopies(editItem.capacity || 1);
+    setDevTier(editItem.tier || 1);
+    setSerial(editItem.serial || editItem.raw?.assetTag || "");
+    setImageDataUrl(editItem.imageUrl || "");
+    setImageName(editItem.imageUrl ? "current image" : "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editItem?.id]);
+
   function close() {
-    setStaffModal((prev) => ({ ...prev, open: false }));
+    setStaffModal((prev) => ({ ...prev, open: false, editItem: null }));
   }
 
   function slug(s) {
@@ -124,46 +151,79 @@ export default function StaffModal() {
     setBusy(true);
     try {
       const n = Math.max(1, parseInt(copies, 10) || 1);
-      if (type === "Book") {
-        const created = await createBook({
-          title: title.trim(),
-          author: author.trim() || "Unknown",
-          description: author.trim(),
-          tags: cat ? [cat] : [],
-          imageUrl: imageDataUrl || undefined,
-        });
-        const base = slug(title);
-        for (let i = 1; i <= n; i++) {
-          await addCopy(
-            created.id,
-            `${base}-${Date.now().toString().slice(-5)}-${i}`,
-          );
+
+      if (isEdit) {
+        // ---- EDIT ----
+        if (type === "Book") {
+          await updateBook(editItem.id, {
+            title: title.trim(),
+            author: author.trim() || "Unknown",
+            description: author.trim(),
+            tags: cat ? [cat] : [],
+            imageUrl: imageDataUrl || null,
+          });
+        } else if (type === "Device") {
+          await updateDevice(editItem.id, {
+            name: title.trim(),
+            assetTag: serial.trim() || editItem.serial,
+            deviceTier: devTier,
+            imageUrl: imageDataUrl || null,
+          });
+        } else {
+          await updateRoom(editItem.id, {
+            name: title.trim(),
+            capacity: n,
+            features: cat ? [cat] : [],
+          });
         }
-      } else if (type === "Device") {
-        if (!serial.trim()) {
-          showToast("Enter a serial number for the device");
-          setBusy(false);
-          return;
-        }
-        await createDevice({
-          name: title.trim(),
-          assetTag: serial.trim(),
-          deviceTier: devTier,
-          imageUrl: imageDataUrl || undefined,
-        });
+        showToast(`“${title.trim()}” updated`);
       } else {
-        await createRoom({
-          name: title.trim(),
-          capacity: n,
-          features: cat ? [cat] : [],
-          roomQr: `ROOM-${slug(title)}-${Date.now().toString().slice(-5)}`,
-        });
+        // ---- CREATE ----
+        if (type === "Book") {
+          const created = await createBook({
+            title: title.trim(),
+            author: author.trim() || "Unknown",
+            description: author.trim(),
+            tags: cat ? [cat] : [],
+            imageUrl: imageDataUrl || undefined,
+          });
+          const base = slug(title);
+          for (let i = 1; i <= n; i++) {
+            await addCopy(
+              created.id,
+              `${base}-${Date.now().toString().slice(-5)}-${i}`,
+            );
+          }
+        } else if (type === "Device") {
+          if (!serial.trim()) {
+            showToast("Enter a serial number for the device");
+            setBusy(false);
+            return;
+          }
+          await createDevice({
+            name: title.trim(),
+            assetTag: serial.trim(),
+            deviceTier: devTier,
+            imageUrl: imageDataUrl || undefined,
+          });
+        } else {
+          await createRoom({
+            name: title.trim(),
+            capacity: n,
+            features: cat ? [cat] : [],
+            roomQr: `ROOM-${slug(title)}-${Date.now().toString().slice(-5)}`,
+          });
+        }
+        showToast(`“${title.trim()}” added to the catalogue`);
       }
-      showToast(`“${title.trim()}” added to the catalogue`);
+
       refresh();
       close();
     } catch (e) {
-      showToast(e?.response?.data?.message ?? "Could not add resource");
+      showToast(
+        e?.response?.data?.message ??
+          (isEdit ? "Could not update resource" : "Could not add resource"),
+      );
     } finally {
       setBusy(false);
     }
@@ -183,6 +243,14 @@ export default function StaffModal() {
         : "Description";
   const copiesLabel = type === "Study Room" ? "Capacity" : "Number of copies";
   const showImageUpload = type === "Book" || type === "Device";
+  const headerTitle = isEdit ? `Edit ${type.toLowerCase()}` : "Add resource";
+  const submitLabel = busy
+    ? isEdit
+      ? "Saving…"
+      : "Adding…"
+    : isEdit
+      ? "Save changes"
+      : "Add to catalogue";
 
   return (
     <div
@@ -208,7 +276,6 @@ export default function StaffModal() {
           overflowY: "auto",
           boxShadow: "0 24px 60px rgba(6,24,15,0.22)",
         }}>
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -224,8 +291,9 @@ export default function StaffModal() {
               fontWeight: 700,
               color: "#1a1b2e",
               margin: 0,
+              textTransform: "capitalize",
             }}>
-            Add resource
+            {headerTitle}
           </h2>
           <button
             onClick={close}
@@ -251,27 +319,31 @@ export default function StaffModal() {
         </div>
 
         <div style={{ padding: "20px 24px" }}>
-          {/* Type toggle */}
+          {/* Type toggle — locked while editing because changing it would
+              cross to a different backend resource entity. */}
           <Field label="Resource type">
             <div style={{ display: "flex", gap: 8 }}>
               {TYPES.map((t) => (
                 <button
                   key={t}
                   onClick={() => {
+                    if (isEdit) return;
                     setType(t);
                     setCat("");
                     if (t === "Study Room") clearImage();
                   }}
+                  disabled={isEdit && type !== t}
                   style={{
                     flex: 1,
-                    background: type === t ? "#16a34a" : "#f0f0f6",
-                    color: type === t ? "#fff" : "#3a3b4e",
+                    background:
+                      type === t ? "#16a34a" : isEdit ? "#f8f8fc" : "#f0f0f6",
+                    color: type === t ? "#fff" : isEdit ? "#c4c5d4" : "#3a3b4e",
                     border: "none",
                     borderRadius: 8,
                     padding: "9px 8px",
                     fontSize: 12,
                     fontWeight: 700,
-                    cursor: "pointer",
+                    cursor: isEdit && type !== t ? "not-allowed" : "pointer",
                   }}>
                   {t}
                 </button>
@@ -279,7 +351,6 @@ export default function StaffModal() {
             </div>
           </Field>
 
-          {/* Title */}
           <Field label="Title">
             <input
               type="text"
@@ -296,7 +367,6 @@ export default function StaffModal() {
             />
           </Field>
 
-          {/* Author / Description */}
           <Field label={authorLabel}>
             <input
               type="text"
@@ -313,7 +383,6 @@ export default function StaffModal() {
             />
           </Field>
 
-          {/* Category */}
           <Field label="Category">
             <select
               value={cat}
@@ -328,18 +397,26 @@ export default function StaffModal() {
             </select>
           </Field>
 
-          {/* Copies / capacity */}
           <Field label={copiesLabel}>
             <input
               type="number"
               min="1"
               value={copies}
               onChange={(e) => setCopies(e.target.value)}
-              style={{ ...inputStyle, width: "120px" }}
+              disabled={isEdit && type === "Book"}
+              style={{
+                ...inputStyle,
+                width: "120px",
+                opacity: isEdit && type === "Book" ? 0.6 : 1,
+              }}
             />
+            {isEdit && type === "Book" && (
+              <div style={{ fontSize: 11, color: "#9b9db2", marginTop: 4 }}>
+                Manage individual copies from “Manage copies” on the row.
+              </div>
+            )}
           </Field>
 
-          {/* Serial number - only for Device (maps to the backend assetTag) */}
           {type === "Device" && (
             <Field label="Serial number">
               <input
@@ -355,7 +432,6 @@ export default function StaffModal() {
             </Field>
           )}
 
-          {/* Device tier - only for Device */}
           {type === "Device" && (
             <Field label="Device tier (1–5)">
               <div style={{ display: "flex", gap: 8 }}>
@@ -381,7 +457,6 @@ export default function StaffModal() {
             </Field>
           )}
 
-          {/* Image upload — books and devices only */}
           {showImageUpload && (
             <Field label="Cover image (optional)">
               {imageDataUrl ? (
@@ -457,22 +532,24 @@ export default function StaffModal() {
             </Field>
           )}
 
-          {/* Initial status */}
-          <Field label="Initial status">
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              style={{ ...inputStyle, cursor: "pointer" }}>
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
-                </option>
-              ))}
-            </select>
-          </Field>
+          {!isEdit && (
+            <Field label="Initial status">
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                style={{ ...inputStyle, cursor: "pointer" }}>
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s
+                      .replace("_", " ")
+                      .replace(/\b\w/g, (c) => c.toUpperCase())}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
         </div>
 
-        {/* Footer buttons */}
         <div style={{ display: "flex", gap: 10, padding: "6px 24px 22px" }}>
           <button
             onClick={close}
@@ -503,7 +580,7 @@ export default function StaffModal() {
               fontWeight: 700,
               cursor: busy ? "default" : "pointer",
             }}>
-            {busy ? "Adding…" : "Add to catalogue"}
+            {submitLabel}
           </button>
         </div>
       </div>

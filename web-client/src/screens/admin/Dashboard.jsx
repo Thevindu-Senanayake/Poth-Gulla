@@ -2,14 +2,18 @@ import { useFetch } from "../../hooks/useFetch";
 import { listUsers } from "../../api/users";
 import { allBookings } from "../../api/bookings";
 import { listBooks, listDevices, listRooms } from "../../api/catalogue";
+import { auditLogs as fetchAuditLogs } from "../../api/misc";
+import { colorFor } from "../../api/adapters";
 import { Loading, ErrorState } from "../../components/States";
 
 const STAT_ICONS = {
   users:
     "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8",
   book: "M5 4a1 1 0 0 1 1-1h11v15H6a1 1 0 0 0-1 1z",
-  scan: "M9 11l3 3L22 4",
-  clock: "M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z",
+  alert:
+    "M12 9v4M12 17h.01M10.3 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0z",
+  inbox:
+    "M22 12h-6l-2 3h-4l-2-3H2M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z",
 };
 
 const TIER_COL = {
@@ -20,20 +24,25 @@ const TIER_COL = {
   5: "#8b5cf6",
 };
 
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
 async function loadAdmin() {
-  const [users, bookings, books, devices, rooms] = await Promise.all([
-    listUsers({ limit: 100 }),
-    allBookings({ limit: 100 }),
+  const [users, bookings, books, devices, rooms, audit] = await Promise.all([
+    listUsers({ limit: 200 }),
+    allBookings({ limit: 200 }),
     listBooks({ limit: 1 }),
     listDevices({ limit: 1 }),
     listRooms(),
+    fetchAuditLogs({ limit: 6 }),
   ]);
   return {
     users: users.items,
     usersTotal: users.total,
     bookings: bookings.items,
-    resTotal:
-      (books.total || 0) + (devices.total || 0) + (rooms.items?.length || 0),
+    booksTotal: books.total || 0,
+    devicesTotal: devices.total || 0,
+    roomsTotal: rooms.items?.length || 0,
+    auditEntries: audit?.items || [],
   };
 }
 
@@ -42,12 +51,34 @@ export default function Dashboard() {
   if (loading) return <Loading label="Loading system overview…" />;
   if (error) return <ErrorState error={error} onRetry={reload} />;
 
-  const { users, usersTotal, bookings, resTotal } = data;
+  const {
+    users,
+    usersTotal,
+    bookings,
+    booksTotal,
+    devicesTotal,
+    roomsTotal,
+    auditEntries,
+  } = data;
+
   const activeMembers = users.filter((u) => u.isActive).length;
-  const inProgress = bookings.filter((b) =>
-    ["APPROVED", "PENDING"].includes(b.status),
+  const resTotal = booksTotal + devicesTotal + roomsTotal;
+  const now = Date.now();
+
+  const overdueItems = bookings.filter(
+    (b) =>
+      b.status === "CHECKED_OUT" &&
+      b.endAt &&
+      new Date(b.endAt).getTime() < now,
   ).length;
-  const waitlisted = bookings.filter((b) => b.status === "WAITLIST").length;
+  const pendingApprovals = bookings.filter(
+    (b) => b.status === "PENDING",
+  ).length;
+  const newMembers = users.filter(
+    (u) =>
+      u.raw?.createdAt &&
+      now - new Date(u.raw.createdAt).getTime() < SEVEN_DAYS_MS,
+  ).length;
 
   const adminStats = [
     {
@@ -56,7 +87,7 @@ export default function Dashboard() {
       iconBg: "#dcfce7",
       iconColor: "#16a34a",
       iconPath: STAT_ICONS.users,
-      trend: `${activeMembers} active`,
+      trend: `${activeMembers} active · +${newMembers} this week`,
       trendColor: "#10b981",
     },
     {
@@ -65,25 +96,25 @@ export default function Dashboard() {
       iconBg: "#fce7f3",
       iconColor: "#db2777",
       iconPath: STAT_ICONS.book,
-      trend: "books · devices · rooms",
+      trend: `${booksTotal} books · ${devicesTotal} devices · ${roomsTotal} rooms`,
       trendColor: "#7c7e93",
     },
     {
-      label: "Loans in progress",
-      value: inProgress,
-      iconBg: "#d7f8e9",
-      iconColor: "#059669",
-      iconPath: STAT_ICONS.scan,
-      trend: "approved + pending",
-      trendColor: "#10b981",
+      label: "Overdue items",
+      value: overdueItems,
+      iconBg: "#fee2e2",
+      iconColor: "#dc2626",
+      iconPath: STAT_ICONS.alert,
+      trend: overdueItems > 0 ? "needs follow-up" : "all clear",
+      trendColor: overdueItems > 0 ? "#dc2626" : "#10b981",
     },
     {
-      label: "On waitlist",
-      value: waitlisted,
+      label: "Pending approvals",
+      value: pendingApprovals,
       iconBg: "#fef4e6",
-      iconColor: "#f59e0b",
-      iconPath: STAT_ICONS.clock,
-      trend: "queued requests",
+      iconColor: "#d97706",
+      iconPath: STAT_ICONS.inbox,
+      trend: "device requests awaiting staff",
       trendColor: "#d97706",
     },
   ];
@@ -105,7 +136,6 @@ export default function Dashboard() {
   });
   const maxN = Math.max(1, ...days.map((d) => d.n));
 
-  // Tier distribution among patrons.
   const patrons = users.filter((u) => u.tierNum >= 1);
   const tierDist = [1, 2, 3, 4, 5].map((t) => {
     const n = patrons.filter((u) => u.tierNum === t).length;
@@ -118,17 +148,16 @@ export default function Dashboard() {
     };
   });
 
-  // Booking status breakdown (replaces synthetic health panel).
-  const statusBreak = [
-    "APPROVED",
-    "PENDING",
-    "WAITLIST",
-    "COMPLETED",
-    "CANCELLED",
-  ].map((s) => ({
-    label: s.charAt(0) + s.slice(1).toLowerCase(),
-    n: bookings.filter((b) => b.status === s).length,
-  }));
+  // Catalogue mix — proportional bars.
+  const resourceMix = [
+    { label: "Books", n: booksTotal, col: "#16a34a" },
+    { label: "Devices", n: devicesTotal, col: "#3b82f6" },
+    { label: "Rooms", n: roomsTotal, col: "#a855f7" },
+  ];
+  const mixTotal = Math.max(
+    1,
+    resourceMix.reduce((s, r) => s + r.n, 0),
+  );
 
   return (
     <div
@@ -136,8 +165,7 @@ export default function Dashboard() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}
-    >
+      }}>
       <div style={{ marginBottom: 26 }}>
         <h1
           style={{
@@ -146,8 +174,7 @@ export default function Dashboard() {
             fontWeight: 700,
             color: "#1a1b2e",
             margin: "0 0 4px",
-          }}
-        >
+          }}>
           Admin Dashboard
         </h1>
         <p style={{ fontSize: 13, color: "#7c7e93", margin: 0 }}>
@@ -161,8 +188,7 @@ export default function Dashboard() {
           gridTemplateColumns: "repeat(4,1fr)",
           gap: 14,
           marginBottom: 24,
-        }}
-      >
+        }}>
         {adminStats.map((stat, i) => (
           <div
             key={i}
@@ -172,19 +198,7 @@ export default function Dashboard() {
               borderRadius: 13,
               padding: "18px 20px",
               transition: "transform .15s, box-shadow .15s, border-color .15s",
-              cursor: "default",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-3px)";
-              e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
-              e.currentTarget.style.borderColor = "#d4d4e4";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "none";
-              e.currentTarget.style.boxShadow = "none";
-              e.currentTarget.style.borderColor = "#e7e7ef";
-            }}
-          >
+            }}>
             <div
               style={{
                 background: stat.iconBg,
@@ -195,8 +209,7 @@ export default function Dashboard() {
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 10,
-              }}
-            >
+              }}>
               <svg
                 width="18"
                 height="18"
@@ -205,8 +218,7 @@ export default function Dashboard() {
                 stroke={stat.iconColor}
                 strokeWidth="2"
                 strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+                strokeLinejoin="round">
                 {stat.iconPath
                   .split("M")
                   .filter(Boolean)
@@ -222,16 +234,14 @@ export default function Dashboard() {
                 fontWeight: 700,
                 color: "#1a1b2e",
                 marginBottom: 2,
-              }}
-            >
+              }}>
               {stat.value}
             </div>
             <div style={{ fontSize: 12, color: "#7c7e93", marginBottom: 4 }}>
               {stat.label}
             </div>
             <div
-              style={{ fontSize: 11, color: stat.trendColor, fontWeight: 600 }}
-            >
+              style={{ fontSize: 11, color: stat.trendColor, fontWeight: 600 }}>
               {stat.trend}
             </div>
           </div>
@@ -244,16 +254,14 @@ export default function Dashboard() {
           gridTemplateColumns: "1.5fr 1fr",
           gap: 18,
           marginBottom: 18,
-        }}
-      >
+        }}>
         <div
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             padding: "22px 24px",
-          }}
-        >
+          }}>
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -261,9 +269,8 @@ export default function Dashboard() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: "0 0 20px",
-            }}
-          >
-            Bookings - last 7 days
+            }}>
+            Bookings — last 7 days
           </h2>
           <div
             style={{
@@ -271,8 +278,7 @@ export default function Dashboard() {
               alignItems: "flex-end",
               gap: 10,
               height: 130,
-            }}
-          >
+            }}>
             {days.map((bar, i) => (
               <div
                 key={i}
@@ -282,15 +288,13 @@ export default function Dashboard() {
                   flexDirection: "column",
                   alignItems: "center",
                   gap: 6,
-                }}
-              >
+                }}>
                 <span
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: 10,
                     color: "#9b9db2",
-                  }}
-                >
+                  }}>
                   {bar.n}
                 </span>
                 <div
@@ -307,8 +311,7 @@ export default function Dashboard() {
                     fontSize: 10,
                     color: "#9b9db2",
                     fontWeight: 600,
-                  }}
-                >
+                  }}>
                   {bar.label}
                 </span>
               </div>
@@ -322,8 +325,7 @@ export default function Dashboard() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             padding: "22px 24px",
-          }}
-        >
+          }}>
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -331,8 +333,7 @@ export default function Dashboard() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: "0 0 18px",
-            }}
-          >
+            }}>
             Member tier distribution
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -343,11 +344,9 @@ export default function Dashboard() {
                     display: "flex",
                     justifyContent: "space-between",
                     marginBottom: 5,
-                  }}
-                >
+                  }}>
                   <span
-                    style={{ fontSize: 12, color: "#3a3b4e", fontWeight: 600 }}
-                  >
+                    style={{ fontSize: 12, color: "#3a3b4e", fontWeight: 600 }}>
                     {tier.tier}
                   </span>
                   <span
@@ -356,8 +355,7 @@ export default function Dashboard() {
                       fontSize: 11,
                       color: tier.col,
                       fontWeight: 700,
-                    }}
-                  >
+                    }}>
                     {tier.pct}
                   </span>
                 </div>
@@ -367,8 +365,7 @@ export default function Dashboard() {
                     borderRadius: 20,
                     height: 7,
                     overflow: "hidden",
-                  }}
-                >
+                  }}>
                   <div
                     style={{
                       width: tier.w,
@@ -385,73 +382,151 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Resources mix + Recent admin activity */}
       <div
         style={{
-          background: "#fff",
-          border: "1px solid #e7e7ef",
-          borderRadius: 14,
-          padding: "22px 24px",
-        }}
-      >
-        <h2
-          style={{
-            fontFamily: "'Spectral', serif",
-            fontSize: 17,
-            fontWeight: 600,
-            color: "#1a1b2e",
-            margin: "0 0 18px",
-          }}
-        >
-          Bookings by status
-        </h2>
+          display: "grid",
+          gridTemplateColumns: "1fr 1.4fr",
+          gap: 18,
+        }}>
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(5,1fr)",
-            gap: 12,
-          }}
-        >
-          {statusBreak.map((h, i) => (
-            <div
-              key={i}
-              style={{
-                background: "#f8f8fc",
-                border: "1px solid #e7e7ef",
-                borderRadius: 10,
-                padding: "14px 16px",
-                transition:
-                  "transform .15s, box-shadow .15s, border-color .15s",
-                cursor: "default",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,0.07)";
-                e.currentTarget.style.borderColor = "#d4d4e4";
-                e.currentTarget.style.background = "#fff";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "none";
-                e.currentTarget.style.boxShadow = "none";
-                e.currentTarget.style.borderColor = "#e7e7ef";
-                e.currentTarget.style.background = "#f8f8fc";
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: 22,
-                  fontWeight: 800,
-                  color: "#1a1b2e",
-                  marginBottom: 2,
-                }}
-              >
-                {h.n}
-              </div>
-              <div style={{ fontSize: 12, color: "#7c7e93", fontWeight: 600 }}>
-                {h.label}
-              </div>
+            background: "#fff",
+            border: "1px solid #e7e7ef",
+            borderRadius: 14,
+            padding: "22px 24px",
+          }}>
+          <h2
+            style={{
+              fontFamily: "'Spectral', serif",
+              fontSize: 17,
+              fontWeight: 600,
+              color: "#1a1b2e",
+              margin: "0 0 18px",
+            }}>
+            Catalogue mix
+          </h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {resourceMix.map((r) => {
+              const pct = Math.round((r.n / mixTotal) * 100);
+              return (
+                <div key={r.label}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: 5,
+                    }}>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        color: "#3a3b4e",
+                        fontWeight: 600,
+                      }}>
+                      {r.label}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: 11,
+                        color: r.col,
+                        fontWeight: 700,
+                      }}>
+                      {r.n} · {pct}%
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      background: "#f0f0f6",
+                      borderRadius: 20,
+                      height: 7,
+                      overflow: "hidden",
+                    }}>
+                    <div
+                      style={{
+                        width: `${pct}%`,
+                        height: "100%",
+                        background: r.col,
+                        borderRadius: 20,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e7e7ef",
+            borderRadius: 14,
+            padding: "22px 24px",
+          }}>
+          <h2
+            style={{
+              fontFamily: "'Spectral', serif",
+              fontSize: 17,
+              fontWeight: 600,
+              color: "#1a1b2e",
+              margin: "0 0 14px",
+            }}>
+            Recent admin activity
+          </h2>
+          {auditEntries.length === 0 ? (
+            <div style={{ fontSize: 13, color: "#9b9db2" }}>
+              No recent activity recorded.
             </div>
-          ))}
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {auditEntries.slice(0, 6).map((l) => {
+                const col = colorFor(l.targetType || l.action || "x");
+                const when = l.createdAt
+                  ? new Date(l.createdAt).toLocaleString()
+                  : "";
+                return (
+                  <div
+                    key={l.id}
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      alignItems: "flex-start",
+                      padding: "8px 0",
+                      borderBottom: "1px solid #f0f0f6",
+                    }}>
+                    <div
+                      style={{
+                        width: 6,
+                        alignSelf: "stretch",
+                        background: col,
+                        borderRadius: 3,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#1a1b2e",
+                        }}>
+                        {(l.action || "").replace(/_/g, " ")}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "#7c7e93",
+                          marginTop: 2,
+                        }}>
+                        {l.actor?.name || "System"} · {when}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

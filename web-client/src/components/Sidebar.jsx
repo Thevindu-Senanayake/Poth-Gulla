@@ -167,6 +167,7 @@ function NavItem({ item, active, onClick }) {
   return (
     <button
       onClick={() => onClick(item.path)}
+      className={`pg-nav-item${active ? " is-active" : ""}`}
       style={{
         display: "flex",
         alignItems: "center",
@@ -184,10 +185,8 @@ function NavItem({ item, active, onClick }) {
         fontSize: 13.5,
         textAlign: "left",
         boxShadow: active ? "0 4px 14px rgba(22,163,74,.28)" : "none",
-        transition: "all .15s",
         position: "relative",
-      }}
-    >
+      }}>
       <svg
         width="17"
         height="17"
@@ -197,8 +196,7 @@ function NavItem({ item, active, onClick }) {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        style={{ flexShrink: 0, opacity: active ? 1 : 0.75 }}
-      >
+        style={{ flexShrink: 0, opacity: active ? 1 : 0.75 }}>
         {item.d
           .split("M")
           .filter(Boolean)
@@ -218,8 +216,7 @@ function NavItem({ item, active, onClick }) {
             borderRadius: 20,
             minWidth: 18,
             textAlign: "center",
-          }}
-        >
+          }}>
           {item.badge}
         </span>
       )}
@@ -267,8 +264,7 @@ export default function Sidebar() {
         flexDirection: "column",
         height: "100%",
         flexShrink: 0,
-      }}
-    >
+      }}>
       {/* Logo area */}
       <div
         style={{
@@ -277,8 +273,7 @@ export default function Sidebar() {
           display: "flex",
           alignItems: "center",
           gap: 12,
-        }}
-      >
+        }}>
         <div
           style={{
             width: 38,
@@ -290,8 +285,7 @@ export default function Sidebar() {
             justifyContent: "center",
             flexShrink: 0,
             boxShadow: "0 2px 10px rgba(22,163,74,.25)",
-          }}
-        >
+          }}>
           <svg
             width="20"
             height="20"
@@ -300,34 +294,29 @@ export default function Sidebar() {
             stroke="#fff"
             strokeWidth="2"
             strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+            strokeLinejoin="round">
             <path d={BOOK_SVG} />
             <path d="M5 19a1 1 0 0 1 1-1h13" />
           </svg>
         </div>
         <div>
           <div
+            className="pg-brand"
             style={{
-              fontFamily: "Spectral, Georgia, serif",
-              fontWeight: 700,
               fontSize: 17,
               color: "#16231b",
-              letterSpacing: "-.2px",
-            }}
-          >
+            }}>
             Poth Gulla
           </div>
-          <div
+          {/* <div
             style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: 9.5,
               color: "#9b9db2",
               marginTop: 1,
-            }}
-          >
-            Library System
-          </div>
+            }}>
+            Library Management System
+          </div> */}
         </div>
       </div>
 
@@ -340,8 +329,7 @@ export default function Sidebar() {
           display: "flex",
           flexDirection: "column",
           gap: 2,
-        }}
-      >
+        }}>
         {navItems.map((item) => (
           <NavItem
             key={item.path}
@@ -360,8 +348,7 @@ export default function Sidebar() {
           display: "flex",
           alignItems: "center",
           gap: 10,
-        }}
-      >
+        }}>
         {/* Avatar */}
         <div
           style={{
@@ -376,8 +363,7 @@ export default function Sidebar() {
             fontSize: 13,
             fontWeight: 700,
             flexShrink: 0,
-          }}
-        >
+          }}>
           {initials}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -389,8 +375,7 @@ export default function Sidebar() {
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-            }}
-          >
+            }}>
             {userName}
           </div>
           <div style={{ fontSize: 11, color: "#9b9db2", marginTop: 1 }}>
@@ -422,8 +407,7 @@ export default function Sidebar() {
           onMouseLeave={(e) => {
             e.currentTarget.style.background = "#f4f4f8";
             e.currentTarget.style.color = "#7c7e93";
-          }}
-        >
+          }}>
           <svg
             width="16"
             height="16"
@@ -432,8 +416,7 @@ export default function Sidebar() {
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+            strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />

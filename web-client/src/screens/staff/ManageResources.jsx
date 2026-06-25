@@ -11,11 +11,31 @@ import {
   restoreCopy,
   setDeviceMaintenance,
   setRoomMaintenance,
+  deleteBook,
+  deleteDevice,
+  deleteRoom,
 } from "../../api/catalogue";
 import { allBookings } from "../../api/bookings";
 import { listUsers } from "../../api/users";
 import { scanReturn } from "../../api/misc";
 import { Loading, ErrorState, Empty } from "../../components/States";
+import Pagination from "../../components/Pagination";
+import { usePaginated } from "../../hooks/usePaginated";
+import ResourceImage from "../../components/ResourceImage";
+
+// Surfaces the raw backend error so QA/back-end can reproduce; falls back to
+// a friendly message if the server didn't supply one.
+function backendError(e, fallback) {
+  const data = e?.response?.data;
+  const status = e?.response?.status;
+  const msg =
+    (typeof data === "string" && data) ||
+    data?.message ||
+    data?.error ||
+    e?.message ||
+    fallback;
+  return status ? `${msg} (HTTP ${status})` : msg;
+}
 
 function SvgIcon({ path, color, size = 16 }) {
   return (
@@ -27,8 +47,7 @@ function SvgIcon({ path, color, size = 16 }) {
       stroke={color}
       strokeWidth="2"
       strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+      strokeLinejoin="round">
       {path
         .split("M")
         .filter(Boolean)
@@ -63,8 +82,7 @@ function ConfirmDialog({
         alignItems: "center",
         justifyContent: "center",
         animation: "pg-pop .15s ease both",
-      }}
-    >
+      }}>
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -74,16 +92,14 @@ function ConfirmDialog({
           width: 400,
           maxWidth: "92vw",
           boxShadow: "0 20px 50px rgba(6,24,15,0.22)",
-        }}
-      >
+        }}>
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 10,
             marginBottom: 10,
-          }}
-        >
+          }}>
           <div
             style={{
               width: 36,
@@ -94,8 +110,7 @@ function ConfirmDialog({
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
-            }}
-          >
+            }}>
             <SvgIcon
               path="M12 9v4M12 17h.01M12 3l9.5 16.5H2.5z"
               color={confirmColor}
@@ -109,8 +124,7 @@ function ConfirmDialog({
               fontWeight: 700,
               color: "#1a1b2e",
               margin: 0,
-            }}
-          >
+            }}>
             {title}
           </h3>
         </div>
@@ -121,8 +135,7 @@ function ConfirmDialog({
             lineHeight: 1.65,
             margin: "0 0 20px",
             paddingLeft: 46,
-          }}
-        >
+          }}>
           {message}
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -137,8 +150,7 @@ function ConfirmDialog({
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}
-          >
+            }}>
             Cancel
           </button>
           <button
@@ -153,8 +165,7 @@ function ConfirmDialog({
               fontWeight: 700,
               cursor: "pointer",
               boxShadow: `0 2px 10px ${confirmColor}40`,
-            }}
-          >
+            }}>
             {confirmLabel}
           </button>
         </div>
@@ -185,8 +196,7 @@ function badge(status) {
         background: m.bg,
         borderRadius: 20,
         padding: "3px 10px",
-      }}
-    >
+      }}>
       {m.label}
     </span>
   );
@@ -223,7 +233,10 @@ const rowHoverStyle = {
 };
 
 export default function ManageResources() {
-  const { setStaffModal, showToast, refresh } = useApp();
+  const { setStaffModal, showToast, refresh, searchQuery } = useApp();
+  const [pages, setPages] = useState({ books: 1, devices: 1, rooms: 1 });
+  const [pageSize, setPageSize] = useState(30);
+  const setTabPage = (k, n) => setPages((p) => ({ ...p, [k]: n }));
   const { data, loading, error, reload } = useFetch(() => loadAll(), []);
 
   const [tab, setTab] = useState("books");
@@ -267,12 +280,78 @@ export default function ManageResources() {
     setConfirm((c) => ({ ...c, open: false }));
   }
 
+  // ---- Delete helpers (used by all three tabs) ----
+  async function doDeleteBook(book) {
+    try {
+      const fresh = await getBook(book.id);
+      const copies = fresh.raw?.copies || [];
+      const live = copies.filter((c) => c.status !== "RETIRED");
+      const onLoan = live.filter((c) => c.status === "BORROWED");
+      if (onLoan.length > 0) {
+        showToast(
+          `Cannot delete — ${onLoan.length} copy${onLoan.length > 1 ? "ies are" : " is"} currently on loan.`,
+        );
+        return;
+      }
+      for (const c of live) {
+        try {
+          await retireCopy(c.id);
+        } catch (re) {
+          showToast(backendError(re, `Could not retire copy ${c.assetTag}`));
+          return;
+        }
+      }
+      await deleteBook(book.id);
+      showToast(`Deleted "${book.title}"`);
+      refresh();
+      reload();
+    } catch (e) {
+      showToast(backendError(e, "Could not delete book"));
+    }
+  }
+  async function doDeleteDevice(device) {
+    try {
+      await deleteDevice(device.id);
+      showToast(`Deleted "${device.title}"`);
+      refresh();
+      reload();
+    } catch (e) {
+      showToast(backendError(e, "Could not delete device"));
+    }
+  }
+  async function doDeleteRoom(room) {
+    try {
+      await deleteRoom(room.id);
+      showToast(`Deleted "${room.title}"`);
+      refresh();
+      reload();
+    } catch (e) {
+      showToast(backendError(e, "Could not delete room"));
+    }
+  }
+
+  // Derive filtered arrays first so hooks below run unconditionally.
+  const allBooks = data?.books || [];
+  const allDevices = data?.devices || [];
+  const allRooms = data?.rooms || [];
+
+  const q = (searchQuery || "").trim().toLowerCase();
+  const matches = (r) =>
+    !q ||
+    (r.title || "").toLowerCase().includes(q) ||
+    (r.author || "").toLowerCase().includes(q) ||
+    (r.cat || "").toLowerCase().includes(q) ||
+    (r.serial || "").toLowerCase().includes(q);
+  const books = q ? allBooks.filter(matches) : allBooks;
+  const devices = q ? allDevices.filter(matches) : allDevices;
+  const rooms = q ? allRooms.filter(matches) : allRooms;
+
+  const bookPage = usePaginated(books, pages.books, pageSize);
+  const devicePage = usePaginated(devices, pages.devices, pageSize);
+  const roomPage = usePaginated(rooms, pages.rooms, pageSize);
+
   if (loading) return <Loading label="Loading resources…" />;
   if (error) return <ErrorState error={error} onRetry={reload} />;
-
-  const books = data?.books || [];
-  const devices = data?.devices || [];
-  const rooms = data?.rooms || [];
 
   // ---- Derive active device loans ----
   const userName = new Map((data?.users || []).map((u) => [u.id, u.name]));
@@ -443,8 +522,7 @@ export default function ManageResources() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}
-    >
+      }}>
       {/* Confirmation modal */}
       <ConfirmDialog
         open={confirm.open}
@@ -462,8 +540,7 @@ export default function ManageResources() {
           justifyContent: "space-between",
           alignItems: "flex-start",
           marginBottom: 22,
-        }}
-      >
+        }}>
         <div>
           <p style={{ fontSize: 12, color: "#7c7e93", margin: "0 0 3px" }}>
             Staff · Resources
@@ -475,8 +552,7 @@ export default function ManageResources() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: 0,
-            }}
-          >
+            }}>
             Manage resources
           </h1>
         </div>
@@ -517,8 +593,7 @@ export default function ManageResources() {
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = "translateY(0)";
             e.currentTarget.style.boxShadow = "0 3px 12px rgba(22,163,74,.28)";
-          }}
-        >
+          }}>
           <SvgIcon path="M12 5v14M5 12h14" color="#fff" size={15} />
           Add resource
         </button>
@@ -531,8 +606,7 @@ export default function ManageResources() {
           gap: 12,
           marginBottom: 22,
           flexWrap: "wrap",
-        }}
-      >
+        }}>
         {counts.map((s, i) => (
           <div
             key={i}
@@ -552,16 +626,14 @@ export default function ManageResources() {
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "scale(1)";
-            }}
-          >
+            }}>
             <span
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 16,
                 fontWeight: 800,
                 color: s.col,
-              }}
-            >
+              }}>
               {s.value}
             </span>
             <span style={{ fontSize: 12, color: s.col, fontWeight: 500 }}>
@@ -581,8 +653,7 @@ export default function ManageResources() {
           padding: 4,
           borderRadius: 10,
           width: "fit-content",
-        }}
-      >
+        }}>
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -599,8 +670,7 @@ export default function ManageResources() {
               boxShadow:
                 tab === t.key ? "0 2px 8px rgba(22,163,74,.25)" : "none",
               transition: "all 0.15s ease",
-            }}
-          >
+            }}>
             {t.label}
           </button>
         ))}
@@ -614,12 +684,13 @@ export default function ManageResources() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             overflow: "hidden",
-          }}
-        >
+          }}>
           {books.length === 0 ? (
-            <Empty label="No books yet." />
+            <Empty
+              label={q ? `No books match "${searchQuery}".` : "No books yet."}
+            />
           ) : (
-            books.map((book, i) => {
+            bookPage.slice.map((book, i) => {
               const isOpen = openBook === book.id;
               const list = copies[book.id] || [];
               const liveAvail = list.length
@@ -630,9 +701,10 @@ export default function ManageResources() {
                   key={book.id}
                   style={{
                     borderBottom:
-                      i < books.length - 1 ? "1px solid #f3f3f8" : "none",
-                  }}
-                >
+                      i < bookPage.slice.length - 1
+                        ? "1px solid #f3f3f8"
+                        : "none",
+                  }}>
                   <div
                     style={{
                       display: "flex",
@@ -646,33 +718,16 @@ export default function ManageResources() {
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = "transparent";
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 38,
-                        height: 46,
-                        background: book.color,
-                        borderRadius: 5,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        transition: "transform 0.15s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "scale(1.08)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "scale(1)";
-                      }}
-                    >
-                      <SvgIcon
-                        path={book.iconPath}
-                        color="rgba(255,255,255,0.9)"
-                        size={16}
-                      />
-                    </div>
+                    }}>
+                    <ResourceImage
+                      imageUrl={book.imageUrl}
+                      resourceType="BOOK"
+                      iconPath={book.iconPath}
+                      color={book.color}
+                      w={38}
+                      h={46}
+                      radius={5}
+                    />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div
                         style={{
@@ -682,8 +737,7 @@ export default function ManageResources() {
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
-                        }}
-                      >
+                        }}>
                         {book.title}
                       </div>
                       <div style={{ fontSize: 11, color: "#7c7e93" }}>
@@ -698,8 +752,7 @@ export default function ManageResources() {
                         color: liveAvail > 0 ? "#16a34a" : "#ef4444",
                         width: 110,
                         textAlign: "right",
-                      }}
-                    >
+                      }}>
                       {liveAvail} available
                     </div>
                     <button
@@ -727,9 +780,32 @@ export default function ManageResources() {
                           e.currentTarget.style.background = "#f0f0f6";
                           e.currentTarget.style.borderColor = "#e7e7ef";
                         }
-                      }}
-                    >
+                      }}>
                       {isOpen ? "Hide copies" : "Manage copies"}
+                    </button>
+                    <button
+                      onClick={() =>
+                        askConfirm({
+                          title: "Delete this book?",
+                          message: `"${book.title}" and all of its copies will be permanently removed. Any non-retired copies will be retired first. This cannot be undone.`,
+                          confirmLabel: "Delete",
+                          confirmColor: "#ef4444",
+                          onConfirm: () => doDeleteBook(book),
+                        })
+                      }
+                      style={{
+                        background: "#fff",
+                        color: "#ef4444",
+                        border: "1px solid #fecaca",
+                        borderRadius: 8,
+                        padding: "7px 12px",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        marginLeft: 6,
+                      }}>
+                      Delete
                     </button>
                   </div>
 
@@ -739,16 +815,14 @@ export default function ManageResources() {
                       style={{
                         padding: "4px 20px 18px 72px",
                         background: "#fafafb",
-                      }}
-                    >
+                      }}>
                       {copiesLoading && !copies[book.id] ? (
                         <div
                           style={{
                             fontSize: 13,
                             color: "#9b9db2",
                             padding: "10px 0",
-                          }}
-                        >
+                          }}>
                           Loading copies…
                         </div>
                       ) : (
@@ -758,8 +832,7 @@ export default function ManageResources() {
                               display: "flex",
                               gap: 8,
                               margin: "12px 0",
-                            }}
-                          >
+                            }}>
                             <input
                               value={newTag}
                               onChange={(e) => setNewTag(e.target.value)}
@@ -802,8 +875,7 @@ export default function ManageResources() {
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.background = "#16a34a";
-                              }}
-                            >
+                              }}>
                               Add copy
                             </button>
                           </div>
@@ -813,8 +885,7 @@ export default function ManageResources() {
                                 fontSize: 13,
                                 color: "#9b9db2",
                                 padding: "6px 0",
-                              }}
-                            >
+                              }}>
                               No copies registered yet.
                             </div>
                           ) : (
@@ -823,8 +894,7 @@ export default function ManageResources() {
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: 8,
-                              }}
-                            >
+                              }}>
                               {list.map((copy) => (
                                 <div
                                   key={copy.id}
@@ -849,15 +919,13 @@ export default function ManageResources() {
                                     e.currentTarget.style.boxShadow = "none";
                                     e.currentTarget.style.borderColor =
                                       "#e7e7ef";
-                                  }}
-                                >
+                                  }}>
                                   <div
                                     style={{
                                       fontFamily: "'IBM Plex Mono', monospace",
                                       fontSize: 13,
                                       color: "#16231b",
-                                    }}
-                                  >
+                                    }}>
                                     {copy.assetTag}
                                   </div>
                                   <div
@@ -865,8 +933,7 @@ export default function ManageResources() {
                                       display: "flex",
                                       alignItems: "center",
                                       gap: 10,
-                                    }}
-                                  >
+                                    }}>
                                     {badge(copy.status)}
                                     {copy.status === "RETIRED" && (
                                       <button
@@ -903,8 +970,7 @@ export default function ManageResources() {
                                             "#fff";
                                           e.currentTarget.style.borderColor =
                                             "#bbf7d0";
-                                        }}
-                                      >
+                                        }}>
                                         Mark found
                                       </button>
                                     )}
@@ -944,8 +1010,7 @@ export default function ManageResources() {
                                               "#fff";
                                             e.currentTarget.style.borderColor =
                                               "#fecaca";
-                                          }}
-                                        >
+                                          }}>
                                           Mark lost
                                         </button>
                                       )}
@@ -959,8 +1024,7 @@ export default function ManageResources() {
                               fontSize: 11,
                               color: "#9b9db2",
                               marginTop: 10,
-                            }}
-                          >
+                            }}>
                             Borrowed copies can't be retired until they're
                             returned. Lost copies can be marked found to restore
                             availability.
@@ -973,6 +1037,17 @@ export default function ManageResources() {
               );
             })
           )}
+          <Pagination
+            page={bookPage.page}
+            pageSize={pageSize}
+            total={bookPage.total}
+            onPageChange={(n) => setTabPage("books", n)}
+            onPageSizeChange={(s) => {
+              setPageSize(s);
+              setPages({ books: 1, devices: 1, rooms: 1 });
+            }}
+            pageSizes={[10, 30, 50, 100]}
+          />
         </div>
       )}
 
@@ -984,17 +1059,15 @@ export default function ManageResources() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             overflow: "hidden",
-          }}
-        >
+          }}>
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "2fr 1.4fr 0.8fr 1fr 1.2fr",
+              gridTemplateColumns: "2fr 1.4fr 0.8fr 1fr 1.6fr",
               padding: "12px 20px",
               background: "#f8f8fc",
               borderBottom: "1px solid #e7e7ef",
-            }}
-          >
+            }}>
             {["Device", "Serial", "Tier", "Status", "Maintenance"].map(
               (h, i) => (
                 <div
@@ -1005,17 +1078,20 @@ export default function ManageResources() {
                     color: "#7c7e93",
                     textTransform: "uppercase",
                     letterSpacing: 0.6,
-                  }}
-                >
+                  }}>
                   {h}
                 </div>
               ),
             )}
           </div>
           {devices.length === 0 ? (
-            <Empty label="No devices yet." />
+            <Empty
+              label={
+                q ? `No devices match "${searchQuery}".` : "No devices yet."
+              }
+            />
           ) : (
-            devices.map((d, i) => {
+            devicePage.slice.map((d, i) => {
               const status = d.raw?.status || "AVAILABLE";
               const borrowed = status === "BORROWED";
               const under = status === "UNDER_MAINTENANCE";
@@ -1024,10 +1100,12 @@ export default function ManageResources() {
                   key={d.id}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "2fr 1.4fr 0.8fr 1fr 1.2fr",
+                    gridTemplateColumns: "2fr 1.4fr 0.8fr 1fr 1.6fr",
                     padding: "13px 20px",
                     borderBottom:
-                      i < devices.length - 1 ? "1px solid #f3f3f8" : "none",
+                      i < devicePage.slice.length - 1
+                        ? "1px solid #f3f3f8"
+                        : "none",
                     alignItems: "center",
                     ...rowHoverStyle,
                   }}
@@ -1036,20 +1114,33 @@ export default function ManageResources() {
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "transparent";
-                  }}
-                >
+                  }}>
                   <div
-                    style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}
-                  >
-                    {d.title}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "#1a1b2e",
+                    }}>
+                    <ResourceImage
+                      imageUrl={d.imageUrl}
+                      resourceType="DEVICE"
+                      iconPath={d.iconPath}
+                      color={d.color}
+                      w={40}
+                      h={40}
+                      radius={6}
+                    />
+                    <span>{d.title}</span>
                   </div>
                   <div
                     style={{
                       fontFamily: "'IBM Plex Mono', monospace",
                       fontSize: 12,
                       color: "#5a5c74",
-                    }}
-                  >
+                    }}>
                     {d.serial}
                   </div>
                   <div style={{ fontSize: 12, color: "#3a3b4e" }}>
@@ -1104,15 +1195,50 @@ export default function ManageResources() {
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = "translateY(0)";
                         e.currentTarget.style.boxShadow = "none";
-                      }}
-                    >
+                      }}>
                       {under ? "Set available" : "Set maintenance"}
+                    </button>
+                    <button
+                      onClick={() =>
+                        askConfirm({
+                          title: "Delete this device?",
+                          message: `"${d.title}" will be permanently removed. This cannot be undone.`,
+                          confirmLabel: "Delete",
+                          confirmColor: "#ef4444",
+                          onConfirm: () => doDeleteDevice(d),
+                        })
+                      }
+                      disabled={borrowed}
+                      title={borrowed ? "Cannot delete a borrowed device" : ""}
+                      style={{
+                        background: "#fff",
+                        color: borrowed ? "#c5c7d4" : "#ef4444",
+                        border: `1px solid ${borrowed ? "#e7e7ef" : "#fecaca"}`,
+                        borderRadius: 8,
+                        padding: "6px 10px",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: borrowed ? "not-allowed" : "pointer",
+                        marginLeft: 6,
+                      }}>
+                      Delete
                     </button>
                   </div>
                 </div>
               );
             })
           )}
+          <Pagination
+            page={devicePage.page}
+            pageSize={pageSize}
+            total={devicePage.total}
+            onPageChange={(n) => setTabPage("devices", n)}
+            onPageSizeChange={(s) => {
+              setPageSize(s);
+              setPages({ books: 1, devices: 1, rooms: 1 });
+            }}
+            pageSizes={[10, 30, 50, 100]}
+          />
         </div>
       )}
 
@@ -1124,17 +1250,15 @@ export default function ManageResources() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             overflow: "hidden",
-          }}
-        >
+          }}>
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "2fr 1fr 1fr 1.2fr",
+              gridTemplateColumns: "2fr 1fr 1fr 1.6fr",
               padding: "12px 20px",
               background: "#f8f8fc",
               borderBottom: "1px solid #e7e7ef",
-            }}
-          >
+            }}>
             {["Room", "Capacity", "Status", "Maintenance"].map((h, i) => (
               <div
                 key={i}
@@ -1144,16 +1268,19 @@ export default function ManageResources() {
                   color: "#7c7e93",
                   textTransform: "uppercase",
                   letterSpacing: 0.6,
-                }}
-              >
+                }}>
                 {h}
               </div>
             ))}
           </div>
           {rooms.length === 0 ? (
-            <Empty label="No study rooms yet." />
+            <Empty
+              label={
+                q ? `No rooms match "${searchQuery}".` : "No study rooms yet."
+              }
+            />
           ) : (
-            rooms.map((r, i) => {
+            roomPage.slice.map((r, i) => {
               const status = r.raw?.status || "AVAILABLE";
               const under = status === "UNDER_MAINTENANCE";
               return (
@@ -1161,10 +1288,12 @@ export default function ManageResources() {
                   key={r.id}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr 1.2fr",
+                    gridTemplateColumns: "2fr 1fr 1fr 1.6fr",
                     padding: "13px 20px",
                     borderBottom:
-                      i < rooms.length - 1 ? "1px solid #f3f3f8" : "none",
+                      i < roomPage.slice.length - 1
+                        ? "1px solid #f3f3f8"
+                        : "none",
                     alignItems: "center",
                     ...rowHoverStyle,
                   }}
@@ -1173,12 +1302,26 @@ export default function ManageResources() {
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "transparent";
-                  }}
-                >
+                  }}>
                   <div
-                    style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}
-                  >
-                    {r.title}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "#1a1b2e",
+                    }}>
+                    <ResourceImage
+                      imageUrl={r.imageUrl}
+                      resourceType="ROOM"
+                      iconPath={r.iconPath}
+                      color={r.color}
+                      w={40}
+                      h={40}
+                      radius={6}
+                    />
+                    <span>{r.title}</span>
                   </div>
                   <div style={{ fontSize: 12, color: "#3a3b4e" }}>
                     {r.capacity} seats
@@ -1221,15 +1364,48 @@ export default function ManageResources() {
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = "translateY(0)";
                         e.currentTarget.style.boxShadow = "none";
-                      }}
-                    >
+                      }}>
                       {under ? "Set available" : "Set maintenance"}
+                    </button>
+                    <button
+                      onClick={() =>
+                        askConfirm({
+                          title: "Delete this study room?",
+                          message: `"${r.title}" will be permanently removed. This cannot be undone.`,
+                          confirmLabel: "Delete",
+                          confirmColor: "#ef4444",
+                          onConfirm: () => doDeleteRoom(r),
+                        })
+                      }
+                      style={{
+                        background: "#fff",
+                        color: "#ef4444",
+                        border: "1px solid #fecaca",
+                        borderRadius: 8,
+                        padding: "6px 10px",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        marginLeft: 6,
+                      }}>
+                      Delete
                     </button>
                   </div>
                 </div>
               );
             })
           )}
+          <Pagination
+            page={roomPage.page}
+            pageSize={pageSize}
+            total={roomPage.total}
+            onPageChange={(n) => setTabPage("rooms", n)}
+            onPageSizeChange={(s) => {
+              setPageSize(s);
+              setPages({ books: 1, devices: 1, rooms: 1 });
+            }}
+            pageSizes={[10, 30, 50, 100]}
+          />
         </div>
       )}
 
@@ -1241,8 +1417,7 @@ export default function ManageResources() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             overflow: "hidden",
-          }}
-        >
+          }}>
           <div
             style={{
               display: "grid",
@@ -1250,8 +1425,7 @@ export default function ManageResources() {
               padding: "12px 20px",
               background: "#f8f8fc",
               borderBottom: "1px solid #e7e7ef",
-            }}
-          >
+            }}>
             {["Device", "Serial", "Borrowed by", "Due", "Manage"].map(
               (h, i) => (
                 <div
@@ -1262,8 +1436,7 @@ export default function ManageResources() {
                     color: "#7c7e93",
                     textTransform: "uppercase",
                     letterSpacing: 0.6,
-                  }}
-                >
+                  }}>
                   {h}
                 </div>
               ),
@@ -1289,11 +1462,9 @@ export default function ManageResources() {
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = "transparent";
-                }}
-              >
+                }}>
                 <div
-                  style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}
-                >
+                  style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}>
                   {ln.device.title}
                 </div>
                 <div
@@ -1301,8 +1472,7 @@ export default function ManageResources() {
                     fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: 12,
                     color: "#5a5c74",
-                  }}
-                >
+                  }}>
                   {ln.device.serial}
                 </div>
                 <div style={{ fontSize: 13, color: "#3a3b4e" }}>
@@ -1318,8 +1488,7 @@ export default function ManageResources() {
                         padding: "3px 10px",
                         color: ln.overdue ? "#ef4444" : "#2563eb",
                         background: ln.overdue ? "#fee2e2" : "#dbeafe",
-                      }}
-                    >
+                      }}>
                       {ln.overdue ? "Overdue · " : ""}
                       {ln.due.toLocaleDateString(undefined, {
                         month: "short",
@@ -1345,8 +1514,7 @@ export default function ManageResources() {
                       background: "#fff",
                       cursor: "pointer",
                       outline: "none",
-                    }}
-                  >
+                    }}>
                     <option value="GOOD">Good</option>
                     <option value="DAMAGED">Damaged</option>
                   </select>
@@ -1379,8 +1547,7 @@ export default function ManageResources() {
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = "#16a34a";
                       e.currentTarget.style.transform = "translateY(0)";
-                    }}
-                  >
+                    }}>
                     Process return
                   </button>
                 </div>
@@ -1393,8 +1560,7 @@ export default function ManageResources() {
               color: "#9b9db2",
               padding: "12px 20px",
               borderTop: "1px solid #f3f3f8",
-            }}
-          >
+            }}>
             Returning frees the device, applies point scoring (late/damage), and
             auto-promotes the next waitlist entry.
           </div>

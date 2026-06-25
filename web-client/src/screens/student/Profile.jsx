@@ -1,29 +1,107 @@
 import { useState } from "react";
 import { useApp } from "../../App";
 import { useFetch } from "../../hooks/useFetch";
-import { myBookings } from "../../api/bookings";
+import { myBookings, allBookings } from "../../api/bookings";
 import { myWaitlist } from "../../api/waitlist";
+import { listUsers } from "../../api/users";
+import { listBooks, listDevices, listRooms } from "../../api/catalogue";
+import Modal from "../../components/Modal";
+
+// Pull whichever stats are meaningful for the current role.
+// - student/lecturer: own bookings + own waitlist
+// - staff: queue counts (pending / approved / overdue)
+// - admin: members + resources + overdue
+async function loadProfileSummary(role) {
+  if (role === "staff") {
+    const { items } = await allBookings({ limit: 200 });
+    const now = Date.now();
+    return {
+      kind: "staff",
+      stats: [
+        {
+          label: "Pending approvals",
+          value: items.filter(
+            (b) => b.status === "PENDING" && b.resourceType === "DEVICE",
+          ).length,
+        },
+        {
+          label: "Active loans",
+          value: items.filter((b) => b.status === "CHECKED_OUT").length,
+        },
+        {
+          label: "Overdue items",
+          value: items.filter(
+            (b) =>
+              b.status === "CHECKED_OUT" &&
+              b.endAt &&
+              new Date(b.endAt).getTime() < now,
+          ).length,
+        },
+      ],
+    };
+  }
+  if (role === "admin") {
+    const [users, books, devices, rooms, bookings] = await Promise.all([
+      listUsers({ limit: 1 }),
+      listBooks({ limit: 1 }),
+      listDevices({ limit: 1 }),
+      listRooms(),
+      allBookings({ limit: 200 }),
+    ]);
+    const now = Date.now();
+    return {
+      kind: "admin",
+      stats: [
+        { label: "Members", value: users.total || 0 },
+        {
+          label: "Resources",
+          value:
+            (books.total || 0) +
+            (devices.total || 0) +
+            (rooms.items?.length || 0),
+        },
+        {
+          label: "Overdue items",
+          value: bookings.items.filter(
+            (b) =>
+              b.status === "CHECKED_OUT" &&
+              b.endAt &&
+              new Date(b.endAt).getTime() < now,
+          ).length,
+        },
+      ],
+    };
+  }
+  // student / lecturer default
+  const [b, w] = await Promise.all([myBookings(), myWaitlist()]);
+  return {
+    kind: "patron",
+    stats: [
+      { label: "Total bookings", value: b.items.length },
+      {
+        label: "Active loans",
+        value: b.items.filter(
+          (x) => x.status === "APPROVED" || x.status === "CHECKED_OUT",
+        ).length,
+      },
+      { label: "On waitlist", value: (w || []).length },
+    ],
+  };
+}
 
 export default function Profile() {
-  const { user } = useApp();
+  const { user, refreshKey } = useApp();
   const [contactOpen, setContactOpen] = useState(false);
-  const { data } = useFetch(
-    () =>
-      Promise.all([myBookings(), myWaitlist()]).then(([b, w]) => ({
-        bookings: b.items,
-        waitlist: w,
-      })),
-    [],
-  );
+  const role = user?.role || "student";
 
-  const bookings = data?.bookings || [];
-  const profileStats = [
-    { label: "Total bookings", value: bookings.length },
-    {
-      label: "Active loans",
-      value: bookings.filter((b) => b.status === "APPROVED").length,
-    },
-    { label: "On waitlist", value: (data?.waitlist || []).length },
+  // Refetch whenever the global refreshKey ticks (cancelling a booking,
+  // approving a request, etc.) so the cards stop showing stale numbers.
+  const { data } = useFetch(() => loadProfileSummary(role), [role, refreshKey]);
+
+  const profileStats = data?.stats || [
+    { label: "—", value: 0 },
+    { label: "—", value: 0 },
+    { label: "—", value: 0 },
   ];
 
   return (
@@ -33,7 +111,6 @@ export default function Profile() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
       }}>
-      {/* Profile header */}
       <div
         style={{
           background: "#fff",
@@ -59,7 +136,7 @@ export default function Profile() {
             fontWeight: 800,
             flexShrink: 0,
           }}>
-          {user?.initials || "SW"}
+          {user?.initials || "??"}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
@@ -69,23 +146,25 @@ export default function Profile() {
               color: "#16231b",
               marginBottom: 2,
             }}>
-            {user?.name || "Sahan Wickrama"}
+            {user?.name || "User"}
           </div>
           <div style={{ fontSize: 13, color: "#7c7e93", marginBottom: 8 }}>
-            {user?.email || "sahan@meridian.edu"}
+            {user?.email || "-"}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <div
-              style={{
-                padding: "3px 10px",
-                borderRadius: 20,
-                background: "#f0fdf4",
-                color: "#16a34a",
-                fontSize: 11,
-                fontWeight: 700,
-              }}>
-              {user?.tierLabel || "Tier 3 · Regular"}
-            </div>
+            {user?.tier && (
+              <div
+                style={{
+                  padding: "3px 10px",
+                  borderRadius: 20,
+                  background: "#f0fdf4",
+                  color: "#16a34a",
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}>
+                {user?.tierLabel}
+              </div>
+            )}
             <div
               style={{
                 padding: "3px 10px",
@@ -95,7 +174,7 @@ export default function Profile() {
                 fontSize: 11,
                 fontWeight: 600,
               }}>
-              {user?.roleLabel || "Student"}
+              {user?.roleLabel || "—"}
             </div>
           </div>
         </div>
@@ -115,11 +194,10 @@ export default function Profile() {
         </button>
       </div>
 
-      {/* Stats row */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3,1fr)",
+          gridTemplateColumns: `repeat(${profileStats.length},1fr)`,
           gap: 14,
           marginBottom: 20,
         }}>
@@ -143,7 +221,6 @@ export default function Profile() {
         ))}
       </div>
 
-      {/* Account details */}
       <div
         style={{
           background: "#fff",
@@ -191,103 +268,79 @@ export default function Profile() {
         ))}
       </div>
 
-      {/* Edit profile = administrator contact modal. The overlay covers the
-          whole viewport with a single dark backdrop so the dialog reads as a
-          true modal (not a stray card floating over a half-styled page). */}
-      {contactOpen && (
-        <div
-          onClick={() => setContactOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1000,
-            background: "rgba(6,24,15,0.58)",
-            backdropFilter: "blur(6px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-          }}>
+      <Modal
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        width={420}>
+        <div style={{ padding: "26px 26px 22px" }}>
           <div
-            onClick={(e) => e.stopPropagation()}
             style={{
-              background: "#fff",
-              borderRadius: 16,
-              width: 420,
-              maxWidth: "92vw",
-              padding: "26px 26px 22px",
-              boxShadow: "0 24px 60px rgba(6,24,15,0.22)",
-              fontFamily: "'Public Sans', sans-serif",
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              marginBottom: 14,
+              background: "#f0fdf4",
+              color: "#16a34a",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                marginBottom: 14,
-                background: "#f0fdf4",
-                color: "#16a34a",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}>
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#16a34a"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round">
-                <path d="M12 16v-4M12 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
-              </svg>
-            </div>
-            <h2
-              style={{
-                fontFamily: "'Spectral', serif",
-                fontSize: 19,
-                fontWeight: 700,
-                color: "#16231b",
-                margin: "0 0 8px",
-              }}>
-              Contact an administrator
-            </h2>
-            <p
-              style={{
-                fontSize: 13,
-                color: "#5c5e72",
-                lineHeight: 1.55,
-                margin: "0 0 20px",
-              }}>
-              Profile details — your name, email, role and tier — are managed by
-              library staff. To request a change, please contact an
-              administrator at{" "}
-              <a
-                href="mailto:admin@iit.ac.lk"
-                style={{ color: "#16a34a", fontWeight: 600 }}>
-                admin@iit.ac.lk
-              </a>
-              .
-            </p>
-            <button
-              onClick={() => setContactOpen(false)}
-              style={{
-                width: "100%",
-                padding: "11px",
-                borderRadius: 9,
-                border: "none",
-                background: "#16a34a",
-                color: "#fff",
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}>
-              Got it
-            </button>
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#16a34a"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round">
+              <path d="M12 16v-4M12 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+            </svg>
           </div>
+          <h2
+            style={{
+              fontFamily: "'Spectral', serif",
+              fontSize: 19,
+              fontWeight: 700,
+              color: "#16231b",
+              margin: "0 0 8px",
+            }}>
+            Contact an administrator
+          </h2>
+          <p
+            style={{
+              fontSize: 13,
+              color: "#5c5e72",
+              lineHeight: 1.55,
+              margin: "0 0 20px",
+            }}>
+            Profile details — your name, email, role and tier — are managed by
+            library staff. To request a change, please contact an administrator
+            at{" "}
+            <a
+              href="mailto:admin@iit.ac.lk"
+              style={{ color: "#16a34a", fontWeight: 600 }}>
+              admin@iit.ac.lk
+            </a>
+            .
+          </p>
+          <button
+            onClick={() => setContactOpen(false)}
+            style={{
+              width: "100%",
+              padding: "11px",
+              borderRadius: 9,
+              border: "none",
+              background: "#16a34a",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}>
+            Got it
+          </button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }
