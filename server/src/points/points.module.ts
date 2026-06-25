@@ -4,9 +4,9 @@ import { PointsController } from './points.controller.js';
 import { PointsService } from './points.service.js';
 
 @Module({
-    imports: [SystemConfigModule],
-    providers: [PointsService],
-    controllers: [PointsController],
-    exports: [PointsService],
+  imports: [SystemConfigModule],
+  providers: [PointsService],
+  controllers: [PointsController],
+  exports: [PointsService],
 })
 export class PointsModule {}

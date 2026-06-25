@@ -8,24 +8,24 @@ import { AuditService } from './audit.service.js';
 @ApiBearerAuth('JWT')
 @Controller('audit')
 export class AuditController {
-    constructor(private audit: AuditService) {}
+  constructor(private audit: AuditService) {}
 
-    @ApiOperation({ summary: 'Query the system-wide audit log (Admin only)' })
-    @Get('logs')
-    @Roles(Role.ADMIN)
-    findMany(
-        @Query('page') page = '1',
-        @Query('limit') limit = '50',
-        @Query('actorId') actorId?: string,
-        @Query('action') action?: string,
-        @Query('targetType') targetType?: string,
-    ) {
-        return this.audit.findMany({
-            page: Math.max(1, parseInt(page, 10)),
-            limit: Math.min(200, Math.max(1, parseInt(limit, 10))),
-            actorId,
-            action,
-            targetType,
-        });
-    }
+  @ApiOperation({ summary: 'Query the system-wide audit log (Admin only)' })
+  @Get('logs')
+  @Roles(Role.ADMIN)
+  findMany(
+    @Query('page') page = '1',
+    @Query('limit') limit = '50',
+    @Query('actorId') actorId?: string,
+    @Query('action') action?: string,
+    @Query('targetType') targetType?: string,
+  ) {
+    return this.audit.findMany({
+      page: Math.max(1, parseInt(page, 10)),
+      limit: Math.min(200, Math.max(1, parseInt(limit, 10))),
+      actorId,
+      action,
+      targetType,
+    });
+  }
 }

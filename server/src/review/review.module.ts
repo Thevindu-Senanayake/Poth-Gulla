@@ -4,8 +4,8 @@ import { ReviewController } from './review.controller.js';
 import { ReviewService } from './review.service.js';
 
 @Module({
-    imports: [PointsModule],
-    controllers: [ReviewController],
-    providers: [ReviewService],
+  imports: [PointsModule],
+  controllers: [ReviewController],
+  providers: [ReviewService],
 })
 export class ReviewModule {}

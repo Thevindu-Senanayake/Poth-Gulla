@@ -114,7 +114,8 @@ export default function Points() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1
@@ -124,7 +125,8 @@ export default function Points() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: "0 0 4px",
-          }}>
+          }}
+        >
           Points &amp; Tiers
         </h1>
         <p style={{ color: "#7c7e93", fontSize: 13, margin: 0 }}>
@@ -139,7 +141,8 @@ export default function Points() {
           gridTemplateColumns: "1fr 1fr",
           gap: 18,
           marginBottom: 24,
-        }}>
+        }}
+      >
         {/* Left: dark green points card */}
         <div
           className="pg-card-banner"
@@ -150,7 +153,8 @@ export default function Points() {
             padding: "28px 30px",
             position: "relative",
             overflow: "hidden",
-          }}>
+          }}
+        >
           <div
             style={{
               position: "absolute",
@@ -182,7 +186,8 @@ export default function Points() {
                 textTransform: "uppercase",
                 letterSpacing: 0.6,
                 marginBottom: 6,
-              }}>
+              }}
+            >
               {tierLabel}
             </div>
             <div
@@ -193,7 +198,8 @@ export default function Points() {
                 color: "#fff",
                 lineHeight: 1,
                 marginBottom: 6,
-              }}>
+              }}
+            >
               {pts.toLocaleString()}
             </div>
             <div
@@ -201,7 +207,8 @@ export default function Points() {
                 fontSize: 12,
                 color: "rgba(255,255,255,0.65)",
                 marginBottom: 20,
-              }}>
+              }}
+            >
               total points earned
             </div>
 
@@ -212,7 +219,8 @@ export default function Points() {
                   display: "flex",
                   justifyContent: "space-between",
                   marginBottom: 6,
-                }}>
+                }}
+              >
                 <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>
                   Progress to {user?.nextTierLabel || "Tier 4"}
                 </span>
@@ -222,7 +230,8 @@ export default function Points() {
                     fontSize: 11,
                     color: "#fcd34d",
                     fontWeight: 700,
-                  }}>
+                  }}
+                >
                   {progressPct}
                 </span>
               </div>
@@ -232,7 +241,8 @@ export default function Points() {
                   borderRadius: 20,
                   height: 9,
                   overflow: "hidden",
-                }}>
+                }}
+              >
                 <div
                   style={{
                     height: "100%",
@@ -248,7 +258,8 @@ export default function Points() {
                   display: "flex",
                   justifyContent: "space-between",
                   marginTop: 5,
-                }}>
+                }}
+              >
                 <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>
                   {pts} pts
                 </span>
@@ -268,7 +279,8 @@ export default function Points() {
                 color: "#fcd34d",
                 fontWeight: 600,
                 marginTop: 12,
-              }}>
+              }}
+            >
               {toNext} points to {user?.nextTierLabel || "Tier 4"}
             </div>
           </div>
@@ -282,7 +294,8 @@ export default function Points() {
             border: "1px solid #e7e7ef",
             borderRadius: 16,
             padding: "22px 24px",
-          }}>
+          }}
+        >
           <h3
             style={{
               fontFamily: "'Spectral', serif",
@@ -290,7 +303,8 @@ export default function Points() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: "0 0 16px",
-            }}>
+            }}
+          >
             Tier ladder
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -307,7 +321,8 @@ export default function Points() {
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
-                  }}>
+                  }}
+                >
                   <div
                     style={{
                       width: 10,
@@ -323,7 +338,8 @@ export default function Points() {
                         fontSize: 13,
                         fontWeight: isCurrent ? 700 : 500,
                         color: "#1a1b2e",
-                      }}>
+                      }}
+                    >
                       {t.tier} · {t.label}
                     </div>
                     <div style={{ fontSize: 11, color: "#9b9db2" }}>
@@ -340,7 +356,8 @@ export default function Points() {
                         padding: "3px 9px",
                         borderRadius: 20,
                         flexShrink: 0,
-                      }}>
+                      }}
+                    >
                       You
                     </span>
                   )}
@@ -361,9 +378,11 @@ export default function Points() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             overflow: "hidden",
-          }}>
+          }}
+        >
           <div
-            style={{ padding: "16px 20px", borderBottom: "1px solid #f0f0f8" }}>
+            style={{ padding: "16px 20px", borderBottom: "1px solid #f0f0f8" }}
+          >
             <h3
               style={{
                 fontFamily: "'Spectral', serif",
@@ -371,7 +390,8 @@ export default function Points() {
                 fontWeight: 600,
                 color: "#1a1b2e",
                 margin: 0,
-              }}>
+              }}
+            >
               How points are earned &amp; lost
             </h3>
           </div>
@@ -385,7 +405,8 @@ export default function Points() {
                 padding: "11px 20px",
                 borderBottom:
                   i < pointEvents.length - 1 ? "1px solid #f8f8fc" : "none",
-              }}>
+              }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div
                   style={{
@@ -407,7 +428,8 @@ export default function Points() {
                   fontWeight: 700,
                   color: e.positive ? "#16a34a" : "#ef4444",
                   flexShrink: 0,
-                }}>
+                }}
+              >
                 {e.delta}
               </span>
             </div>
@@ -422,9 +444,11 @@ export default function Points() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             overflow: "hidden",
-          }}>
+          }}
+        >
           <div
-            style={{ padding: "16px 20px", borderBottom: "1px solid #f0f0f8" }}>
+            style={{ padding: "16px 20px", borderBottom: "1px solid #f0f0f8" }}
+          >
             <h3
               style={{
                 fontFamily: "'Spectral', serif",
@@ -432,7 +456,8 @@ export default function Points() {
                 fontWeight: 600,
                 color: "#1a1b2e",
                 margin: 0,
-              }}>
+              }}
+            >
               Recent activity
             </h3>
           </div>
@@ -446,7 +471,8 @@ export default function Points() {
                 padding: "13px 20px",
                 borderBottom:
                   i < pointHistory.length - 1 ? "1px solid #f8f8fc" : "none",
-              }}>
+              }}
+            >
               <div
                 style={{
                   width: 32,
@@ -457,13 +483,15 @@ export default function Points() {
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
-                }}>
+                }}
+              >
                 <span
                   style={{
                     fontSize: 13,
                     fontWeight: 800,
                     color: h.positive ? "#16a34a" : "#ef4444",
-                  }}>
+                  }}
+                >
                   {h.positive ? "+" : "−"}
                 </span>
               </div>
@@ -474,7 +502,8 @@ export default function Points() {
                     fontWeight: 500,
                     color: "#1a1b2e",
                     lineHeight: 1.3,
-                  }}>
+                  }}
+                >
                   {h.action}
                 </div>
                 <div style={{ fontSize: 11, color: "#9b9db2", marginTop: 2 }}>
@@ -488,7 +517,8 @@ export default function Points() {
                   fontWeight: 700,
                   color: h.positive ? "#16a34a" : "#ef4444",
                   flexShrink: 0,
-                }}>
+                }}
+              >
                 {h.delta}
               </span>
             </div>

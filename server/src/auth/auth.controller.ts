@@ -12,38 +12,38 @@ import { UsersService } from '../users/users.service.js';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-    constructor(
-        private auth: AuthService,
-        private users: UsersService
-    ) {}
+  constructor(
+    private auth: AuthService,
+    private users: UsersService,
+  ) {}
 
-    @ApiBearerAuth('JWT')
-    @ApiOperation({ summary: 'Register a new user (Admin only)' })
-    @Roles(Role.ADMIN)
-    @Post('register')
-    register(@Body() dto: RegisterDto) {
-        return this.auth.register(dto);
-    }
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Register a new user (Admin only)' })
+  @Roles(Role.ADMIN)
+  @Post('register')
+  register(@Body() dto: RegisterDto) {
+    return this.auth.register(dto);
+  }
 
-    @ApiOperation({ summary: 'Login and receive a JWT token' })
-    @Public()
-    @Post('login')
-    @HttpCode(200)
-    async login(
-        @Headers('authorization') authHeader: string | undefined,
-        @Body() dto: LoginDto
-    ) {
-        if (authHeader?.startsWith('Bearer ')) {
-            await this.auth.assertNotAuthenticated(authHeader.slice(7));
-        }
-        return this.auth.login(dto);
+  @ApiOperation({ summary: 'Login and receive a JWT token' })
+  @Public()
+  @Post('login')
+  @HttpCode(200)
+  async login(
+    @Headers('authorization') authHeader: string | undefined,
+    @Body() dto: LoginDto,
+  ) {
+    if (authHeader?.startsWith('Bearer ')) {
+      await this.auth.assertNotAuthenticated(authHeader.slice(7));
     }
+    return this.auth.login(dto);
+  }
 
-    @ApiBearerAuth('JWT')
-    @ApiOperation({ summary: 'Get the currently authenticated user profile' })
-    @Get('me')
-    async me(@CurrentUser() current: { userId: string }) {
-        const user = await this.users.findById(current.userId);
-        return user ? this.auth.sanitize(user) : null;
-    }
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Get the currently authenticated user profile' })
+  @Get('me')
+  async me(@CurrentUser() current: { userId: string }) {
+    const user = await this.users.findById(current.userId);
+    return user ? this.auth.sanitize(user) : null;
+  }
 }

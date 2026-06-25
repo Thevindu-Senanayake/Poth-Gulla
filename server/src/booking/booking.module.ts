@@ -6,9 +6,9 @@ import { BookingController } from './booking.controller.js';
 import { BookingService } from './booking.service.js';
 
 @Module({
-    imports: [WaitlistModule, PointsModule, SystemConfigModule],
-    controllers: [BookingController],
-    providers: [BookingService],
-    exports: [BookingService],
+  imports: [WaitlistModule, PointsModule, SystemConfigModule],
+  controllers: [BookingController],
+  providers: [BookingService],
+  exports: [BookingService],
 })
 export class BookingModule {}
