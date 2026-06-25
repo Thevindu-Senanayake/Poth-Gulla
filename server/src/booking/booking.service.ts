@@ -21,6 +21,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { WaitlistService } from '../waitlist/waitlist.service.js';
 import { CreateBookingDto } from './dto/create-booking.dto.js';
 import { SystemConfigService } from '../config/system-config.service.js';
+import { AuditService } from '../audit/audit.service.js';
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 
@@ -39,6 +40,7 @@ export class BookingService {
     private waitlist: WaitlistService,
     private points: PointsService,
     private systemConfig: SystemConfigService,
+    private audit: AuditService,
   ) {}
 
   async create(userId: string, dto: CreateBookingDto): Promise<Booking> {
@@ -118,6 +120,31 @@ export class BookingService {
       await this.waitlist.enqueue(booking, user, resourceId, !!message);
     }
 
+    let resourceName = '';
+    if (resourceType === ResourceType.BOOK) {
+      const book = await this.prisma.bookTitle.findUnique({
+        where: { id: resourceId },
+      });
+      resourceName = book?.title ?? '';
+    } else if (resourceType === ResourceType.DEVICE) {
+      const device = await this.prisma.device.findUnique({
+        where: { id: resourceId },
+      });
+      resourceName = device?.name ?? '';
+    } else if (resourceType === ResourceType.ROOM) {
+      const room = await this.prisma.studyRoom.findUnique({
+        where: { id: resourceId },
+      });
+      resourceName = room?.name ?? '';
+    }
+
+    await this.audit.log(userId, 'BOOKING_CREATED', 'Booking', booking.id, {
+      userName: user.name,
+      userEmail: user.email,
+      resourceType,
+      resourceName,
+    });
+
     return booking;
   }
 
@@ -158,30 +185,84 @@ export class BookingService {
     return clash ? BookingStatus.WAITLIST : BookingStatus.APPROVED;
   }
 
-  async approve(bookingId: string): Promise<Booking> {
+  async approve(bookingId: string, actorId?: string): Promise<Booking> {
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
     });
     if (booking.status !== BookingStatus.PENDING) {
       throw new BadRequestException('Only PENDING bookings can be approved');
     }
-    return this.prisma.booking.update({
+    const updated = await this.prisma.booking.update({
       where: { id: bookingId },
       data: { status: BookingStatus.APPROVED, qrToken: randomUUID() },
+      include: {
+        user: { select: { name: true, email: true } },
+        bookTitle: { select: { title: true } },
+        device: { select: { name: true } },
+        studyRoom: { select: { name: true } },
+      },
     });
+
+    const resourceName =
+      updated.bookTitle?.title ??
+      updated.device?.name ??
+      updated.studyRoom?.name ??
+      '';
+
+    await this.audit.log(
+      actorId ?? null,
+      'BOOKING_APPROVED',
+      'Booking',
+      updated.id,
+      {
+        userName: updated.user.name,
+        userEmail: updated.user.email,
+        resourceType: updated.resourceType,
+        resourceName,
+      },
+    );
+
+    return updated;
   }
 
-  async reject(bookingId: string): Promise<Booking> {
+  async reject(bookingId: string, actorId?: string): Promise<Booking> {
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
     });
     if (booking.status !== BookingStatus.PENDING) {
       throw new BadRequestException('Only PENDING bookings can be rejected');
     }
-    return this.prisma.booking.update({
+    const updated = await this.prisma.booking.update({
       where: { id: bookingId },
       data: { status: BookingStatus.REJECTED },
+      include: {
+        user: { select: { name: true, email: true } },
+        bookTitle: { select: { title: true } },
+        device: { select: { name: true } },
+        studyRoom: { select: { name: true } },
+      },
     });
+
+    const resourceName =
+      updated.bookTitle?.title ??
+      updated.device?.name ??
+      updated.studyRoom?.name ??
+      '';
+
+    await this.audit.log(
+      actorId ?? null,
+      'BOOKING_REJECTED',
+      'Booking',
+      updated.id,
+      {
+        userName: updated.user.name,
+        userEmail: updated.user.email,
+        resourceType: updated.resourceType,
+        resourceName,
+      },
+    );
+
+    return updated;
   }
 
   async cancel(
@@ -217,6 +298,12 @@ export class BookingService {
     const updated = await this.prisma.booking.update({
       where: { id: bookingId },
       data: { status: BookingStatus.CANCELLED },
+      include: {
+        user: { select: { name: true, email: true } },
+        bookTitle: { select: { title: true } },
+        device: { select: { name: true } },
+        studyRoom: { select: { name: true } },
+      },
     });
 
     // If slot was live (APPROVED), apply cancellation charges and free the slot
@@ -227,6 +314,20 @@ export class BookingService {
         booking.studyRoomId)!;
       await this.waitlist.onResourceFreed(booking.resourceType, resourceKey);
     }
+
+    const resourceName =
+      updated.bookTitle?.title ??
+      updated.device?.name ??
+      updated.studyRoom?.name ??
+      '';
+
+    await this.audit.log(actorId, 'BOOKING_CANCELLED', 'Booking', updated.id, {
+      userName: updated.user.name,
+      userEmail: updated.user.email,
+      resourceType: updated.resourceType,
+      resourceName,
+      adminOverride,
+    });
 
     return updated;
   }

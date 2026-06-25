@@ -16,6 +16,7 @@ import { PointsService } from '../points/points.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WaitlistService } from '../waitlist/waitlist.service.js';
 import { PointAction } from '../points/point-events.js';
+import { AuditService } from '../audit/audit.service.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -43,14 +44,20 @@ export class ScanService {
     private prisma: PrismaService,
     private points: PointsService,
     private waitlist: WaitlistService,
+    private audit: AuditService,
   ) {}
 
   // ── Checkout (book or device) ─────────────────────────────────────────
 
-  async checkout(dto: CheckoutDto): Promise<Booking> {
+  async checkout(dto: CheckoutDto, actorId?: string): Promise<Booking> {
     const booking = await this.prisma.booking.findUnique({
       where: { qrToken: dto.bookingQr },
-      include: { waitlistEntry: true },
+      include: {
+        waitlistEntry: true,
+        user: { select: { name: true, email: true } },
+        bookTitle: { select: { title: true } },
+        device: { select: { name: true } },
+      },
     });
 
     if (!booking) {
@@ -73,6 +80,7 @@ export class ScanService {
       // Check if the assetTag belongs to a BOOK copy
       const copy = await this.prisma.bookCopy.findUnique({
         where: { assetTag: dto.assetTag },
+        include: { bookTitle: { select: { title: true } } },
       });
 
       if (!copy) {
@@ -112,6 +120,21 @@ export class ScanService {
             dueAt: endAt,
           },
         });
+
+        await this.audit.log(
+          actorId ?? null,
+          'ITEM_CHECKED_OUT',
+          'Booking',
+          b.id,
+          {
+            userName: user.name,
+            userEmail: user.email,
+            resourceType: ResourceType.BOOK,
+            resourceName: copy.bookTitle?.title ?? '',
+            assetTag: dto.assetTag,
+          },
+        );
+
         return b;
       });
     }
@@ -123,17 +146,22 @@ export class ScanService {
     }
 
     if (booking.resourceType === ResourceType.BOOK)
-      return this.checkoutBook(booking, dto.assetTag);
+      return this.checkoutBook(booking, dto.assetTag, actorId);
     if (booking.resourceType === ResourceType.DEVICE)
-      return this.checkoutDevice(booking, dto.assetTag);
+      return this.checkoutDevice(booking, dto.assetTag, actorId);
     throw new BadRequestException(
       'Room bookings are checked in via /scan/room-checkin',
     );
   }
 
   private async checkoutBook(
-    booking: Booking & { waitlistEntry: { id: string } | null },
+    booking: Booking & {
+      waitlistEntry?: { id: string } | null;
+      user?: { name: string; email: string } | null;
+      bookTitle?: { title: string } | null;
+    },
     assetTag: string,
+    actorId?: string,
   ): Promise<Booking> {
     const copy = await this.prisma.bookCopy.findUnique({ where: { assetTag } });
     if (!copy)
@@ -174,12 +202,31 @@ export class ScanService {
       });
     }
 
+    await this.audit.log(
+      actorId ?? null,
+      'ITEM_CHECKED_OUT',
+      'Booking',
+      updated.id,
+      {
+        userName: booking.user?.name ?? '',
+        userEmail: booking.user?.email ?? '',
+        resourceType: ResourceType.BOOK,
+        resourceName: booking.bookTitle?.title ?? '',
+        assetTag,
+      },
+    );
+
     return updated;
   }
 
   private async checkoutDevice(
-    booking: Booking & { waitlistEntry: { id: string } | null },
+    booking: Booking & {
+      waitlistEntry?: { id: string } | null;
+      user?: { name: string; email: string } | null;
+      device?: { name: string } | null;
+    },
     assetTag: string,
+    actorId?: string,
   ): Promise<Booking> {
     const device = await this.prisma.device.findUnique({ where: { assetTag } });
     if (!device)
@@ -219,6 +266,20 @@ export class ScanService {
       });
     }
 
+    await this.audit.log(
+      actorId ?? null,
+      'ITEM_CHECKED_OUT',
+      'Booking',
+      updated.id,
+      {
+        userName: booking.user?.name ?? '',
+        userEmail: booking.user?.email ?? '',
+        resourceType: ResourceType.DEVICE,
+        resourceName: booking.device?.name ?? '',
+        assetTag,
+      },
+    );
+
     return updated;
   }
 
@@ -254,10 +315,20 @@ export class ScanService {
     const updated = await this.prisma.booking.update({
       where: { id: booking.id },
       data: { status: BookingStatus.COMPLETED },
+      include: {
+        user: { select: { name: true, email: true } },
+      },
     });
 
     await this.points.applyFixed(userId, 'ROOM_ATTENDED', {
       bookingId: booking.id,
+    });
+
+    await this.audit.log(userId, 'ROOM_CHECKED_IN', 'Booking', updated.id, {
+      userName: updated.user.name,
+      userEmail: updated.user.email,
+      resourceType: ResourceType.ROOM,
+      resourceName: room.name,
     });
 
     return updated;
@@ -265,7 +336,7 @@ export class ScanService {
 
   // ── Return ────────────────────────────────────────────────────────────
 
-  async returnItem(dto: ReturnItemDto) {
+  async returnItem(dto: ReturnItemDto, actorId?: string) {
     // Find an active borrowing by assetTag on either a book copy or device
     const borrowing = await this.prisma.borrowing.findFirst({
       where: {
@@ -275,7 +346,12 @@ export class ScanService {
           { device: { assetTag: dto.assetTag } },
         ],
       },
-      include: { bookCopy: true, device: true, booking: true },
+      include: {
+        bookCopy: { include: { bookTitle: { select: { title: true } } } },
+        device: { select: { name: true } },
+        booking: true,
+        user: { select: { name: true, email: true } },
+      },
     });
     if (!borrowing) {
       throw new NotFoundException(
@@ -335,6 +411,24 @@ export class ScanService {
       ? borrowing.booking.bookTitleId!
       : borrowing.booking.deviceId!;
     await this.waitlist.onResourceFreed(resourceType, resourceKey);
+
+    const resourceName =
+      borrowing.bookCopy?.bookTitle?.title ?? borrowing.device?.name ?? '';
+
+    await this.audit.log(
+      actorId ?? null,
+      'ITEM_RETURNED',
+      'Booking',
+      borrowing.bookingId,
+      {
+        userName: borrowing.user?.name ?? '',
+        userEmail: borrowing.user?.email ?? '',
+        resourceType,
+        resourceName,
+        assetTag: dto.assetTag,
+        condition: dto.condition,
+      },
+    );
 
     return borrowing;
   }

@@ -9,6 +9,7 @@ import {
   tierFromPointsWithConfig,
 } from './tier.utils.js';
 import { SystemConfigService } from '../config/system-config.service.js';
+import { AuditService } from '../audit/audit.service.js';
 
 const OPERATIONAL_ROLES = new Set<Role>([Role.ADMIN, Role.LIBRARY_STAFF]);
 const isOperational = (role: Role) => OPERATIONAL_ROLES.has(role);
@@ -27,6 +28,7 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private systemConfig: SystemConfigService,
+    private audit: AuditService,
   ) {}
 
   findByEmail(email: string): Promise<User | null> {
@@ -85,12 +87,24 @@ export class UsersService {
       tier = tierFromPointsWithConfig(points, config.tiers);
     }
 
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: { ...data, role, userPoints: points, tier },
     });
+
+    await this.audit.log(null, 'USER_REGISTERED', 'User', user.id, {
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    });
+
+    return user;
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<User> {
+  async update(
+    id: string,
+    dto: UpdateUserDto,
+    actorId?: string,
+  ): Promise<User> {
     const { name, role, userPoints, tier } = dto;
 
     // Resolve tier/points coupling.
@@ -127,7 +141,7 @@ export class UsersService {
       finalTier = tierFromPointsWithConfig(current.userPoints, config.tiers);
     }
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: {
         ...(name !== undefined ? { name } : {}),
@@ -138,10 +152,41 @@ export class UsersService {
           : {}),
       },
     });
+
+    await this.audit.log(actorId ?? null, 'USER_UPDATED', 'User', updated.id, {
+      dto: {
+        name: dto.name,
+        role: dto.role,
+        userPoints: dto.userPoints,
+        tier: dto.tier,
+      },
+      name: updated.name,
+      email: updated.email,
+    });
+
+    return updated;
   }
 
-  setActive(id: string, isActive: boolean): Promise<User> {
-    return this.prisma.user.update({ where: { id }, data: { isActive } });
+  async setActive(
+    id: string,
+    isActive: boolean,
+    actorId?: string,
+  ): Promise<User> {
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { isActive },
+    });
+    await this.audit.log(
+      actorId ?? null,
+      isActive ? 'USER_ENABLED' : 'USER_DISABLED',
+      'User',
+      updated.id,
+      {
+        name: updated.name,
+        email: updated.email,
+      },
+    );
+    return updated;
   }
 
   sanitize(user: User): Omit<User, 'passwordHash'> {
