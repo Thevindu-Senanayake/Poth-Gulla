@@ -6,7 +6,7 @@ export default function ResourceDetail() {
 
   useEffect(() => {
     if (!selectedResource) setPage("search");
-  }, [selectedResource]);
+  }, [selectedResource, setPage]);
 
   if (!selectedResource) return null;
 
@@ -20,7 +20,8 @@ export default function ResourceDetail() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       {/* Back button */}
       <button
         onClick={() => setPage("search")}
@@ -36,7 +37,8 @@ export default function ResourceDetail() {
           cursor: "pointer",
           padding: "0 0 20px",
           fontFamily: "'Public Sans', sans-serif",
-        }}>
+        }}
+      >
         ← Back to results
       </button>
 
@@ -46,7 +48,8 @@ export default function ResourceDetail() {
           gridTemplateColumns: "340px 1fr",
           gap: 28,
           alignItems: "start",
-        }}>
+        }}
+      >
         {/* Left: resource card */}
         <div>
           <div
@@ -59,7 +62,8 @@ export default function ResourceDetail() {
               justifyContent: "center",
               position: "relative",
               marginBottom: 14,
-            }}>
+            }}
+          >
             <svg
               width="64"
               height="64"
@@ -68,7 +72,8 @@ export default function ResourceDetail() {
               stroke="rgba(255,255,255,0.85)"
               strokeWidth="1.4"
               strokeLinecap="round"
-              strokeLinejoin="round">
+              strokeLinejoin="round"
+            >
               {r.iconPath
                 .split("M")
                 .filter(Boolean)
@@ -90,7 +95,8 @@ export default function ResourceDetail() {
                   padding: "4px 10px",
                   textTransform: "uppercase",
                   letterSpacing: 0.4,
-                }}>
+                }}
+              >
                 Tier {r.tier}+ Required
               </div>
             )}
@@ -103,14 +109,16 @@ export default function ResourceDetail() {
               border: "1px solid #e7e7ef",
               borderRadius: 13,
               padding: "16px 18px",
-            }}>
+            }}
+          >
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
                 marginBottom: 12,
-              }}>
+              }}
+            >
               <span
                 style={{
                   fontSize: 12,
@@ -118,7 +126,8 @@ export default function ResourceDetail() {
                   fontWeight: 600,
                   textTransform: "uppercase",
                   letterSpacing: 0.5,
-                }}>
+                }}
+              >
                 Availability
               </span>
               <span
@@ -129,7 +138,8 @@ export default function ResourceDetail() {
                   background: isAvail ? "#d7f8e9" : "#fce7f3",
                   borderRadius: 6,
                   padding: "4px 9px",
-                }}>
+                }}
+              >
                 {isAvail ? "Available" : "Fully booked"}
               </span>
             </div>
@@ -141,13 +151,15 @@ export default function ResourceDetail() {
                   fontSize: 13,
                   color: "#1a1b2e",
                   marginBottom: 8,
-                }}>
+                }}
+              >
                 <span style={{ color: "#7c7e93" }}>Copies</span>
                 <span
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
                     fontWeight: 600,
-                  }}>
+                  }}
+                >
                   {r.available} / {r.copies}
                 </span>
               </div>
@@ -159,7 +171,8 @@ export default function ResourceDetail() {
                 fontSize: 13,
                 color: "#1a1b2e",
                 marginBottom: 8,
-              }}>
+              }}
+            >
               <span style={{ color: "#7c7e93" }}>Category</span>
               <span style={{ fontWeight: 600 }}>{r.cat}</span>
             </div>
@@ -170,7 +183,8 @@ export default function ResourceDetail() {
                 fontSize: 13,
                 color: "#1a1b2e",
                 marginBottom: r.serial ? 8 : 0,
-              }}>
+              }}
+            >
               <span style={{ color: "#7c7e93" }}>Type</span>
               <span style={{ fontWeight: 600, textTransform: "capitalize" }}>
                 {r.type}
@@ -183,13 +197,15 @@ export default function ResourceDetail() {
                   justifyContent: "space-between",
                   fontSize: 13,
                   color: "#1a1b2e",
-                }}>
+                }}
+              >
                 <span style={{ color: "#7c7e93" }}>Serial no.</span>
                 <span
                   style={{
                     fontWeight: 600,
                     fontFamily: "'IBM Plex Mono', monospace",
-                  }}>
+                  }}
+                >
                   {r.serial}
                 </span>
               </div>
@@ -210,7 +226,8 @@ export default function ResourceDetail() {
                 padding: "3px 9px",
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
-              }}>
+              }}
+            >
               {r.cat}
             </span>
           </div>
@@ -223,7 +240,8 @@ export default function ResourceDetail() {
               color: "#1a1b2e",
               margin: "10px 0 6px",
               lineHeight: 1.2,
-            }}>
+            }}
+          >
             {r.title}
           </h1>
           <p style={{ fontSize: 14, color: "#7c7e93", margin: "0 0 18px" }}>
@@ -237,7 +255,8 @@ export default function ResourceDetail() {
               gap: 6,
               flexWrap: "wrap",
               marginBottom: 20,
-            }}>
+            }}
+          >
             {(r.tags || []).map((tag) => (
               <span
                 key={tag}
@@ -248,7 +267,8 @@ export default function ResourceDetail() {
                   padding: "4px 10px",
                   fontSize: 12,
                   fontWeight: 500,
-                }}>
+                }}
+              >
                 {tag}
               </span>
             ))}
@@ -266,7 +286,8 @@ export default function ResourceDetail() {
                 display: "flex",
                 gap: 10,
                 alignItems: "flex-start",
-              }}>
+              }}
+            >
               <span style={{ fontSize: 16 }}>⚠️</span>
               <div>
                 <div
@@ -275,7 +296,8 @@ export default function ResourceDetail() {
                     fontWeight: 700,
                     color: "#92400e",
                     marginBottom: 2,
-                  }}>
+                  }}
+                >
                   Requires Tier {r.tier} access
                 </div>
                 <div style={{ fontSize: 12, color: "#a16207" }}>
@@ -294,7 +316,8 @@ export default function ResourceDetail() {
               borderRadius: 10,
               padding: "16px 18px",
               marginBottom: 28,
-            }}>
+            }}
+          >
             <h3
               style={{
                 fontSize: 12,
@@ -303,7 +326,8 @@ export default function ResourceDetail() {
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
                 margin: "0 0 8px",
-              }}>
+              }}
+            >
               About
             </h3>
             <p
@@ -312,7 +336,8 @@ export default function ResourceDetail() {
                 color: "#3a3b52",
                 lineHeight: 1.65,
                 margin: 0,
-              }}>
+              }}
+            >
               {r.blurb}
             </p>
           </div>
@@ -334,7 +359,8 @@ export default function ResourceDetail() {
               transition: "opacity 0.15s ease",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.88")}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}>
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+          >
             {r.type === "room"
               ? "Reserve room"
               : isAvail
