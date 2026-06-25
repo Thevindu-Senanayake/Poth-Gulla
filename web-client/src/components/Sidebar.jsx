@@ -23,7 +23,6 @@ const NAV_STUDENT = [
     path: "/waitlist",
     label: "Waitlist",
     d: "M4 7h16M4 12h16M4 17h10",
-    badge: "1",
   },
   {
     path: "/recommendations",
@@ -36,6 +35,16 @@ const NAV_STUDENT = [
     d: "M12 17.5l-5 3 1.5-5.5-4.5-3.5 5.5-.5L12 6l2 5.5 5.5.5-4.5 3.5 1.5 5.5z",
   },
   { path: "/rooms", label: "Study Rooms", d: "M3 3h18v18H3zM9 3v18" },
+  {
+    path: "/self-checkout",
+    label: "Self Checkout",
+    d: "M3 7h18M3 7l2-3h14l2 3M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7M9 11l2 2 4-4",
+  },
+  {
+    path: "/room-checkin",
+    label: "Room Check-in",
+    d: "M3 3h18v18H3zM9 3v18M3 11h6M14 7h4M14 11h4M14 15h4",
+  },
   {
     path: "/profile",
     label: "Profile",
@@ -63,7 +72,6 @@ const NAV_LECTURER = [
     path: "/waitlist",
     label: "Waitlist",
     d: "M4 7h16M4 12h16M4 17h10",
-    badge: "1",
   },
   {
     path: "/recommendations",
@@ -74,6 +82,11 @@ const NAV_LECTURER = [
     path: "/points",
     label: "Points & Tier",
     d: "M12 17.5l-5 3 1.5-5.5-4.5-3.5 5.5-.5L12 6l2 5.5 5.5.5-4.5 3.5 1.5 5.5z",
+  },
+  {
+    path: "/self-checkout",
+    label: "Self Checkout",
+    d: "M3 7h18M3 7l2-3h14l2 3M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7M9 11l2 2 4-4",
   },
   {
     path: "/profile",
@@ -97,19 +110,16 @@ const NAV_STAFF = [
     path: "/staff/waitlist-review",
     label: "Waitlist Review",
     d: "M4 5h16v11H7l-3 3z",
-    badge: "2",
   },
   {
     path: "/staff/approvals",
     label: "Device Approvals",
     d: "M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z",
-    badge: "2",
   },
   {
     path: "/staff/overdue",
     label: "Overdue",
     d: "M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z",
-    badge: "23",
   },
   {
     path: "/staff/manage",
@@ -163,7 +173,7 @@ const ROLE_LABEL_MAP = {
   admin: "Administrator",
 };
 
-function NavItem({ item, active, onClick }) {
+function NavItem({ item, active, onClick, badge }) {
   return (
     <button
       onClick={() => onClick(item.path)}
@@ -205,7 +215,7 @@ function NavItem({ item, active, onClick }) {
           ))}
       </svg>
       <span style={{ flex: 1 }}>{item.label}</span>
-      {item.badge && (
+      {badge > 0 && (
         <span
           style={{
             background: active ? "rgba(255,255,255,.28)" : "#ef4444",
@@ -217,7 +227,7 @@ function NavItem({ item, active, onClick }) {
             minWidth: 18,
             textAlign: "center",
           }}>
-          {item.badge}
+          {badge > 99 ? "99+" : badge}
         </span>
       )}
     </button>
@@ -225,7 +235,7 @@ function NavItem({ item, active, onClick }) {
 }
 
 export default function Sidebar() {
-  const { currentRole, user, logout } = useApp();
+  const { currentRole, user, logout, badges } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -235,7 +245,6 @@ export default function Sidebar() {
     staff: NAV_STAFF,
     admin: NAV_ADMIN,
   };
-
   const navItems = navMap[currentRole] || NAV_STUDENT;
 
   const initials = user?.initials || "??";
@@ -243,12 +252,9 @@ export default function Sidebar() {
   const userName = user?.name || "User";
   const roleLabel = ROLE_LABEL_MAP[currentRole] || "User";
 
-  // Determine active nav item based on current URL path
   function isActive(itemPath) {
     const current = location.pathname;
-    // Exact match for most routes
     if (current === itemPath) return true;
-    // For /catalogue, also match /catalogue/:id
     if (itemPath === "/catalogue" && current.startsWith("/catalogue/"))
       return true;
     return false;
@@ -265,7 +271,6 @@ export default function Sidebar() {
         height: "100%",
         flexShrink: 0,
       }}>
-      {/* Logo area */}
       <div
         style={{
           padding: "20px 20px 16px",
@@ -308,19 +313,18 @@ export default function Sidebar() {
             }}>
             Poth Gulla
           </div>
-          {/* <div
+          <div
             style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: 9.5,
               color: "#9b9db2",
               marginTop: 1,
             }}>
-            Library Management System
-          </div> */}
+            Library System
+          </div>
         </div>
       </div>
 
-      {/* Nav items */}
       <div
         style={{
           flex: 1,
@@ -335,12 +339,12 @@ export default function Sidebar() {
             key={item.path}
             item={item}
             active={isActive(item.path)}
+            badge={badges?.[item.path] ?? 0}
             onClick={(path) => navigate(path)}
           />
         ))}
       </div>
 
-      {/* User card */}
       <div
         style={{
           borderTop: "1px solid #f0f0f8",
@@ -349,7 +353,6 @@ export default function Sidebar() {
           alignItems: "center",
           gap: 10,
         }}>
-        {/* Avatar */}
         <div
           style={{
             width: 36,
@@ -382,7 +385,6 @@ export default function Sidebar() {
             {roleLabel}
           </div>
         </div>
-        {/* Logout button */}
         <button
           onClick={logout}
           title="Sign out"
@@ -398,15 +400,6 @@ export default function Sidebar() {
             justifyContent: "center",
             cursor: "pointer",
             flexShrink: 0,
-            transition: "background .15s, color .15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#fee2e2";
-            e.currentTarget.style.color = "#ef4444";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#f4f4f8";
-            e.currentTarget.style.color = "#7c7e93";
           }}>
           <svg
             width="16"
