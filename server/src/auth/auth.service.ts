@@ -4,8 +4,14 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Role, User } from '../../generated/prisma/client.js';
+import {
+  Role,
+  User,
+  AuditAction,
+  AuditTargetType,
+} from '../../generated/prisma/client.js';
 import * as bcrypt from 'bcrypt';
+import { AuditService } from '../audit/audit.service.js';
 import { PointsService } from '../points/points.service.js';
 import { UsersService } from '../users/users.service.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -17,6 +23,7 @@ export class AuthService {
     private users: UsersService,
     private jwt: JwtService,
     private points: PointsService,
+    private audit: AuditService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -38,6 +45,14 @@ export class AuthService {
     });
     await this.points.applyFixed(user.id, 'ACCOUNT_CREATED');
 
+    await this.audit.log(
+      user.id,
+      AuditAction.USER_REGISTERED,
+      AuditTargetType.User,
+      user.id,
+      { name: user.name, email: user.email, role: user.role },
+    );
+
     return this.buildAuthResponse(user);
   }
 
@@ -49,6 +64,15 @@ export class AuthService {
     if (!user.isActive) {
       throw new UnauthorizedException('User account is disabled');
     }
+
+    await this.audit.log(
+      user.id,
+      AuditAction.USER_LOGGED_IN,
+      AuditTargetType.User,
+      user.id,
+      { name: user.name, email: user.email, role: user.role },
+    );
+
     return this.buildAuthResponse(user);
   }
 

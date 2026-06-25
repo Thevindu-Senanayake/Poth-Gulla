@@ -23,6 +23,10 @@ export class AuditController {
     @Query('actorId') actorId?: string,
     @Query('action') action?: AuditAction,
     @Query('targetType') targetType?: AuditTargetType,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('id') id?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
     return this.audit.findMany({
       page: Math.max(1, parseInt(page, 10)),
@@ -30,6 +34,10 @@ export class AuditController {
       actorId,
       action,
       targetType,
+      startDate,
+      endDate,
+      id: id?.trim() || undefined,
+      sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
     });
   }
 }

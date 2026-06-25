@@ -12,13 +12,15 @@ describe('AuditController', () => {
 
   it('GET /audit/logs passes parsed paging and filters', () => {
     controller.findMany('2', '50', 'actor-1', 'CREATE', 'BOOKING');
-    expect(audit.findMany).toHaveBeenCalledWith({
-      page: 2,
-      limit: 50,
-      actorId: 'actor-1',
-      action: 'CREATE',
-      targetType: 'BOOKING',
-    });
+    expect(audit.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        page: 2,
+        limit: 50,
+        actorId: 'actor-1',
+        action: 'CREATE',
+        targetType: 'BOOKING',
+      }),
+    );
   });
 
   it('floors page at 1 and clamps limit to 200', () => {
