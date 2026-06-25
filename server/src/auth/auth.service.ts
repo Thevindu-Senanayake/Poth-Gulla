@@ -46,6 +46,9 @@ export class AuthService {
     if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    if (!user.isActive) {
+      throw new UnauthorizedException('User account is disabled');
+    }
     return this.buildAuthResponse(user);
   }
 

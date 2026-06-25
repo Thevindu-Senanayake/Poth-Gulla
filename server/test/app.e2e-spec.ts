@@ -51,8 +51,21 @@ describe('App (e2e smoke)', () => {
       userPoints: 500,
       tier: 3,
     };
-    usersById = { 'student-1': student };
-    usersByEmail = { 'student@iit.ac.lk': student };
+    const disabledUser = {
+      id: 'student-disabled',
+      email: 'disabled@iit.ac.lk',
+      name: 'Disabled Student',
+      role: 'STUDENT',
+      passwordHash: hash,
+      isActive: false,
+      userPoints: 500,
+      tier: 3,
+    };
+    usersById = { 'student-1': student, 'student-disabled': disabledUser };
+    usersByEmail = {
+      'student@iit.ac.lk': student,
+      'disabled@iit.ac.lk': disabledUser,
+    };
 
     const prismaMock = {
       user: {
@@ -112,6 +125,12 @@ describe('App (e2e smoke)', () => {
       request(app.getHttpServer())
         .post('/api/auth/login')
         .send({ email: 'student@iit.ac.lk', password: 'wrong' })
+        .expect(401));
+
+    it('POST /api/auth/login with a disabled account → 401', () =>
+      request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email: 'disabled@iit.ac.lk', password: PASSWORD })
         .expect(401));
 
     it('POST /api/auth/login with a missing field → 400 (validation)', () =>
