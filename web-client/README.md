@@ -9,10 +9,10 @@ A complete React front-end for **Poth Gulla**, a smart campus library management
 ## ✨ Features
 
 - **4 roles**, each with its own sidebar, dashboard and screens:
-  - **Student** - browse catalogue, book resources, join waitlists, track points & tier, study-room booking, recommendations, profile.
-  - **Lecturer** - same as student with faculty privileges (higher tiers, no room booking flow).
-  - **Library Staff** - checkout/return scanning, waitlist review, device approvals, overdue management, resource management.
-  - **Admin** - system dashboard, user management, audit log, configuration (tiers/penalties/toggles), copy-level resource management.
+    - **Student** - browse catalogue, book resources, join waitlists, track points & tier, study-room booking, recommendations, profile.
+    - **Lecturer** - same as student with faculty privileges (higher tiers, no room booking flow).
+    - **Library Staff** - checkout/return scanning, waitlist review, device approvals, overdue management, resource management.
+    - **Admin** - system dashboard, user management, audit log, configuration (tiers/penalties/toggles), copy-level resource management.
 - **Student mobile app** - a phone-framed, student-only experience with splash → onboarding → login, home, catalogue, QR scan (checkout/return), bookings and profile.
 - **Booking engine** - auto-routes to _instant booking_, _approval request_ (Tier 4+), or _waitlist_ (unavailable) based on resource state.
 - **QR check-in/out** - deterministic QR rendering for the scan flows.
@@ -89,11 +89,11 @@ poth-gulla/
 The app uses **React Context** (no Redux). All global state lives in `src/App.jsx` and is exposed through `AppContext`:
 
 ```jsx
-import { useApp } from "../App";
+import { useApp } from '../App';
 
 function MyScreen() {
-  const { currentRole, page, setPage, showToast, openBooking } = useApp();
-  // ...
+    const { currentRole, page, setPage, showToast, openBooking } = useApp();
+    // ...
 }
 ```
 
@@ -135,30 +135,30 @@ src/
 Create `src/api/client.js`:
 
 ```js
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
-async function request(path, { method = "GET", body, token } = {}) {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+async function request(path, { method = 'GET', body, token } = {}) {
+    const res = await fetch(`${BASE_URL}${path}`, {
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+    });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Request failed: ${res.status}`);
-  }
-  return res.status === 204 ? null : res.json();
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `Request failed: ${res.status}`);
+    }
+    return res.status === 204 ? null : res.json();
 }
 
 export const api = {
-  get: (p, token) => request(p, { token }),
-  post: (p, body, token) => request(p, { method: "POST", body, token }),
-  put: (p, body, token) => request(p, { method: "PUT", body, token }),
-  del: (p, token) => request(p, { method: "DELETE", token }),
+    get: (p, token) => request(p, { token }),
+    post: (p, body, token) => request(p, { method: 'POST', body, token }),
+    put: (p, body, token) => request(p, { method: 'PUT', body, token }),
+    del: (p, token) => request(p, { method: 'DELETE', token }),
 };
 ```
 
@@ -173,33 +173,32 @@ VITE_API_URL=http://localhost:4000/api
 **Before** (current - static import):
 
 ```jsx
-import { resources } from "../../data/mockData";
+import { resources } from '../../data/mockData';
 
 export default function Catalogue() {
-  const list = resources; // static
-  // ...
+    const list = resources; // static
+    // ...
 }
 ```
 
 **After** (live - fetched in a hook):
 
 ```jsx
-import { useEffect, useState } from "react";
-import { api } from "../../api/client";
+import { useEffect, useState } from 'react';
+import { api } from '../../api/client';
 
 export default function Catalogue() {
-  const [list, setList] = useState([]);
-  const [loading, setLoading] = useState(true);
+    const [list, setList] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    api
-      .get("/resources")
-      .then(setList)
-      .finally(() => setLoading(false));
-  }, []);
+    useEffect(() => {
+        api.get('/resources')
+            .then(setList)
+            .finally(() => setLoading(false));
+    }, []);
 
-  if (loading) return <div>Loading…</div>;
-  // ...rest of the UI is unchanged
+    if (loading) return <div>Loading…</div>;
+    // ...rest of the UI is unchanged
 }
 ```
 
@@ -216,20 +215,20 @@ export default function Catalogue() {
 
 ```js
 // src/api/auth.js
-import { api } from "./client";
+import { api } from './client';
 
 export async function login(email, password) {
-  const { token, user } = await api.post("/auth/login", { email, password });
-  localStorage.setItem("pg_token", token);
-  return user;
+    const { token, user } = await api.post('/auth/login', { email, password });
+    localStorage.setItem('pg_token', token);
+    return user;
 }
 
 export function logout() {
-  localStorage.removeItem("pg_token");
+    localStorage.removeItem('pg_token');
 }
 
 export function getToken() {
-  return localStorage.getItem("pg_token");
+    return localStorage.getItem('pg_token');
 }
 ```
 

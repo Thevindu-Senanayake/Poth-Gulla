@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api } from './client';
 
 // Student self-checkout (books only).
 // Posts the scanned/typed asset tag of a book copy. Backend verifies the
@@ -9,4 +9,4 @@ import { api } from "./client";
 // body { assetTag } — see issue #N. Until that endpoint exists, calls will
 // return 404 and the UI surfaces "Asset tag not recognised".
 export const selfCheckoutBook = (assetTag) =>
-  api.post("/scan/self-checkout", { assetTag }).then((r) => r.data);
+    api.post('/scan/self-checkout', { assetTag }).then((r) => r.data);

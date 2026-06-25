@@ -1,11 +1,11 @@
-import { Navigate, useLocation } from "react-router-dom";
-import { useApp } from "../App";
+import { Navigate, useLocation } from 'react-router-dom';
+import { useApp } from '../App';
 
 const HOME_PATH = {
-  admin: "/admin/dashboard",
-  staff: "/staff/dashboard",
-  lecturer: "/dashboard",
-  student: "/dashboard",
+    admin: '/admin/dashboard',
+    staff: '/staff/dashboard',
+    lecturer: '/dashboard',
+    student: '/dashboard',
 };
 
 /**
@@ -15,18 +15,18 @@ const HOME_PATH = {
  *   their home page.
  */
 export default function ProtectedRoute({ children, roles }) {
-  const { user, authLoading } = useApp();
-  const location = useLocation();
+    const { user, authLoading } = useApp();
+    const location = useLocation();
 
-  if (authLoading) return null; // still checking token
+    if (authLoading) return null; // still checking token
 
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
+    if (!user) {
+        return <Navigate to="/login" state={{ from: location }} replace />;
+    }
 
-  if (roles && !roles.includes(user.role)) {
-    return <Navigate to={HOME_PATH[user.role] || "/dashboard"} replace />;
-  }
+    if (roles && !roles.includes(user.role)) {
+        return <Navigate to={HOME_PATH[user.role] || '/dashboard'} replace />;
+    }
 
-  return children;
+    return children;
 }

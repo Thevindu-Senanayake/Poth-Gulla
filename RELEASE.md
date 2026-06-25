@@ -20,21 +20,21 @@ Current version: **v0.4.0**
 
 1. **All tests pass** - Run locally and verify GitHub Actions CI is green:
 
-   ```bash
-   yarn lint:ci
-   yarn test
-   yarn test:e2e
-   cd web-client && yarn build
-   ```
+    ```bash
+    yarn lint:ci
+    yarn test
+    yarn test:e2e
+    cd web-client && yarn build
+    ```
 
 2. **Code review complete** - All PRs targeting `main` are merged
 
 3. **Documentation updated** - DEVELOPMENT.md section 2, README.md, any architecture docs
 
 4. **Decide version bump:**
-   - Patch fix (v0.2.3 → v0.2.4) - typo, small bug, docs
-   - Minor feature (v0.2.3 → v0.3.0) - new feature, backward-compatible
-   - Major (v0.2.3 → v1.0.0) - breaking changes
+    - Patch fix (v0.2.3 → v0.2.4) - typo, small bug, docs
+    - Minor feature (v0.2.3 → v0.3.0) - new feature, backward-compatible
+    - Major (v0.2.3 → v1.0.0) - breaking changes
 
 5. **Update `package.json` version** in the root (if not automated)
 
@@ -125,13 +125,13 @@ Scenario: A user reports a bug in the tier configuration loader.
 
 1. Create and merge a PR: `fix(config): correct default tier thresholds`
 2. Tag the release:
-   ```bash
-   git tag -s v0.2.4 -m "Release v0.2.4: fix tier config loading bug"
-   ```
+    ```bash
+    git tag -s v0.2.4 -m "Release v0.2.4: fix tier config loading bug"
+    ```
 3. Push:
-   ```bash
-   git push origin v0.2.4
-   ```
+    ```bash
+    git push origin v0.2.4
+    ```
 4. Monitor the GitHub Actions workflow
 
 ### Example: Minor Release (v0.2.3 → v0.3.0)
@@ -139,18 +139,18 @@ Scenario: A user reports a bug in the tier configuration loader.
 Scenario: New waitlist auto-promotion feature.
 
 1. Merge feature PRs with commits like:
-   - `feat(waitlist): implement auto-promotion on freed slots`
-   - `docs(readme): document waitlist auto-promotion behavior`
+    - `feat(waitlist): implement auto-promotion on freed slots`
+    - `docs(readme): document waitlist auto-promotion behavior`
 2. Update `package.json` version to `0.3.0`
 3. Update DEVELOPMENT.md and README.md as needed
 4. Tag:
-   ```bash
-   git tag -s v0.3.0 -m "Release v0.3.0: auto-promote waitlist entries"
-   ```
+    ```bash
+    git tag -s v0.3.0 -m "Release v0.3.0: auto-promote waitlist entries"
+    ```
 5. Push:
-   ```bash
-   git push origin v0.3.0
-   ```
+    ```bash
+    git push origin v0.3.0
+    ```
 
 ### Example: Major Release (v0.2.3 → v1.0.0)
 
@@ -161,13 +161,13 @@ Scenario: First production release with all features complete.
 3. Update DEVELOPMENT.md, README.md, docs
 4. Create a `RELEASE_NOTES.md` summarizing major features, breaking changes (if any)
 5. Tag:
-   ```bash
-   git tag -s v1.0.0 -m "Release v1.0.0: initial production release"
-   ```
+    ```bash
+    git tag -s v1.0.0 -m "Release v1.0.0: initial production release"
+    ```
 6. Push:
-   ```bash
-   git push origin v1.0.0
-   ```
+    ```bash
+    git push origin v1.0.0
+    ```
 
 ---
 
@@ -269,9 +269,9 @@ Check the GitHub Actions logs. Common causes:
 If a released version has a critical bug:
 
 1. Create a `hotfix/` branch from the problematic tag:
-   ```bash
-   git checkout -b hotfix/v0.2.4 v0.2.4
-   ```
+    ```bash
+    git checkout -b hotfix/v0.2.4 v0.2.4
+    ```
 2. Fix the bug with commits like `fix(scope): issue description`
 3. Increment the patch version and tag: `v0.3.0`
 4. Push and release as normal
@@ -285,9 +285,9 @@ To release, you need:
 - **Write access** to the repository (push tags to `origin`)
 - **GPG key** registered on GitHub (for signing tags)
 - **GitHub Actions secrets** configured for deployment (if deploying to cloud):
-  - `COSIGN_SIGNING_KEY` - Private key for signing Docker images
-  - `COSIGN_VERIFICATION_KEY` - Public key for verifying images
-  - Cloud deployment credentials (SSH key, API token, etc.)
+    - `COSIGN_SIGNING_KEY` - Private key for signing Docker images
+    - `COSIGN_VERIFICATION_KEY` - Public key for verifying images
+    - Cloud deployment credentials (SSH key, API token, etc.)
 
 Ask a maintainer if you don't have these.
 
