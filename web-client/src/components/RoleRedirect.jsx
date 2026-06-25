@@ -1,11 +1,11 @@
-import { Navigate } from 'react-router-dom';
-import { useApp } from '../App';
+import { Navigate } from "react-router-dom";
+import { useApp } from "../App";
 
 const HOME_PATH = {
-  admin: '/admin/dashboard',
-  staff: '/staff/dashboard',
-  lecturer: '/dashboard',
-  student: '/dashboard',
+  admin: "/admin/dashboard",
+  staff: "/staff/dashboard",
+  lecturer: "/dashboard",
+  student: "/dashboard",
 };
 
 /**
@@ -13,6 +13,6 @@ const HOME_PATH = {
  */
 export default function RoleRedirect() {
   const { user } = useApp();
-  const dest = HOME_PATH[user?.role] || '/dashboard';
+  const dest = HOME_PATH[user?.role] || "/dashboard";
   return <Navigate to={dest} replace />;
 }

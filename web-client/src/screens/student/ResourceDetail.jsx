@@ -82,7 +82,7 @@ export default function ResourceDetail() {
 							strokeLinecap="round"
 							strokeLinejoin="round"
 						>
-							{r.iconPath
+							{(r.iconPath || "")
 								.split("M")
 								.filter(Boolean)
 								.map((d, j) => (
