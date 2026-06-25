@@ -1,25 +1,29 @@
 import {
-    Body,
-    Controller,
-    ForbiddenException,
-    Get,
-    NotFoundException,
-    Param,
-    Patch,
-    Post,
-    Query,
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  NotFoundException,
+  Param,
+  Patch,
+  Post,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { BookingStatus, ResourceType, Role } from '../../generated/prisma/client.js';
+import {
+  BookingStatus,
+  ResourceType,
+  Role,
+} from '../../generated/prisma/client.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { BookingService } from './booking.service.js';
 import { CreateBookingDto } from './dto/create-booking.dto.js';
 
 interface JwtUser {
-    userId: string;
-    email: string;
-    role: Role;
+  userId: string;
+  email: string;
+  role: Role;
 }
 
 const STAFF_ROLES: Role[] = [Role.ADMIN, Role.LIBRARY_STAFF];
@@ -28,89 +32,98 @@ const STAFF_ROLES: Role[] = [Role.ADMIN, Role.LIBRARY_STAFF];
 @ApiBearerAuth('JWT')
 @Controller('bookings')
 export class BookingController {
-    constructor(private readonly bookings: BookingService) {}
+  constructor(private readonly bookings: BookingService) {}
 
-    @ApiOperation({ summary: 'Create a booking for a book, device, or room' })
-    @Post()
-    create(@CurrentUser() user: JwtUser, @Body() dto: CreateBookingDto) {
-        return this.bookings.create(user.userId, dto);
-    }
+  @ApiOperation({ summary: 'Create a booking for a book, device, or room' })
+  @Post()
+  create(@CurrentUser() user: JwtUser, @Body() dto: CreateBookingDto) {
+    return this.bookings.create(user.userId, dto);
+  }
 
-    @ApiOperation({ summary: 'Get own bookings (paginated, filterable by status and resource type)' })
-    @Get('me')
-    findMine(
-        @CurrentUser() user: JwtUser,
-        @Query('page') page = '1',
-        @Query('limit') limit = '20',
-        @Query('status') status?: BookingStatus,
-        @Query('resourceType') resourceType?: ResourceType,
-    ) {
-        return this.bookings
-            .findMine(user.userId, {
-                page: parseInt(page, 10),
-                limit: Math.min(parseInt(limit, 10), 100),
-                status,
-                resourceType,
-            })
-            .then(([data, total]) => ({ data, total, page: parseInt(page, 10) }));
-    }
+  @ApiOperation({
+    summary:
+      'Get own bookings (paginated, filterable by status and resource type)',
+  })
+  @Get('me')
+  findMine(
+    @CurrentUser() user: JwtUser,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+    @Query('status') status?: BookingStatus,
+    @Query('resourceType') resourceType?: ResourceType,
+  ) {
+    return this.bookings
+      .findMine(user.userId, {
+        page: parseInt(page, 10),
+        limit: Math.min(parseInt(limit, 10), 100),
+        status,
+        resourceType,
+      })
+      .then(([data, total]) => ({ data, total, page: parseInt(page, 10) }));
+  }
 
-    @ApiOperation({ summary: 'List all bookings system-wide (Admin/Staff)' })
-    @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
-    @Get()
-    findAll(
-        @Query('page') page = '1',
-        @Query('limit') limit = '20',
-        @Query('userId') userId?: string,
-        @Query('resourceType') resourceType?: ResourceType,
-        @Query('status') status?: BookingStatus,
-    ) {
-        return this.bookings
-            .findMany({
-                page: parseInt(page, 10),
-                limit: Math.min(parseInt(limit, 10), 100),
-                userId,
-                resourceType,
-                status,
-            })
-            .then(([data, total]) => ({ data, total, page: parseInt(page, 10) }));
-    }
+  @ApiOperation({ summary: 'List all bookings system-wide (Admin/Staff)' })
+  @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
+  @Get()
+  findAll(
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+    @Query('userId') userId?: string,
+    @Query('resourceType') resourceType?: ResourceType,
+    @Query('status') status?: BookingStatus,
+  ) {
+    return this.bookings
+      .findMany({
+        page: parseInt(page, 10),
+        limit: Math.min(parseInt(limit, 10), 100),
+        userId,
+        resourceType,
+        status,
+      })
+      .then(([data, total]) => ({ data, total, page: parseInt(page, 10) }));
+  }
 
-    @ApiOperation({ summary: 'Get a single booking by ID' })
-    @Get(':id')
-    async findOne(@Param('id') id: string, @CurrentUser() user: JwtUser) {
-        const booking = await this.bookings.findById(id);
-        if (!booking) throw new NotFoundException('Booking not found');
-        if (!STAFF_ROLES.includes(user.role) && booking.userId !== user.userId) {
-            throw new ForbiddenException();
-        }
-        return booking;
+  @ApiOperation({ summary: 'Get a single booking by ID' })
+  @Get(':id')
+  async findOne(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    const booking = await this.bookings.findById(id);
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (!STAFF_ROLES.includes(user.role) && booking.userId !== user.userId) {
+      throw new ForbiddenException();
     }
+    return booking;
+  }
 
-    @ApiOperation({ summary: 'Approve a PENDING booking (Admin/Staff)' })
-    @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
-    @Patch(':id/approve')
-    approve(@Param('id') id: string) {
-        return this.bookings.approve(id);
-    }
+  @ApiOperation({ summary: 'Approve a PENDING booking (Admin/Staff)' })
+  @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
+  @Patch(':id/approve')
+  approve(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    return user
+      ? this.bookings.approve(id, user.userId)
+      : this.bookings.approve(id);
+  }
 
-    @ApiOperation({ summary: 'Reject a PENDING booking (Admin/Staff)' })
-    @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
-    @Patch(':id/reject')
-    reject(@Param('id') id: string) {
-        return this.bookings.reject(id);
-    }
+  @ApiOperation({ summary: 'Reject a PENDING booking (Admin/Staff)' })
+  @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
+  @Patch(':id/reject')
+  reject(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    return user
+      ? this.bookings.reject(id, user.userId)
+      : this.bookings.reject(id);
+  }
 
-    @ApiOperation({ summary: 'Cancel own booking (−25 pts if approved and non-emergency)' })
-    @Post(':id/cancel')
-    cancel(@Param('id') id: string, @CurrentUser() user: JwtUser) {
-        return this.bookings.cancel(user.userId, id, false);
-    }
+  @ApiOperation({
+    summary: 'Cancel own booking (−25 pts if approved and non-emergency)',
+  })
+  @Post(':id/cancel')
+  cancel(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    return this.bookings.cancel(user.userId, id, false);
+  }
 
-    @ApiOperation({ summary: 'Cancel any booking (Admin/Staff)' })
-    @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
-    @Post(':id/cancel-any')
-    cancelAny(@Param('id') id: string, @CurrentUser() user: JwtUser) {
-        return this.bookings.cancel(user.userId, id, true);
-    }
+  @ApiOperation({ summary: 'Cancel any booking (Admin/Staff)' })
+  @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
+  @Post(':id/cancel-any')
+  cancelAny(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    return this.bookings.cancel(user.userId, id, true);
+  }
 }

@@ -22,6 +22,50 @@ function fmt(d) {
   }
 }
 
+function getEventDescription(log) {
+  const meta = log.metadata || {};
+  const action = log.action || "";
+
+  switch (action) {
+    case "CONFIG_UPDATED": {
+      const keys = meta.patch ? Object.keys(meta.patch) : [];
+      return keys.length > 0
+        ? `Updated system configuration. Changed keys: ${keys.join(", ")}`
+        : "Updated system configuration.";
+    }
+    case "USER_REGISTERED":
+      return `Registered new user: ${meta.name || "-"} (${meta.email || "-"}) as ${meta.role || "-"}`;
+    case "USER_UPDATED":
+      return `Updated user profile for ${meta.name || "-"} (${meta.email || "-"})`;
+    case "USER_ENABLED":
+      return `Enabled account of ${meta.name || "-"} (${meta.email || "-"})`;
+    case "USER_DISABLED":
+      return `Disabled account of ${meta.name || "-"} (${meta.email || "-"})`;
+    case "BOOKING_CREATED":
+      return `Created booking for ${meta.userName || "-"} (${meta.userEmail || "-"}): ${meta.resourceType || "-"} "${meta.resourceName || "-"}"`;
+    case "BOOKING_APPROVED":
+      return `Approved booking for ${meta.userName || "-"} (${meta.userEmail || "-"}): ${meta.resourceType || "-"} "${meta.resourceName || "-"}"`;
+    case "BOOKING_REJECTED":
+      return `Rejected booking for ${meta.userName || "-"} (${meta.userEmail || "-"}): ${meta.resourceType || "-"} "${meta.resourceName || "-"}"`;
+    case "BOOKING_CANCELLED":
+      return `Cancelled booking for ${meta.userName || "-"} (${meta.userEmail || "-"}): ${meta.resourceType || "-"} "${meta.resourceName || "-"}"${meta.adminOverride ? " (by Admin)" : ""}`;
+    case "ITEM_CHECKED_OUT":
+      return `Checked out ${meta.resourceType || "-"} "${meta.resourceName || "-"}" (Asset: ${meta.assetTag || "-"}) to ${meta.userName || "-"} (${meta.userEmail || "-"})`;
+    case "ROOM_CHECKED_IN":
+      return `Checked in to room "${meta.resourceName || "-"}" for ${meta.userName || "-"} (${meta.userEmail || "-"})`;
+    case "ITEM_RETURNED":
+      return `Returned ${meta.resourceType || "-"} "${meta.resourceName || "-"}" (Asset: ${meta.assetTag || "-"}) from ${meta.userName || "-"} (${meta.userEmail || "-"}) · Condition: ${meta.condition || "-"}`;
+    case "WAITLIST_ENQUEUED":
+      return `Enqueued ${meta.userName || "-"} (${meta.userEmail || "-"}) on waitlist for ${meta.resourceType || "-"} "${meta.resourceName || "-"}" (Score: ${meta.priorityScore || "-"})`;
+    case "WAITLIST_PROMOTED":
+      return `Promoted ${meta.userName || "-"} (${meta.userEmail || "-"}) from waitlist for ${meta.resourceType || "-"} "${meta.resourceName || "-"}"${meta.staffNotes ? ` · Notes: ${meta.staffNotes}` : ""}`;
+    case "WAITLIST_DISMISSED":
+      return `Dismissed ${meta.userName || "-"} (${meta.userEmail || "-"}) from waitlist for ${meta.resourceType || "-"} "${meta.resourceName || "-"}"${meta.staffNotes ? ` · Notes: ${meta.staffNotes}` : ""}`;
+    default:
+      return "Performed administrative action.";
+  }
+}
+
 export default function AuditLog() {
   const { auditFilter, setAuditFilter } = useApp();
   const { data, loading, error, reload } = useFetch(
@@ -43,6 +87,7 @@ export default function AuditLog() {
     time: fmt(l.createdAt),
     ip: l.metadata?.ip || "-",
     col: colorFor(l.targetType || l.action || "x"),
+    description: getEventDescription(l),
   }));
 
   const filtered =
@@ -169,7 +214,7 @@ export default function AuditLog() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "7px 2fr 2fr 120px 160px",
+            gridTemplateColumns: "7px 2fr 2fr 3fr 100px 160px",
             padding: "10px 20px 10px 10px",
             background: "#f8f8fc",
             borderBottom: "1px solid #e7e7ef",
@@ -178,7 +223,13 @@ export default function AuditLog() {
           }}
         >
           <div />
-          {["Actor / Action", "Target", "Kind", "Timestamp · IP"].map((col) => (
+          {[
+            "Actor / Action",
+            "Target",
+            "Description",
+            "Kind",
+            "Timestamp · IP",
+          ].map((col) => (
             <span
               key={col}
               style={{
@@ -212,7 +263,7 @@ export default function AuditLog() {
             key={log.id}
             style={{
               display: "grid",
-              gridTemplateColumns: "7px 2fr 2fr 120px 160px",
+              gridTemplateColumns: "7px 2fr 2fr 3fr 100px 160px",
               gap: 16,
               borderBottom:
                 i < filtered.length - 1 ? "1px solid #f0f0f6" : "none",
@@ -262,6 +313,18 @@ export default function AuditLog() {
               }}
             >
               {log.target}
+            </div>
+
+            {/* Description */}
+            <div
+              style={{
+                padding: "14px 0",
+                fontSize: 12,
+                color: "#3a3b4e",
+                lineHeight: 1.4,
+              }}
+            >
+              {log.description}
             </div>
 
             {/* Kind badge */}

@@ -33,7 +33,13 @@ describe('ScanService.returnItem (return scoring)', () => {
     };
     points = { apply: jest.fn(), applyFixed: jest.fn() };
     waitlist = { onResourceFreed: jest.fn() };
-    service = new ScanService(prisma as any, points as any, waitlist as any);
+    const audit = { log: jest.fn() };
+    service = new ScanService(
+      prisma as any,
+      points as any,
+      waitlist as any,
+      audit as any,
+    );
   });
 
   function bookBorrowing(dueOffsetMs: number) {
@@ -85,7 +91,9 @@ describe('ScanService.returnItem (return scoring)', () => {
   it('book 3 days late -> -20/day (-60)', async () => {
     // Use -4 DAY to account for any clock skew between test setup and service execution
     // The service calls Math.ceil, so -3 DAY might round up to 4 days due to millisecond precision
-    prisma.borrowing.findFirst.mockResolvedValue(bookBorrowing(-4 * DAY));
+    prisma.borrowing.findFirst.mockResolvedValue(
+      bookBorrowing(-4 * DAY + 60000),
+    );
     await service.returnItem({
       assetTag: 'BK-1',
       condition: ItemCondition.GOOD,
@@ -173,7 +181,13 @@ describe('ScanService.checkout', () => {
     };
     points = { apply: jest.fn(), applyFixed: jest.fn() };
     waitlist = { onResourceFreed: jest.fn() };
-    service = new ScanService(prisma as any, points as any, waitlist as any);
+    const audit = { log: jest.fn() };
+    service = new ScanService(
+      prisma as any,
+      points as any,
+      waitlist as any,
+      audit as any,
+    );
   });
 
   it('standard flow: checks out an APPROVED book booking successfully', async () => {
@@ -195,7 +209,12 @@ describe('ScanService.checkout', () => {
 
     expect(prisma.booking.findUnique).toHaveBeenCalledWith({
       where: { qrToken: 'token123' },
-      include: { waitlistEntry: true },
+      include: {
+        waitlistEntry: true,
+        user: { select: { name: true, email: true } },
+        bookTitle: { select: { title: true } },
+        device: { select: { name: true } },
+      },
     });
     expect(prisma.bookCopy.findUnique).toHaveBeenCalledWith({
       where: { assetTag: 'tag123' },
