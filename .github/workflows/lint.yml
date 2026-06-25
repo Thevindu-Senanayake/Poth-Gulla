@@ -19,6 +19,9 @@ jobs:
           cache: "yarn"
       - name: Install dependencies
         run: yarn install --frozen-lockfile
+      - name: Generate Prisma client
+        working-directory: server
+        run: yarn prisma generate
       - name: Run lint
         run: yarn lint
       - name: Run format-check
