@@ -117,14 +117,35 @@ export class SystemConfigService {
     const row = await this.prisma.systemConfig.findUnique({
       where: { id: SINGLETON_ID },
     });
-    if (row) return row.data as unknown as SystemConfigData;
-    const created = await this.prisma.systemConfig.create({
-      data: {
-        id: SINGLETON_ID,
-        data: DEFAULT_SYSTEM_CONFIG as unknown as Prisma.InputJsonObject,
-      },
-    });
-    return created.data as unknown as SystemConfigData;
+    const data = row
+      ? (row.data as unknown as SystemConfigData)
+      : ((
+          await this.prisma.systemConfig.create({
+            data: {
+              id: SINGLETON_ID,
+              data: DEFAULT_SYSTEM_CONFIG as unknown as Prisma.InputJsonObject,
+            },
+          })
+        ).data as unknown as SystemConfigData);
+
+    if (data && data.tiers) {
+      data.tiers = data.tiers.map((t) => ({
+        ...t,
+        threshold:
+          t.threshold !== undefined && t.threshold !== null
+            ? Number(t.threshold)
+            : t.threshold,
+        books:
+          t.books !== undefined && t.books !== null ? Number(t.books) : t.books,
+        devices:
+          t.devices !== undefined && t.devices !== null
+            ? Number(t.devices)
+            : t.devices,
+        rooms:
+          t.rooms !== undefined && t.rooms !== null ? Number(t.rooms) : t.rooms,
+      }));
+    }
+    return data;
   }
 
   /** Merge the provided sections over the current config and persist (upsert). Logs to audit trail. */
@@ -133,8 +154,25 @@ export class SystemConfigService {
     actorId?: string | null,
   ): Promise<SystemConfigData> {
     const current = await this.get();
+
+    const updatedTiers = patch.tiers?.map((t) => ({
+      ...t,
+      threshold:
+        t.threshold !== undefined && t.threshold !== null
+          ? Number(t.threshold)
+          : t.threshold,
+      books:
+        t.books !== undefined && t.books !== null ? Number(t.books) : t.books,
+      devices:
+        t.devices !== undefined && t.devices !== null
+          ? Number(t.devices)
+          : t.devices,
+      rooms:
+        t.rooms !== undefined && t.rooms !== null ? Number(t.rooms) : t.rooms,
+    }));
+
     const next: SystemConfigData = {
-      tiers: patch.tiers ?? current.tiers,
+      tiers: updatedTiers ?? current.tiers,
       penalties: patch.penalties ?? current.penalties,
       toggles: patch.toggles ?? current.toggles,
     };

@@ -1,15 +1,22 @@
-import { useEffect, useState } from 'react';
-import { useApp } from '../../App';
-import { useFetch } from '../../hooks/useFetch';
-import { getSystemConfig, saveSystemConfig } from '../../api/config';
-import { configTiers, configPenalties, configToggles } from '../../data/mockData';
-import { Loading, ErrorState } from '../../components/States';
+import { useEffect, useState } from "react";
+import { useApp } from "../../App";
+import { useFetch } from "../../hooks/useFetch";
+import { getSystemConfig, saveSystemConfig } from "../../api/config";
+import {
+  configTiers,
+  configPenalties,
+  configToggles,
+} from "../../data/mockData";
+import { Loading, ErrorState } from "../../components/States";
 
 export default function Config() {
   const { showToast } = useApp();
 
   // Persisted server-side (issue #23): load on mount, save on demand.
-  const { data, loading, error, reload } = useFetch(() => getSystemConfig(), []);
+  const { data, loading, error, reload } = useFetch(
+    () => getSystemConfig(),
+    [],
+  );
   const [tiers, setTiers] = useState([]);
   const [penalties, setPenalties] = useState([]);
   const [toggles, setToggles] = useState([]);
@@ -43,10 +50,17 @@ export default function Config() {
   async function save() {
     setSaving(true);
     try {
-      await saveSystemConfig({ tiers, penalties, toggles });
-      showToast('Config saved successfully');
+      const sanitizedTiers = tiers.map((t) => ({
+        ...t,
+        threshold: parseInt(t.threshold, 10) || 0,
+        books: parseInt(t.books, 10) || 0,
+        devices: parseInt(t.devices, 10) || 0,
+        rooms: parseInt(t.rooms, 10) || 0,
+      }));
+      await saveSystemConfig({ tiers: sanitizedTiers, penalties, toggles });
+      showToast("Config saved successfully");
     } catch (e) {
-      showToast(e?.response?.data?.message ?? 'Could not save config');
+      showToast(e?.response?.data?.message ?? "Could not save config");
     } finally {
       setSaving(false);
     }
@@ -61,7 +75,8 @@ export default function Config() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       {/* Header */}
       <div
         style={{
@@ -69,7 +84,8 @@ export default function Config() {
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: 24,
-        }}>
+        }}
+      >
         <div>
           <h1
             style={{
@@ -78,7 +94,8 @@ export default function Config() {
               fontWeight: 700,
               color: "#1a1b2e",
               margin: "0 0 4px",
-            }}>
+            }}
+          >
             System Config
           </h1>
           <p style={{ fontSize: 13, color: "#7c7e93", margin: 0 }}>
@@ -90,17 +107,18 @@ export default function Config() {
           onClick={save}
           disabled={saving}
           style={{
-            background: saving ? '#9ca3af' : '#16a34a',
-            color: '#fff',
-            border: 'none',
+            background: saving ? "#9ca3af" : "#16a34a",
+            color: "#fff",
+            border: "none",
             borderRadius: 9,
             padding: "10px 22px",
             fontSize: 13,
             fontWeight: 700,
-            cursor: saving ? 'not-allowed' : 'pointer',
+            cursor: saving ? "not-allowed" : "pointer",
             letterSpacing: 0.2,
-          }}>
-          {saving ? 'Saving…' : 'Save changes'}
+          }}
+        >
+          {saving ? "Saving…" : "Save changes"}
         </button>
       </div>
 
@@ -113,12 +131,14 @@ export default function Config() {
           borderRadius: 14,
           marginBottom: 18,
           overflow: "hidden",
-        }}>
+        }}
+      >
         <div
           style={{
             padding: "18px 22px 14px",
             borderBottom: "1px solid #e7e7ef",
-          }}>
+          }}
+        >
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -126,7 +146,8 @@ export default function Config() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: 0,
-            }}>
+            }}
+          >
             Tier thresholds &amp; borrowing limits
           </h2>
         </div>
@@ -139,7 +160,8 @@ export default function Config() {
             padding: "10px 22px",
             background: "#f8f8fc",
             borderBottom: "1px solid #e7e7ef",
-          }}>
+          }}
+        >
           {["Tier", "Min points", "Books", "Devices", "Rooms"].map((h) => (
             <span
               key={h}
@@ -149,7 +171,8 @@ export default function Config() {
                 color: "#9b9db2",
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
-              }}>
+              }}
+            >
               {h}
             </span>
           ))}
@@ -165,7 +188,8 @@ export default function Config() {
               borderBottom: i < tiers.length - 1 ? "1px solid #f0f0f6" : "none",
               alignItems: "center",
               gap: 12,
-            }}>
+            }}
+          >
             {/* Tier name */}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div
@@ -179,7 +203,8 @@ export default function Config() {
               />
               <div>
                 <div
-                  style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}>
+                  style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}
+                >
                   {t.tier}
                 </div>
                 <div style={{ fontSize: 11, color: "#9b9db2" }}>{t.label}</div>
@@ -271,12 +296,14 @@ export default function Config() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             overflow: "hidden",
-          }}>
+          }}
+        >
           <div
             style={{
               padding: "18px 22px 14px",
               borderBottom: "1px solid #e7e7ef",
-            }}>
+            }}
+          >
             <h2
               style={{
                 fontFamily: "'Spectral', serif",
@@ -284,7 +311,8 @@ export default function Config() {
                 fontWeight: 600,
                 color: "#1a1b2e",
                 margin: 0,
-              }}>
+              }}
+            >
               Penalty &amp; escalation rules
             </h2>
           </div>
@@ -303,7 +331,8 @@ export default function Config() {
                     borderBottom:
                       i < penalties.length - 1 ? "1px solid #f0f0f6" : "none",
                     gap: 12,
-                  }}>
+                  }}
+                >
                   <span style={{ fontSize: 13, color: "#3a3b4e", flex: 1 }}>
                     {p.rule}
                   </span>
@@ -339,12 +368,14 @@ export default function Config() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             overflow: "hidden",
-          }}>
+          }}
+        >
           <div
             style={{
               padding: "18px 22px 14px",
               borderBottom: "1px solid #e7e7ef",
-            }}>
+            }}
+          >
             <h2
               style={{
                 fontFamily: "'Spectral', serif",
@@ -352,7 +383,8 @@ export default function Config() {
                 fontWeight: 600,
                 color: "#1a1b2e",
                 margin: 0,
-              }}>
+              }}
+            >
               Feature switches
             </h2>
           </div>
@@ -368,7 +400,8 @@ export default function Config() {
                   borderBottom:
                     i < toggles.length - 1 ? "1px solid #f0f0f6" : "none",
                   gap: 12,
-                }}>
+                }}
+              >
                 <span style={{ fontSize: 13, color: "#3a3b4e", flex: 1 }}>
                   {tog.label}
                 </span>
@@ -385,7 +418,8 @@ export default function Config() {
                     cursor: "pointer",
                     transition: "background 0.2s ease",
                     flexShrink: 0,
-                  }}>
+                  }}
+                >
                   <div
                     style={{
                       position: "absolute",
