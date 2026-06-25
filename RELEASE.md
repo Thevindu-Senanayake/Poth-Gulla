@@ -12,7 +12,7 @@ Follow Semantic Versioning: `MAJOR.MINOR.PATCH`
 - **MINOR** - New features, backward-compatible (e.g. v0.2 → v0.3)
 - **PATCH** - Bug fixes, hotfixes, no new features (e.g. v0.2.3 → v0.2.4)
 
-Current version: **v0.2.5** (see `package.json`)
+Current version: **v0.3.0** (see `package.json`)
 
 ---
 
@@ -273,7 +273,7 @@ If a released version has a critical bug:
    git checkout -b hotfix/v0.2.4 v0.2.4
    ```
 2. Fix the bug with commits like `fix(scope): issue description`
-3. Increment the patch version and tag: `v0.2.5`
+3. Increment the patch version and tag: `v0.3.0`
 4. Push and release as normal
 
 ---
