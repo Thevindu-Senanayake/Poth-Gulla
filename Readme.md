@@ -409,6 +409,34 @@ yarn test:e2e        # e2e smoke suite - boots AppModule with Prisma/Redis faked
 
 ---
 
+## Code style & pre-commit hooks
+
+Formatting is owned by **Prettier**; lint correctness by **ESLint**. The shared Prettier config lives in [`.prettierrc.json`](.prettierrc.json):
+
+| Option          | Value  |
+| --------------- | ------ |
+| `tabWidth`      | `4`    |
+| `singleQuote`   | `true` |
+| `trailingComma` | `es5`  |
+| `printWidth`    | `100`  |
+
+A **Husky** `pre-commit` hook runs **`lint-staged`**, which on every staged file does two steps **in order — format first, then lint**:
+
+1. `prettier --write` — normalises formatting to the config above.
+2. `eslint --fix` — applies the workspace's ESLint rules to the already-formatted file.
+
+This ordering matters: Prettier rewrites the file, then ESLint runs on the final text, so the two never fight over the same lines (the server's ESLint config also runs Prettier as a rule via `eslint-plugin-prettier`). If ESLint reports an unfixable error the commit is aborted.
+
+```bash
+yarn format          # format the whole repo with the shared Prettier config
+yarn format-check    # verify formatting without writing (CI-friendly)
+yarn lint            # run ESLint across all workspaces
+```
+
+The hook is installed automatically by the root `prepare` script (`husky install`) on `yarn install`.
+
+---
+
 ## Tech Stack
 
 | Package       | Stack                                                                                                              |
