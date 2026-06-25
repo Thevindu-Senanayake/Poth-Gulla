@@ -102,7 +102,8 @@ export default function Dashboard() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       {/* Hero */}
       <div
         style={{
@@ -113,7 +114,8 @@ export default function Dashboard() {
           marginBottom: 28,
           position: "relative",
           overflow: "hidden",
-        }}>
+        }}
+      >
         <div
           style={{
             position: "absolute",
@@ -131,7 +133,8 @@ export default function Dashboard() {
               color: "rgba(255,255,255,0.7)",
               fontSize: 13,
               margin: "0 0 4px",
-            }}>
+            }}
+          >
             Welcome back
           </p>
           <h1
@@ -141,7 +144,8 @@ export default function Dashboard() {
               fontSize: 27,
               margin: "0 0 16px",
               lineHeight: 1.2,
-            }}>
+            }}
+          >
             {user.name}
           </h1>
           <div
@@ -150,7 +154,8 @@ export default function Dashboard() {
               gap: 8,
               flexWrap: "wrap",
               marginBottom: 20,
-            }}>
+            }}
+          >
             <span
               style={{
                 background: "rgba(255,255,255,0.15)",
@@ -160,7 +165,8 @@ export default function Dashboard() {
                 padding: "4px 12px",
                 fontSize: 12,
                 fontWeight: 600,
-              }}>
+              }}
+            >
               {user.tierLabel} · {pts} pts
             </span>
             <span
@@ -171,7 +177,8 @@ export default function Dashboard() {
                 borderRadius: 20,
                 padding: "4px 12px",
                 fontSize: 12,
-              }}>
+              }}
+            >
               {activeLoans.length} active loans
             </span>
             {user.role === "lecturer" && (
@@ -183,7 +190,8 @@ export default function Dashboard() {
                   padding: "4px 12px",
                   fontSize: 12,
                   fontWeight: 700,
-                }}>
+                }}
+              >
                 FACULTY PRIORITY
               </span>
             )}
@@ -199,7 +207,8 @@ export default function Dashboard() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             Browse catalogue
           </button>
         </div>
@@ -212,7 +221,8 @@ export default function Dashboard() {
           gridTemplateColumns: "repeat(4,1fr)",
           gap: 14,
           marginBottom: 28,
-        }}>
+        }}
+      >
         {stats.map((stat, i) => (
           <div
             key={i}
@@ -221,7 +231,8 @@ export default function Dashboard() {
               border: "1px solid #e7e7ef",
               borderRadius: 13,
               padding: "18px 20px",
-            }}>
+            }}
+          >
             <div
               style={{
                 background: stat.iconBg,
@@ -232,7 +243,8 @@ export default function Dashboard() {
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 10,
-              }}>
+              }}
+            >
               <svg
                 width="18"
                 height="18"
@@ -241,7 +253,8 @@ export default function Dashboard() {
                 stroke={stat.iconColor}
                 strokeWidth="2"
                 strokeLinecap="round"
-                strokeLinejoin="round">
+                strokeLinejoin="round"
+              >
                 {stat.iconPath
                   .split("M")
                   .filter(Boolean)
@@ -257,14 +270,16 @@ export default function Dashboard() {
                 fontWeight: 700,
                 color: "#1a1b2e",
                 marginBottom: 2,
-              }}>
+              }}
+            >
               {stat.value}
             </div>
             <div style={{ fontSize: 12, color: "#7c7e93", marginBottom: 4 }}>
               {stat.label}
             </div>
             <div
-              style={{ fontSize: 11, color: stat.trendColor, fontWeight: 600 }}>
+              style={{ fontSize: 11, color: stat.trendColor, fontWeight: 600 }}
+            >
               {stat.trend}
             </div>
           </div>
@@ -272,7 +287,8 @@ export default function Dashboard() {
       </div>
 
       <div
-        style={{ display: "grid", gridTemplateColumns: "1.55fr 1fr", gap: 18 }}>
+        style={{ display: "grid", gridTemplateColumns: "1.55fr 1fr", gap: 18 }}
+      >
         {/* Active loans */}
         <div
           style={{
@@ -280,14 +296,16 @@ export default function Dashboard() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             padding: "22px 24px",
-          }}>
+          }}
+        >
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
               marginBottom: 18,
-            }}>
+            }}
+          >
             <h2
               style={{
                 fontFamily: "'Spectral', serif",
@@ -295,7 +313,8 @@ export default function Dashboard() {
                 fontWeight: 600,
                 color: "#1a1b2e",
                 margin: 0,
-              }}>
+              }}
+            >
               Active loans
             </h2>
             <button
@@ -308,7 +327,8 @@ export default function Dashboard() {
                 fontWeight: 600,
                 cursor: "pointer",
                 padding: 0,
-              }}>
+              }}
+            >
               View all →
             </button>
           </div>
@@ -321,7 +341,8 @@ export default function Dashboard() {
               {activeLoans.map((loan) => (
                 <div
                   key={loan.id}
-                  style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  style={{ display: "flex", alignItems: "center", gap: 14 }}
+                >
                   <div
                     style={{
                       width: 44,
@@ -332,7 +353,8 @@ export default function Dashboard() {
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
-                    }}>
+                    }}
+                  >
                     <svg
                       width="20"
                       height="20"
@@ -341,7 +363,8 @@ export default function Dashboard() {
                       stroke="rgba(255,255,255,0.85)"
                       strokeWidth="1.8"
                       strokeLinecap="round"
-                      strokeLinejoin="round">
+                      strokeLinejoin="round"
+                    >
                       {(ICON[loan.resourceType] || BOOK_ICON)
                         .split("M")
                         .filter(Boolean)
@@ -360,7 +383,8 @@ export default function Dashboard() {
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
-                      }}>
+                      }}
+                    >
                       {loan.title}
                     </div>
                     <div
@@ -368,7 +392,8 @@ export default function Dashboard() {
                         fontSize: 12,
                         color: "#7c7e93",
                         textTransform: "capitalize",
-                      }}>
+                      }}
+                    >
                       {loan.type}
                     </div>
                   </div>
@@ -379,7 +404,8 @@ export default function Dashboard() {
                         fontSize: 12,
                         fontWeight: 700,
                         color: "#059669",
-                      }}>
+                      }}
+                    >
                       Due {fmt(loan.endAt)}
                     </div>
                   </div>
@@ -397,7 +423,8 @@ export default function Dashboard() {
               border: "1px solid #e7e7ef",
               borderRadius: 14,
               padding: "20px 22px",
-            }}>
+            }}
+          >
             <h3
               style={{
                 fontFamily: "'Spectral', serif",
@@ -405,7 +432,8 @@ export default function Dashboard() {
                 fontWeight: 600,
                 color: "#1a1b2e",
                 margin: "0 0 14px",
-              }}>
+              }}
+            >
               Your tier progress
             </h3>
             <div
@@ -413,7 +441,8 @@ export default function Dashboard() {
                 display: "flex",
                 justifyContent: "space-between",
                 marginBottom: 6,
-              }}>
+              }}
+            >
               <span style={{ fontSize: 12, color: "#7c7e93", fontWeight: 600 }}>
                 {user.tierLabel}
               </span>
@@ -423,7 +452,8 @@ export default function Dashboard() {
                   fontSize: 12,
                   fontWeight: 700,
                   color: "#f59e0b",
-                }}>
+                }}
+              >
                 {pts} pts
               </span>
             </div>
@@ -434,7 +464,8 @@ export default function Dashboard() {
                 height: 8,
                 overflow: "hidden",
                 marginBottom: 8,
-              }}>
+              }}
+            >
               <div
                 style={{
                   width: progressPct,
@@ -465,14 +496,16 @@ export default function Dashboard() {
                 background: "linear-gradient(135deg,#0c2a1a 0%,#166534 100%)",
                 borderRadius: 14,
                 padding: "20px 22px",
-              }}>
+              }}
+            >
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 8,
                   marginBottom: 10,
-                }}>
+                }}
+              >
                 <div
                   style={{
                     background: "rgba(255,255,255,0.15)",
@@ -482,14 +515,16 @@ export default function Dashboard() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                  }}>
+                  }}
+                >
                   <span
                     style={{
                       fontFamily: "'IBM Plex Mono', monospace",
                       fontSize: 12,
                       fontWeight: 800,
                       color: "#fff",
-                    }}>
+                    }}
+                  >
                     #1
                   </span>
                 </div>
@@ -500,7 +535,8 @@ export default function Dashboard() {
                     fontWeight: 600,
                     textTransform: "uppercase",
                     letterSpacing: 0.5,
-                  }}>
+                  }}
+                >
                   Waitlist update
                 </span>
               </div>
@@ -511,7 +547,8 @@ export default function Dashboard() {
                   color: "#fff",
                   marginBottom: 4,
                   lineHeight: 1.3,
-                }}>
+                }}
+              >
                 {waitlist[0].title}
               </div>
               <div
@@ -519,7 +556,8 @@ export default function Dashboard() {
                   fontSize: 11,
                   color: "rgba(255,255,255,0.6)",
                   marginBottom: 12,
-                }}>
+                }}
+              >
                 {waitlist[0].resourceType}
               </div>
               <div
@@ -531,7 +569,8 @@ export default function Dashboard() {
                   fontSize: 11,
                   color: "#fcd34d",
                   fontWeight: 600,
-                }}>
+                }}
+              >
                 In queue · priority{" "}
                 {Math.round((waitlist[0].priorityScore ?? 0) * 10) / 10}
               </div>

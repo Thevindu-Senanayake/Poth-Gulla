@@ -264,7 +264,8 @@ export default function StaffModal() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-      }}>
+      }}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -275,7 +276,8 @@ export default function StaffModal() {
           maxHeight: "92vh",
           overflowY: "auto",
           boxShadow: "0 24px 60px rgba(6,24,15,0.22)",
-        }}>
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -283,7 +285,8 @@ export default function StaffModal() {
             alignItems: "center",
             padding: "20px 24px 16px",
             borderBottom: "1px solid #f0f0f6",
-          }}>
+          }}
+        >
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -292,7 +295,8 @@ export default function StaffModal() {
               color: "#1a1b2e",
               margin: 0,
               textTransform: "capitalize",
-            }}>
+            }}
+          >
             {headerTitle}
           </h2>
           <button
@@ -303,7 +307,8 @@ export default function StaffModal() {
               cursor: "pointer",
               padding: 4,
               borderRadius: 6,
-            }}>
+            }}
+          >
             <svg
               width="18"
               height="18"
@@ -312,7 +317,8 @@ export default function StaffModal() {
               stroke="#9b9db2"
               strokeWidth="2"
               strokeLinecap="round"
-              strokeLinejoin="round">
+              strokeLinejoin="round"
+            >
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
@@ -344,7 +350,8 @@ export default function StaffModal() {
                     fontSize: 12,
                     fontWeight: 700,
                     cursor: isEdit && type !== t ? "not-allowed" : "pointer",
-                  }}>
+                  }}
+                >
                   {t}
                 </button>
               ))}
@@ -387,7 +394,8 @@ export default function StaffModal() {
             <select
               value={cat}
               onChange={(e) => setCat(e.target.value)}
-              style={{ ...inputStyle, cursor: "pointer" }}>
+              style={{ ...inputStyle, cursor: "pointer" }}
+            >
               <option value="">Select category...</option>
               {catOptions.map((c) => (
                 <option key={c} value={c}>
@@ -449,7 +457,8 @@ export default function StaffModal() {
                       fontSize: 13,
                       fontWeight: 700,
                       cursor: "pointer",
-                    }}>
+                    }}
+                  >
                     T{n}
                   </button>
                 ))}
@@ -469,7 +478,8 @@ export default function StaffModal() {
                     borderRadius: 8,
                     padding: 10,
                     background: "#f8f8fc",
-                  }}>
+                  }}
+                >
                   <img
                     src={imageDataUrl}
                     alt="preview"
@@ -495,7 +505,8 @@ export default function StaffModal() {
                       fontSize: 12,
                       fontWeight: 700,
                       cursor: "pointer",
-                    }}>
+                    }}
+                  >
                     Remove
                   </button>
                 </div>
@@ -511,7 +522,8 @@ export default function StaffModal() {
                     background: "#f8f8fc",
                     color: "#7c7e93",
                     fontSize: 12,
-                  }}>
+                  }}
+                >
                   <input
                     type="file"
                     accept={ACCEPTED_IMAGE_TYPES.join(",")}
@@ -523,7 +535,8 @@ export default function StaffModal() {
                       fontWeight: 700,
                       color: "#3a3b4e",
                       marginBottom: 4,
-                    }}>
+                    }}
+                  >
                     Click to upload
                   </div>
                   <div>PNG, JPG, or WEBP · up to 2 MB</div>
@@ -537,7 +550,8 @@ export default function StaffModal() {
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                style={{ ...inputStyle, cursor: "pointer" }}>
+                style={{ ...inputStyle, cursor: "pointer" }}
+              >
                 {STATUSES.map((s) => (
                   <option key={s} value={s}>
                     {s
@@ -563,7 +577,8 @@ export default function StaffModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             Cancel
           </button>
           <button
@@ -579,7 +594,8 @@ export default function StaffModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: busy ? "default" : "pointer",
-            }}>
+            }}
+          >
             {submitLabel}
           </button>
         </div>

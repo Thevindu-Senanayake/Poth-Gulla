@@ -110,7 +110,8 @@ export default function Profile() {
       style={{
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
-      }}>
+      }}
+    >
       <div
         style={{
           background: "#fff",
@@ -121,7 +122,8 @@ export default function Profile() {
           display: "flex",
           alignItems: "center",
           gap: 22,
-        }}>
+        }}
+      >
         <div
           style={{
             width: 72,
@@ -135,7 +137,8 @@ export default function Profile() {
             fontSize: 26,
             fontWeight: 800,
             flexShrink: 0,
-          }}>
+          }}
+        >
           {user?.initials || "??"}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -145,7 +148,8 @@ export default function Profile() {
               fontWeight: 700,
               color: "#16231b",
               marginBottom: 2,
-            }}>
+            }}
+          >
             {user?.name || "User"}
           </div>
           <div style={{ fontSize: 13, color: "#7c7e93", marginBottom: 8 }}>
@@ -161,7 +165,8 @@ export default function Profile() {
                   color: "#16a34a",
                   fontSize: 11,
                   fontWeight: 700,
-                }}>
+                }}
+              >
                 {user?.tierLabel}
               </div>
             )}
@@ -173,7 +178,8 @@ export default function Profile() {
                 color: "#5c5e72",
                 fontSize: 11,
                 fontWeight: 600,
-              }}>
+              }}
+            >
               {user?.roleLabel || "—"}
             </div>
           </div>
@@ -189,7 +195,8 @@ export default function Profile() {
             fontSize: 13,
             fontWeight: 600,
             cursor: "pointer",
-          }}>
+          }}
+        >
           Edit Profile
         </button>
       </div>
@@ -200,7 +207,8 @@ export default function Profile() {
           gridTemplateColumns: `repeat(${profileStats.length},1fr)`,
           gap: 14,
           marginBottom: 20,
-        }}>
+        }}
+      >
         {profileStats.map((s, i) => (
           <div
             key={i}
@@ -210,7 +218,8 @@ export default function Profile() {
               padding: "18px 20px",
               border: "1px solid #e7e7ef",
               textAlign: "center",
-            }}>
+            }}
+          >
             <div style={{ fontSize: 28, fontWeight: 800, color: "#16231b" }}>
               {s.value}
             </div>
@@ -227,7 +236,8 @@ export default function Profile() {
           borderRadius: 16,
           border: "1px solid #e7e7ef",
           overflow: "hidden",
-        }}>
+        }}
+      >
         <div
           style={{
             padding: "16px 20px",
@@ -235,7 +245,8 @@ export default function Profile() {
             fontWeight: 600,
             color: "#16231b",
             fontSize: 14,
-          }}>
+          }}
+        >
           Account Details
         </div>
         {[
@@ -259,7 +270,8 @@ export default function Profile() {
               justifyContent: "space-between",
               padding: "13px 20px",
               borderBottom: i < arr.length - 1 ? "1px solid #f0f0f8" : "none",
-            }}>
+            }}
+          >
             <div style={{ fontSize: 13, color: "#7c7e93" }}>{row.label}</div>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#16231b" }}>
               {row.value}
@@ -271,7 +283,8 @@ export default function Profile() {
       <Modal
         open={contactOpen}
         onClose={() => setContactOpen(false)}
-        width={420}>
+        width={420}
+      >
         <div style={{ padding: "26px 26px 22px" }}>
           <div
             style={{
@@ -284,7 +297,8 @@ export default function Profile() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-            }}>
+            }}
+          >
             <svg
               width="22"
               height="22"
@@ -293,7 +307,8 @@ export default function Profile() {
               stroke="#16a34a"
               strokeWidth="2"
               strokeLinecap="round"
-              strokeLinejoin="round">
+              strokeLinejoin="round"
+            >
               <path d="M12 16v-4M12 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
             </svg>
           </div>
@@ -304,7 +319,8 @@ export default function Profile() {
               fontWeight: 700,
               color: "#16231b",
               margin: "0 0 8px",
-            }}>
+            }}
+          >
             Contact an administrator
           </h2>
           <p
@@ -313,13 +329,15 @@ export default function Profile() {
               color: "#5c5e72",
               lineHeight: 1.55,
               margin: "0 0 20px",
-            }}>
+            }}
+          >
             Profile details — your name, email, role and tier — are managed by
             library staff. To request a change, please contact an administrator
             at{" "}
             <a
               href="mailto:admin@iit.ac.lk"
-              style={{ color: "#16a34a", fontWeight: 600 }}>
+              style={{ color: "#16a34a", fontWeight: 600 }}
+            >
               admin@iit.ac.lk
             </a>
             .
@@ -336,7 +354,8 @@ export default function Profile() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             Got it
           </button>
         </div>

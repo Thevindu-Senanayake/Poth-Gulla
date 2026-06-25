@@ -85,7 +85,8 @@ export default function RealQRCode({
           justifyContent: "center",
           color: "#9b9db2",
           fontSize: 12,
-        }}>
+        }}
+      >
         No code yet
       </div>
     );
@@ -98,7 +99,8 @@ export default function RealQRCode({
         flexDirection: "column",
         alignItems: "center",
         gap: 8,
-      }}>
+      }}
+    >
       {fallback ? (
         <img
           src={FALLBACK_PNG(text, size)}
@@ -141,7 +143,8 @@ export default function RealQRCode({
             maxWidth: size + 12,
             textAlign: "center",
           }}
-          aria-label={label || "asset tag"}>
+          aria-label={label || "asset tag"}
+        >
           {text}
         </code>
       )}

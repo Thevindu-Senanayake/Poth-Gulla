@@ -196,7 +196,8 @@ function NavItem({ item, active, onClick, badge }) {
         textAlign: "left",
         boxShadow: active ? "0 4px 14px rgba(22,163,74,.28)" : "none",
         position: "relative",
-      }}>
+      }}
+    >
       <svg
         width="17"
         height="17"
@@ -206,7 +207,8 @@ function NavItem({ item, active, onClick, badge }) {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        style={{ flexShrink: 0, opacity: active ? 1 : 0.75 }}>
+        style={{ flexShrink: 0, opacity: active ? 1 : 0.75 }}
+      >
         {item.d
           .split("M")
           .filter(Boolean)
@@ -226,7 +228,8 @@ function NavItem({ item, active, onClick, badge }) {
             borderRadius: 20,
             minWidth: 18,
             textAlign: "center",
-          }}>
+          }}
+        >
           {badge > 99 ? "99+" : badge}
         </span>
       )}
@@ -270,7 +273,8 @@ export default function Sidebar() {
         flexDirection: "column",
         height: "100%",
         flexShrink: 0,
-      }}>
+      }}
+    >
       <div
         style={{
           padding: "20px 20px 16px",
@@ -278,7 +282,8 @@ export default function Sidebar() {
           display: "flex",
           alignItems: "center",
           gap: 12,
-        }}>
+        }}
+      >
         <div
           style={{
             width: 38,
@@ -290,7 +295,8 @@ export default function Sidebar() {
             justifyContent: "center",
             flexShrink: 0,
             boxShadow: "0 2px 10px rgba(22,163,74,.25)",
-          }}>
+          }}
+        >
           <svg
             width="20"
             height="20"
@@ -299,7 +305,8 @@ export default function Sidebar() {
             stroke="#fff"
             strokeWidth="2"
             strokeLinecap="round"
-            strokeLinejoin="round">
+            strokeLinejoin="round"
+          >
             <path d={BOOK_SVG} />
             <path d="M5 19a1 1 0 0 1 1-1h13" />
           </svg>
@@ -310,7 +317,8 @@ export default function Sidebar() {
             style={{
               fontSize: 17,
               color: "#16231b",
-            }}>
+            }}
+          >
             Poth Gulla
           </div>
           <div
@@ -319,7 +327,8 @@ export default function Sidebar() {
               fontSize: 9.5,
               color: "#9b9db2",
               marginTop: 1,
-            }}>
+            }}
+          >
             Library System
           </div>
         </div>
@@ -333,7 +342,8 @@ export default function Sidebar() {
           display: "flex",
           flexDirection: "column",
           gap: 2,
-        }}>
+        }}
+      >
         {navItems.map((item) => (
           <NavItem
             key={item.path}
@@ -352,7 +362,8 @@ export default function Sidebar() {
           display: "flex",
           alignItems: "center",
           gap: 10,
-        }}>
+        }}
+      >
         <div
           style={{
             width: 36,
@@ -366,7 +377,8 @@ export default function Sidebar() {
             fontSize: 13,
             fontWeight: 700,
             flexShrink: 0,
-          }}>
+          }}
+        >
           {initials}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -378,7 +390,8 @@ export default function Sidebar() {
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-            }}>
+            }}
+          >
             {userName}
           </div>
           <div style={{ fontSize: 11, color: "#9b9db2", marginTop: 1 }}>
@@ -400,7 +413,8 @@ export default function Sidebar() {
             justifyContent: "center",
             cursor: "pointer",
             flexShrink: 0,
-          }}>
+          }}
+        >
           <svg
             width="16"
             height="16"
@@ -409,7 +423,8 @@ export default function Sidebar() {
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
-            strokeLinejoin="round">
+            strokeLinejoin="round"
+          >
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />

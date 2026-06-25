@@ -162,7 +162,8 @@ export default function AdminModal() {
       }}
       onClick={(e) => {
         if (e.target === e.currentTarget) close();
-      }}>
+      }}
+    >
       <div
         className="pg-pop"
         style={{
@@ -172,7 +173,8 @@ export default function AdminModal() {
           maxHeight: "85vh",
           overflowY: "auto",
           boxShadow: "0 24px 60px rgba(0,0,0,.18)",
-        }}>
+        }}
+      >
         <div
           style={{
             padding: "20px 24px 16px",
@@ -180,7 +182,8 @@ export default function AdminModal() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-          }}>
+          }}
+        >
           <div style={{ fontSize: 16, fontWeight: 700, color: "#16231b" }}>
             {title}
           </div>
@@ -195,7 +198,8 @@ export default function AdminModal() {
               color: "#7c7e93",
               cursor: "pointer",
               fontSize: 18,
-            }}>
+            }}
+          >
             ×
           </button>
         </div>
@@ -250,7 +254,8 @@ export default function AdminModal() {
                 <select
                   style={{ ...FIELD_STYLE, cursor: "pointer" }}
                   value={uf.urole || "student"}
-                  onChange={(e) => setUf("urole", e.target.value)}>
+                  onChange={(e) => setUf("urole", e.target.value)}
+                >
                   <option value="student">Student</option>
                   <option value="lecturer">Lecturer</option>
                   <option value="staff">Library Staff</option>
@@ -266,7 +271,8 @@ export default function AdminModal() {
                     <select
                       style={{ ...FIELD_STYLE, cursor: "pointer" }}
                       value={tier}
-                      onChange={(e) => setTier(e.target.value)}>
+                      onChange={(e) => setTier(e.target.value)}
+                    >
                       {[1, 2, 3, 4, 5].map((t) => (
                         <option key={t} value={t}>
                           Tier {t}
@@ -286,7 +292,8 @@ export default function AdminModal() {
                   fontWeight: 600,
                   color: "#16231b",
                   marginBottom: 16,
-                }}>
+                }}
+              >
                 {copiesBook.title}
               </div>
               <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
@@ -311,7 +318,8 @@ export default function AdminModal() {
                     fontWeight: 700,
                     cursor: "pointer",
                     whiteSpace: "nowrap",
-                  }}>
+                  }}
+                >
                   Add copy
                 </button>
               </div>
@@ -343,13 +351,15 @@ export default function AdminModal() {
                         borderRadius: 10,
                         border: "1px solid #e7e7ef",
                         background: "#f8f8fc",
-                      }}>
+                      }}
+                    >
                       <div
                         style={{
                           fontFamily: "'IBM Plex Mono', monospace",
                           fontSize: 13,
                           color: "#16231b",
-                        }}>
+                        }}
+                      >
                         {copy.assetTag}
                       </div>
                       <div
@@ -357,7 +367,8 @@ export default function AdminModal() {
                           display: "flex",
                           alignItems: "center",
                           gap: 10,
-                        }}>
+                        }}
+                      >
                         <span
                           style={{
                             padding: "3px 10px",
@@ -366,7 +377,8 @@ export default function AdminModal() {
                             fontWeight: 600,
                             background: meta.bg,
                             color: meta.col,
-                          }}>
+                          }}
+                        >
                           {meta.label}
                         </span>
                         {canRetire && (
@@ -381,7 +393,8 @@ export default function AdminModal() {
                               fontSize: 11,
                               fontWeight: 600,
                               cursor: "pointer",
-                            }}>
+                            }}
+                          >
                             Retire
                           </button>
                         )}
@@ -397,7 +410,8 @@ export default function AdminModal() {
                               fontSize: 11,
                               fontWeight: 600,
                               cursor: "pointer",
-                            }}>
+                            }}
+                          >
                             Restore
                           </button>
                         )}
@@ -417,7 +431,8 @@ export default function AdminModal() {
             display: "flex",
             gap: 8,
             justifyContent: "flex-end",
-          }}>
+          }}
+        >
           <button
             onClick={close}
             style={{
@@ -429,7 +444,8 @@ export default function AdminModal() {
               fontSize: 13,
               fontWeight: 600,
               cursor: "pointer",
-            }}>
+            }}
+          >
             {mode === "copies" ? "Done" : "Cancel"}
           </button>
           {isUserForm && (
@@ -448,7 +464,8 @@ export default function AdminModal() {
                 fontWeight: 700,
                 cursor: busy ? "default" : "pointer",
                 boxShadow: "0 4px 14px rgba(22,163,74,.25)",
-              }}>
+              }}
+            >
               {busy
                 ? "Saving…"
                 : mode === "addUser"

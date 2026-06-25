@@ -81,7 +81,8 @@ export default function SelfCheckout() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       <div style={{ marginBottom: 24 }}>
         <h1
           style={{
@@ -90,7 +91,8 @@ export default function SelfCheckout() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: "0 0 4px",
-          }}>
+          }}
+        >
           Self-checkout
         </h1>
         <p style={{ fontSize: 13, color: "#7c7e93", margin: 0 }}>
@@ -100,7 +102,8 @@ export default function SelfCheckout() {
       </div>
 
       <div
-        style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 18 }}>
+        style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 18 }}
+      >
         {/* Approved books */}
         <div
           style={{
@@ -108,7 +111,8 @@ export default function SelfCheckout() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             padding: "20px 22px",
-          }}>
+          }}
+        >
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -116,7 +120,8 @@ export default function SelfCheckout() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: "0 0 14px",
-            }}>
+            }}
+          >
             Pending checkout · {approvedBooks.length}
           </h2>
           {approvedBooks.length === 0 ? (
@@ -134,7 +139,8 @@ export default function SelfCheckout() {
                     borderRadius: 10,
                     border: "1px solid #e7e7ef",
                     background: "#f8fafc",
-                  }}>
+                  }}
+                >
                   <ResourceImage
                     imageUrl={b.imageUrl}
                     resourceType="BOOK"
@@ -149,7 +155,8 @@ export default function SelfCheckout() {
                         fontSize: 13,
                         fontWeight: 700,
                         color: "#1a1b2e",
-                      }}>
+                      }}
+                    >
                       {b.title}
                     </div>
                     <div style={{ fontSize: 11, color: "#7c7e93" }}>
@@ -169,7 +176,8 @@ export default function SelfCheckout() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             padding: "20px 22px",
-          }}>
+          }}
+        >
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -177,7 +185,8 @@ export default function SelfCheckout() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: "0 0 12px",
-            }}>
+            }}
+          >
             Scan asset tag
           </h2>
 
@@ -200,7 +209,8 @@ export default function SelfCheckout() {
                   fontSize: 13,
                   fontWeight: 700,
                   cursor: "pointer",
-                }}>
+                }}
+              >
                 Stop camera
               </button>
             </>
@@ -223,7 +233,8 @@ export default function SelfCheckout() {
                   fontWeight: 700,
                   cursor: approvedBooks.length === 0 ? "default" : "pointer",
                   marginBottom: 16,
-                }}>
+                }}
+              >
                 📷 Scan with camera
               </button>
               <div
@@ -232,7 +243,8 @@ export default function SelfCheckout() {
                   color: "#9b9db2",
                   textAlign: "center",
                   marginBottom: 10,
-                }}>
+                }}
+              >
                 OR enter the asset tag printed on the book
               </div>
               <input
@@ -270,7 +282,8 @@ export default function SelfCheckout() {
                   fontWeight: 700,
                   cursor:
                     busy || approvedBooks.length === 0 ? "default" : "pointer",
-                }}>
+                }}
+              >
                 {busy ? "Checking out…" : "Check out"}
               </button>
 
@@ -285,7 +298,8 @@ export default function SelfCheckout() {
                     color: "#b91c1c",
                     fontSize: 12,
                     lineHeight: 1.45,
-                  }}>
+                  }}
+                >
                   {lastError}
                 </div>
               )}

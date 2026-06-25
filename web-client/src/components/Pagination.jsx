@@ -53,7 +53,8 @@ export default function Pagination({
         gap: 12,
         flexWrap: "wrap",
         fontFamily: "'Public Sans', sans-serif",
-      }}>
+      }}
+    >
       <div
         style={{
           display: "flex",
@@ -61,7 +62,8 @@ export default function Pagination({
           gap: 8,
           fontSize: 12,
           color: "#7c7e93",
-        }}>
+        }}
+      >
         <span style={{ fontWeight: 600 }}>Rows per page:</span>
         <select
           value={pageSize}
@@ -73,7 +75,8 @@ export default function Pagination({
             fontSize: 12,
             background: "#fff",
             cursor: "pointer",
-          }}>
+          }}
+        >
           {pageSizes.map((s) => (
             <option key={s} value={s}>
               {s}
@@ -89,21 +92,24 @@ export default function Pagination({
         <button
           onClick={() => go(safePage - 1)}
           disabled={safePage <= 1}
-          style={btn(false, safePage <= 1)}>
+          style={btn(false, safePage <= 1)}
+        >
           ‹
         </button>
         {pages.map((p, i) =>
           p === "…" ? (
             <span
               key={`e${i}`}
-              style={{ fontSize: 12, color: "#9b9db2", padding: "0 4px" }}>
+              style={{ fontSize: 12, color: "#9b9db2", padding: "0 4px" }}
+            >
               …
             </span>
           ) : (
             <button
               key={p}
               onClick={() => go(p)}
-              style={btn(p === safePage, false)}>
+              style={btn(p === safePage, false)}
+            >
               {p}
             </button>
           ),
@@ -111,7 +117,8 @@ export default function Pagination({
         <button
           onClick={() => go(safePage + 1)}
           disabled={safePage >= totalPages}
-          style={btn(false, safePage >= totalPages)}>
+          style={btn(false, safePage >= totalPages)}
+        >
           ›
         </button>
       </div>

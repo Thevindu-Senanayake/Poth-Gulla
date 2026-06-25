@@ -84,7 +84,8 @@ export default function QRScanner({ onDetect, onError }) {
           color: "#854d0e",
           fontSize: 13,
           textAlign: "center",
-        }}>
+        }}
+      >
         Camera scanning is not available in this browser. Type the code below
         instead.
       </div>
@@ -101,7 +102,8 @@ export default function QRScanner({ onDetect, onError }) {
         aspectRatio: "1 / 1",
         maxWidth: 360,
         margin: "0 auto",
-      }}>
+      }}
+    >
       <video
         ref={videoRef}
         playsInline
@@ -133,7 +135,8 @@ export default function QRScanner({ onDetect, onError }) {
             justifyContent: "center",
             color: "#fff",
             fontSize: 13,
-          }}>
+          }}
+        >
           Starting camera…
         </div>
       )}

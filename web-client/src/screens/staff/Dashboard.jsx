@@ -15,7 +15,8 @@ function SvgIcon({ path, color, size = 18 }) {
       stroke={color}
       strokeWidth="2"
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+    >
       {path
         .split("M")
         .filter(Boolean)
@@ -104,7 +105,8 @@ export default function StaffDashboard() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       <div style={{ marginBottom: 26 }}>
         <p style={{ fontSize: 12, color: "#7c7e93", margin: "0 0 3px" }}>
           Library Staff · {user?.name}
@@ -116,7 +118,8 @@ export default function StaffDashboard() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: 0,
-          }}>
+          }}
+        >
           Staff dashboard
         </h1>
       </div>
@@ -127,7 +130,8 @@ export default function StaffDashboard() {
           gridTemplateColumns: "repeat(4,1fr)",
           gap: 14,
           marginBottom: 26,
-        }}>
+        }}
+      >
         {stats.map((stat, i) => (
           <div
             key={i}
@@ -155,7 +159,8 @@ export default function StaffDashboard() {
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
               e.currentTarget.style.boxShadow = "none";
-            }}>
+            }}
+          >
             <div
               style={{
                 background: stat.iconBg,
@@ -166,7 +171,8 @@ export default function StaffDashboard() {
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 10,
-              }}>
+              }}
+            >
               <SvgIcon path={stat.iconPath} color={stat.iconColor} />
             </div>
             <div
@@ -176,7 +182,8 @@ export default function StaffDashboard() {
                 fontWeight: 700,
                 color: "#1a1b2e",
                 marginBottom: 2,
-              }}>
+              }}
+            >
               {stat.value}
             </div>
             <div style={{ fontSize: 12, color: "#7c7e93" }}>{stat.label}</div>
@@ -185,14 +192,16 @@ export default function StaffDashboard() {
       </div>
 
       <div
-        style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 18 }}>
+        style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 18 }}
+      >
         <div
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             padding: "22px 24px",
-          }}>
+          }}
+        >
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -200,7 +209,8 @@ export default function StaffDashboard() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: "0 0 18px",
-            }}>
+            }}
+          >
             Recent bookings
           </h2>
           {recent.length === 0 ? (
@@ -218,7 +228,8 @@ export default function StaffDashboard() {
                   padding: "12px 0",
                   borderBottom:
                     i < recent.length - 1 ? "1px solid #f3f3f8" : "none",
-                }}>
+                }}
+              >
                 <div
                   style={{
                     width: 36,
@@ -229,7 +240,8 @@ export default function StaffDashboard() {
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
-                  }}>
+                  }}
+                >
                   <SvgIcon
                     path="M5 4a1 1 0 0 1 1-1h11v15H6a1 1 0 0 0-1 1z"
                     color={b.statusCol}
@@ -238,7 +250,8 @@ export default function StaffDashboard() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
-                    style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}>
+                    style={{ fontSize: 13, fontWeight: 700, color: "#1a1b2e" }}
+                  >
                     {lk ? lk.resourceName(b) : b.title}
                   </div>
                   <div style={{ fontSize: 12, color: "#7c7e93" }}>
@@ -273,7 +286,8 @@ export default function StaffDashboard() {
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
               e.currentTarget.style.boxShadow = "none";
-            }}>
+            }}
+          >
             <div
               style={{
                 position: "absolute",
@@ -296,7 +310,8 @@ export default function StaffDashboard() {
                   alignItems: "center",
                   justifyContent: "center",
                   marginBottom: 10,
-                }}>
+                }}
+              >
                 <SvgIcon path="M9 3h6v13H9zM5 20h14" color="#fff" />
               </div>
               <div
@@ -306,7 +321,8 @@ export default function StaffDashboard() {
                   fontWeight: 600,
                   color: "#fff",
                   marginBottom: 4,
-                }}>
+                }}
+              >
                 Checkout / Return desk
               </div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)" }}>
@@ -318,7 +334,8 @@ export default function StaffDashboard() {
                   fontSize: 12,
                   color: "rgba(255,255,255,0.8)",
                   fontWeight: 600,
-                }}>
+                }}
+              >
                 Open desk →
               </div>
             </div>
@@ -341,14 +358,16 @@ export default function StaffDashboard() {
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
               e.currentTarget.style.boxShadow = "none";
-            }}>
+            }}
+          >
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "flex-start",
                 marginBottom: 10,
-              }}>
+              }}
+            >
               <div
                 style={{
                   background: "#fef2e2",
@@ -358,7 +377,8 @@ export default function StaffDashboard() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                }}>
+                }}
+              >
                 <SvgIcon path="M4 7h16M4 12h16M4 17h10" color="#d97706" />
               </div>
               <span
@@ -370,7 +390,8 @@ export default function StaffDashboard() {
                   padding: "3px 9px",
                   borderRadius: 20,
                   border: "1px solid #fcd34d",
-                }}>
+                }}
+              >
                 {waitlisted} queued
               </span>
             </div>
@@ -381,7 +402,8 @@ export default function StaffDashboard() {
                 fontWeight: 600,
                 color: "#1a1b2e",
                 marginBottom: 3,
-              }}>
+              }}
+            >
               Waitlist review
             </div>
             <div style={{ fontSize: 12, color: "#7c7e93" }}>
@@ -406,14 +428,16 @@ export default function StaffDashboard() {
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
               e.currentTarget.style.boxShadow = "none";
-            }}>
+            }}
+          >
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "flex-start",
                 marginBottom: 10,
-              }}>
+              }}
+            >
               <div
                 style={{
                   background: "#dbeafe",
@@ -423,7 +447,8 @@ export default function StaffDashboard() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                }}>
+                }}
+              >
                 <SvgIcon
                   path="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"
                   color="#3b82f6"
@@ -438,7 +463,8 @@ export default function StaffDashboard() {
                   padding: "3px 9px",
                   borderRadius: 20,
                   border: "1px solid #bfdbfe",
-                }}>
+                }}
+              >
                 {pendingDevices} pending
               </span>
             </div>
@@ -449,7 +475,8 @@ export default function StaffDashboard() {
                 fontWeight: 600,
                 color: "#1a1b2e",
                 marginBottom: 3,
-              }}>
+              }}
+            >
               Device approvals
             </div>
             <div style={{ fontSize: 12, color: "#7c7e93" }}>

@@ -291,7 +291,8 @@ export default function App() {
           fontFamily: "'Public Sans', sans-serif",
           color: "#16a34a",
           fontWeight: 700,
-        }}>
+        }}
+      >
         Loading…
       </div>
     );
@@ -305,7 +306,8 @@ export default function App() {
           flexDirection: "column",
           height: "100vh",
           overflow: "hidden",
-        }}>
+        }}
+      >
         <Routes>
           {/* Public route */}
           <Route
@@ -325,7 +327,8 @@ export default function App() {
               <ProtectedRoute>
                 <DesktopApp />
               </ProtectedRoute>
-            }>
+            }
+          >
             {/* Root redirect */}
             <Route index element={<RoleRedirect />} />
 

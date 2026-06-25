@@ -176,7 +176,8 @@ export default function Header() {
         padding: "0 24px",
         gap: 16,
         flexShrink: 0,
-      }}>
+      }}
+    >
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
@@ -184,7 +185,8 @@ export default function Header() {
             fontWeight: 700,
             color: "#16231b",
             lineHeight: 1.2,
-          }}>
+          }}
+        >
           {meta.title}
         </div>
         {subtitle && (
@@ -194,7 +196,8 @@ export default function Header() {
               fontWeight: 500,
               color: "#7c7e93",
               marginTop: 2,
-            }}>
+            }}
+          >
             {subtitle}
           </div>
         )}
@@ -206,7 +209,8 @@ export default function Header() {
             position: "relative",
             width: 320,
             flexShrink: 0,
-          }}>
+          }}
+        >
           <div
             style={{
               position: "absolute",
@@ -216,7 +220,8 @@ export default function Header() {
               color: "#9b9db2",
               pointerEvents: "none",
               display: "flex",
-            }}>
+            }}
+          >
             <svg
               width="15"
               height="15"
@@ -225,7 +230,8 @@ export default function Header() {
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
-              strokeLinejoin="round">
+              strokeLinejoin="round"
+            >
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
@@ -270,7 +276,8 @@ export default function Header() {
           cursor: "pointer",
           flexShrink: 0,
           transition: "background .15s, color .15s",
-        }}>
+        }}
+      >
         <svg
           width="18"
           height="18"
@@ -279,7 +286,8 @@ export default function Header() {
           stroke="currentColor"
           strokeWidth="2"
           strokeLinecap="round"
-          strokeLinejoin="round">
+          strokeLinejoin="round"
+        >
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>

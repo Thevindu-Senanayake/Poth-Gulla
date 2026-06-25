@@ -13,7 +13,8 @@ function SvgIcon({ path, color, size = 18 }) {
       stroke={color}
       strokeWidth="2"
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+    >
       {path
         .split("M")
         .filter(Boolean)
@@ -104,7 +105,8 @@ export default function Checkout() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       <div style={{ marginBottom: 26 }}>
         <p style={{ fontSize: 12, color: "#7c7e93", margin: "0 0 3px" }}>
           Staff · Desk
@@ -116,20 +118,23 @@ export default function Checkout() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: 0,
-          }}>
+          }}
+        >
           Checkout / Return desk
         </h1>
       </div>
 
       <div
-        style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 18 }}>
+        style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 18 }}
+      >
         <div
           style={{
             background: "#fff",
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             padding: "24px 26px",
-          }}>
+          }}
+        >
           <div
             style={{
               display: "flex",
@@ -138,7 +143,8 @@ export default function Checkout() {
               padding: 4,
               gap: 4,
               marginBottom: 26,
-            }}>
+            }}
+          >
             {["checkout", "return"].map((mode) => (
               <button
                 key={mode}
@@ -158,7 +164,8 @@ export default function Checkout() {
                     staffScan.mode === mode
                       ? "0 2px 8px rgba(22,163,74,.25)"
                       : "none",
-                }}>
+                }}
+              >
                 {mode === "checkout" ? "Check out" : "Return"}
               </button>
             ))}
@@ -187,7 +194,8 @@ export default function Checkout() {
                     fontSize: 13,
                     fontWeight: 700,
                     cursor: "pointer",
-                  }}>
+                  }}
+                >
                   Stop camera
                 </button>
               </>
@@ -208,7 +216,8 @@ export default function Checkout() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 10,
-                }}>
+                }}
+              >
                 <svg
                   width="18"
                   height="18"
@@ -217,7 +226,8 @@ export default function Checkout() {
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
-                  strokeLinejoin="round">
+                  strokeLinejoin="round"
+                >
                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                   <circle cx="12" cy="13" r="4" />
                 </svg>
@@ -237,7 +247,8 @@ export default function Checkout() {
                   color: "#5c5e72",
                   display: "block",
                   marginBottom: 6,
-                }}>
+                }}
+              >
                 Asset tag
               </label>
               <input
@@ -255,7 +266,8 @@ export default function Checkout() {
                   fontSize: 11,
                   color: "#9b9db2",
                   marginBottom: 18,
-                }}>
+                }}
+              >
                 One scan is enough — the QR encodes the asset tag and the system
                 finds the member's approved booking from it.
               </div>
@@ -269,7 +281,8 @@ export default function Checkout() {
                   color: "#5c5e72",
                   display: "block",
                   marginBottom: 6,
-                }}>
+                }}
+              >
                 Asset tag
               </label>
               <input
@@ -289,7 +302,8 @@ export default function Checkout() {
                   color: "#5c5e72",
                   display: "block",
                   marginBottom: 6,
-                }}>
+                }}
+              >
                 Condition
               </label>
               <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
@@ -320,7 +334,8 @@ export default function Checkout() {
                             ? "#16a34a"
                             : "#ef4444"
                           : "#7c7e93",
-                    }}>
+                    }}
+                  >
                     {c === "GOOD" ? "Good" : "Damaged"}
                   </button>
                 ))}
@@ -353,7 +368,8 @@ export default function Checkout() {
             onMouseLeave={(e) => {
               e.currentTarget.style.background = busy ? "#86efac" : "#16a34a";
               e.currentTarget.style.transform = "translateY(0)";
-            }}>
+            }}
+          >
             {busy
               ? "Processing…"
               : isCheckout
@@ -372,7 +388,8 @@ export default function Checkout() {
                 borderRadius: 9,
                 background: result.ok ? "#dcfce7" : "#fee2e2",
                 border: `1px solid ${result.ok ? "#bbf7d0" : "#fecaca"}`,
-              }}>
+              }}
+            >
               <SvgIcon
                 path={result.ok ? "M5 12l4 4L19 6" : "M18 6L6 18M6 6l12 12"}
                 color={result.ok ? "#16a34a" : "#ef4444"}
@@ -383,7 +400,8 @@ export default function Checkout() {
                   fontSize: 13,
                   fontWeight: 600,
                   color: result.ok ? "#15803d" : "#b91c1c",
-                }}>
+                }}
+              >
                 {result.msg}
               </span>
             </div>
@@ -397,7 +415,8 @@ export default function Checkout() {
             border: "1px solid #e7e7ef",
             borderRadius: 14,
             padding: "22px 24px",
-          }}>
+          }}
+        >
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -405,7 +424,8 @@ export default function Checkout() {
               fontWeight: 600,
               color: "#1a1b2e",
               margin: "0 0 16px",
-            }}>
+            }}
+          >
             How the desk works
           </h2>
           <ol
@@ -415,7 +435,8 @@ export default function Checkout() {
               color: "#4b4d63",
               fontSize: 13,
               lineHeight: 1.9,
-            }}>
+            }}
+          >
             <li>
               <strong>Checkout</strong> - scan the member's <em>booking QR</em>{" "}
               (an APPROVED booking) then the item's <em>asset tag</em>. The
@@ -440,7 +461,8 @@ export default function Checkout() {
               border: "1px solid #e7e7ef",
               borderRadius: 9,
               padding: "12px 14px",
-            }}>
+            }}
+          >
             A hardware scanner simply types into the fields on the left - no
             camera integration required.
           </div>

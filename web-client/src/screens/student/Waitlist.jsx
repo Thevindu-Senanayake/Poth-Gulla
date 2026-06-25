@@ -85,7 +85,8 @@ export default function Waitlist() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
         <h1
@@ -95,7 +96,8 @@ export default function Waitlist() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: "0 0 4px",
-          }}>
+          }}
+        >
           Waitlist
         </h1>
         <p style={{ color: "#7c7e93", fontSize: 13, margin: 0 }}>
@@ -114,7 +116,8 @@ export default function Waitlist() {
           display: "flex",
           alignItems: "flex-start",
           gap: 14,
-        }}>
+        }}
+      >
         <div
           style={{
             width: 36,
@@ -125,7 +128,8 @@ export default function Waitlist() {
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-          }}>
+          }}
+        >
           <svg
             width="18"
             height="18"
@@ -134,7 +138,8 @@ export default function Waitlist() {
             stroke="#86efac"
             strokeWidth="2"
             strokeLinecap="round"
-            strokeLinejoin="round">
+            strokeLinejoin="round"
+          >
             <circle cx="12" cy="12" r="10" />
             <path d="M12 8v4M12 16h.01" />
           </svg>
@@ -146,7 +151,8 @@ export default function Waitlist() {
               fontWeight: 700,
               color: "#fff",
               marginBottom: 4,
-            }}>
+            }}
+          >
             How priority is calculated
           </div>
           <div
@@ -155,7 +161,8 @@ export default function Waitlist() {
               color: "rgba(255,255,255,0.72)",
               lineHeight: 1.6,
               marginBottom: 8,
-            }}>
+            }}
+          >
             Your position in the queue is determined by a weighted score
             combining your tier standing and role type.
           </div>
@@ -169,7 +176,8 @@ export default function Waitlist() {
               padding: "5px 10px",
               color: "#86efac",
               display: "inline-block",
-            }}>
+            }}
+          >
             priority = tier × 0.6 + role × 0.4
           </code>
         </div>
@@ -186,14 +194,16 @@ export default function Waitlist() {
             borderRadius: 14,
             padding: "22px 24px",
             marginBottom: 14,
-          }}>
+          }}
+        >
           <div
             style={{
               display: "flex",
               alignItems: "flex-start",
               justifyContent: "space-between",
               gap: 16,
-            }}>
+            }}
+          >
             <div style={{ flex: 1, minWidth: 0 }}>
               {/* Position + title */}
               <div
@@ -202,7 +212,8 @@ export default function Waitlist() {
                   alignItems: "center",
                   gap: 12,
                   marginBottom: 6,
-                }}>
+                }}
+              >
                 <div
                   style={{
                     width: 36,
@@ -213,14 +224,16 @@ export default function Waitlist() {
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
-                  }}>
+                  }}
+                >
                   <span
                     style={{
                       fontFamily: "'IBM Plex Mono', monospace",
                       fontSize: 13,
                       fontWeight: 800,
                       color: "#fff",
-                    }}>
+                    }}
+                  >
                     #{entry.position}
                   </span>
                 </div>
@@ -231,7 +244,8 @@ export default function Waitlist() {
                       fontWeight: 700,
                       color: "#1a1b2e",
                       lineHeight: 1.2,
-                    }}>
+                    }}
+                  >
                     {entry.title}
                   </div>
                   <div style={{ fontSize: 12, color: "#7c7e93", marginTop: 2 }}>
@@ -251,7 +265,8 @@ export default function Waitlist() {
                     padding: "10px 14px",
                     marginTop: 14,
                     marginBottom: 14,
-                  }}>
+                  }}
+                >
                   <div
                     style={{
                       fontSize: 11,
@@ -260,7 +275,8 @@ export default function Waitlist() {
                       marginBottom: 5,
                       textTransform: "uppercase",
                       letterSpacing: 0.4,
-                    }}>
+                    }}
+                  >
                     Your justification message
                   </div>
                   <p
@@ -269,7 +285,8 @@ export default function Waitlist() {
                       color: "#78350f",
                       lineHeight: 1.6,
                       margin: 0,
-                    }}>
+                    }}
+                  >
                     {entry.message}
                   </p>
                 </div>
@@ -288,7 +305,8 @@ export default function Waitlist() {
                   borderRadius: 20,
                   fontSize: 11,
                   fontWeight: 700,
-                }}>
+                }}
+              >
                 <div
                   style={{
                     width: 6,
@@ -311,7 +329,8 @@ export default function Waitlist() {
                   fontWeight: 600,
                   textTransform: "uppercase",
                   letterSpacing: 0.4,
-                }}>
+                }}
+              >
                 Priority
               </div>
               <div
@@ -321,7 +340,8 @@ export default function Waitlist() {
                   fontWeight: 800,
                   color: "#16a34a",
                   lineHeight: 1,
-                }}>
+                }}
+              >
                 {entry.priorityScore}
               </div>
               <div style={{ fontSize: 11, color: "#9b9db2", marginTop: 2 }}>
@@ -338,7 +358,8 @@ export default function Waitlist() {
               borderTop: "1px solid #f0f0f8",
               display: "flex",
               gap: 8,
-            }}>
+            }}
+          >
             <button
               onClick={() => leave(entry)}
               style={{
@@ -351,7 +372,8 @@ export default function Waitlist() {
                 fontWeight: 600,
                 cursor: "pointer",
                 fontFamily: "'Public Sans', sans-serif",
-              }}>
+              }}
+            >
               Leave waitlist
             </button>
           </div>
@@ -367,7 +389,8 @@ export default function Waitlist() {
             padding: "48px",
             textAlign: "center",
             border: "1px solid #e7e7ef",
-          }}>
+          }}
+        >
           <div style={{ fontSize: 13, color: "#9b9db2" }}>
             You're not on any waitlists.
           </div>

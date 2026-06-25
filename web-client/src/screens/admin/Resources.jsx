@@ -226,7 +226,8 @@ export default function Resources() {
           borderBottom: i < last ? "1px solid #f0f0f6" : "none",
           alignItems: "center",
           gap: 12,
-        }}>
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <ResourceImage
             imageUrl={item.imageUrl}
@@ -244,7 +245,8 @@ export default function Resources() {
                 fontWeight: 600,
                 color: "#1a1b2e",
                 marginBottom: 2,
-              }}>
+              }}
+            >
               {item.title}
             </div>
             <div style={{ fontSize: 12, color: "#9b9db2" }}>{item.author}</div>
@@ -258,7 +260,8 @@ export default function Resources() {
               fontSize: 12,
               fontWeight: 700,
               color: hasAvail ? "#16a34a" : "#ef4444",
-            }}>
+            }}
+          >
             {availLabel}
           </span>
         </div>
@@ -276,7 +279,8 @@ export default function Resources() {
                 fontWeight: 600,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
-              }}>
+              }}
+            >
               Manage copies
             </button>
           )}
@@ -292,7 +296,8 @@ export default function Resources() {
                 fontSize: 12,
                 fontWeight: 700,
                 cursor: "pointer",
-              }}>
+              }}
+            >
               Edit
             </button>
           )}
@@ -308,7 +313,8 @@ export default function Resources() {
                 fontSize: 12,
                 fontWeight: 700,
                 cursor: "pointer",
-              }}>
+              }}
+            >
               Delete
             </button>
           )}
@@ -323,14 +329,16 @@ export default function Resources() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
           marginBottom: 22,
-        }}>
+        }}
+      >
         <div>
           <h1
             style={{
@@ -339,7 +347,8 @@ export default function Resources() {
               fontWeight: 700,
               color: "#1a1b2e",
               margin: "0 0 4px",
-            }}>
+            }}
+          >
             Resources
           </h1>
           <p style={{ fontSize: 13, color: "#7c7e93", margin: 0 }}>
@@ -381,7 +390,8 @@ export default function Resources() {
             fontSize: 13,
             fontWeight: 700,
             cursor: "pointer",
-          }}>
+          }}
+        >
           + Add resource
         </button>
       </div>
@@ -392,7 +402,8 @@ export default function Resources() {
           gridTemplateColumns: "repeat(4,1fr)",
           gap: 14,
           marginBottom: 18,
-        }}>
+        }}
+      >
         {stats.map((stat, i) => (
           <div
             key={i}
@@ -402,7 +413,8 @@ export default function Resources() {
               borderRadius: 13,
               padding: "18px 22px",
               borderTop: `4px solid ${stat.col}`,
-            }}>
+            }}
+          >
             <div
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -410,7 +422,8 @@ export default function Resources() {
                 fontWeight: 700,
                 color: stat.col,
                 marginBottom: 4,
-              }}>
+              }}
+            >
               {stat.value}
             </div>
             <div style={{ fontSize: 12, color: "#7c7e93", fontWeight: 600 }}>
@@ -426,7 +439,8 @@ export default function Resources() {
           gap: 6,
           marginBottom: 14,
           borderBottom: "1px solid #e7e7ef",
-        }}>
+        }}
+      >
         {TABS.map((t) => {
           const active = t.key === tab;
           return (
@@ -445,7 +459,8 @@ export default function Resources() {
                   ? "2px solid #16a34a"
                   : "2px solid transparent",
                 marginBottom: -1,
-              }}>
+              }}
+            >
               {t.label}
             </button>
           );
@@ -458,7 +473,8 @@ export default function Resources() {
           border: "1px solid #e7e7ef",
           borderRadius: 14,
           overflow: "hidden",
-        }}>
+        }}
+      >
         <div
           style={{
             display: "grid",
@@ -466,7 +482,8 @@ export default function Resources() {
             padding: "10px 20px",
             background: "#f8f8fc",
             borderBottom: "1px solid #e7e7ef",
-          }}>
+          }}
+        >
           {["Title", "Category", "Availability", "Actions"].map((c) => (
             <span
               key={c}
@@ -476,7 +493,8 @@ export default function Resources() {
                 color: "#9b9db2",
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
-              }}>
+              }}
+            >
               {c}
             </span>
           ))}
@@ -489,7 +507,8 @@ export default function Resources() {
               textAlign: "center",
               color: "#9b9db2",
               fontSize: 13,
-            }}>
+            }}
+          >
             {q ? `No ${tab} match "${searchQuery}".` : `No ${tab} yet.`}
           </div>
         ) : (
@@ -541,7 +560,8 @@ function ConfirmDelete({ confirm, deleting, onCancel, onConfirm }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-      }}>
+      }}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -552,14 +572,16 @@ function ConfirmDelete({ confirm, deleting, onCancel, onConfirm }) {
           padding: 24,
           boxShadow: "0 24px 60px rgba(6,24,15,0.22)",
           fontFamily: "'Public Sans', sans-serif",
-        }}>
+        }}
+      >
         <h3
           style={{
             fontFamily: "'Spectral', serif",
             fontSize: 18,
             margin: "0 0 8px",
             color: "#1a1b2e",
-          }}>
+          }}
+        >
           Delete this {confirm.kind === "room" ? "study room" : confirm.kind}?
         </h3>
         <p style={{ fontSize: 13, color: "#7c7e93", margin: "0 0 14px" }}>
@@ -576,7 +598,8 @@ function ConfirmDelete({ confirm, deleting, onCancel, onConfirm }) {
               padding: "10px 12px",
               fontSize: 12,
               marginBottom: 14,
-            }}>
+            }}
+          >
             {onLoan.length} copy{onLoan.length > 1 ? "ies are" : " is"}{" "}
             currently on loan — return them first.
           </div>
@@ -591,7 +614,8 @@ function ConfirmDelete({ confirm, deleting, onCancel, onConfirm }) {
               padding: "10px 12px",
               fontSize: 12,
               marginBottom: 14,
-            }}>
+            }}
+          >
             {willAutoRetire} non-retired cop
             {willAutoRetire > 1 ? "ies" : "y"} will be retired automatically.
           </div>
@@ -611,7 +635,8 @@ function ConfirmDelete({ confirm, deleting, onCancel, onConfirm }) {
               fontSize: 13,
               fontWeight: 700,
               cursor: deleting ? "default" : "pointer",
-            }}>
+            }}
+          >
             Cancel
           </button>
           <button
@@ -633,7 +658,8 @@ function ConfirmDelete({ confirm, deleting, onCancel, onConfirm }) {
                 deleting || (isBook && onLoan.length > 0)
                   ? "default"
                   : "pointer",
-            }}>
+            }}
+          >
             {deleting ? "Deleting…" : "Delete"}
           </button>
         </div>

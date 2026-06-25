@@ -46,7 +46,8 @@ export default function RoomCheckin() {
         minHeight: "100%",
         maxWidth: 640,
         margin: "0 auto",
-      }}>
+      }}
+    >
       <h1
         style={{
           fontFamily: "'Spectral', serif",
@@ -54,7 +55,8 @@ export default function RoomCheckin() {
           fontWeight: 600,
           color: "#1a1b2e",
           margin: "0 0 4px",
-        }}>
+        }}
+      >
         Walk-up room check-in
       </h1>
       <p style={{ fontSize: 13, color: "#7c7e93", margin: "0 0 24px" }}>
@@ -68,7 +70,8 @@ export default function RoomCheckin() {
           border: "1px solid #e7e7ef",
           borderRadius: 14,
           padding: "22px 22px",
-        }}>
+        }}
+      >
         {scanning ? (
           <>
             <QRScanner
@@ -88,7 +91,8 @@ export default function RoomCheckin() {
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: "pointer",
-              }}>
+              }}
+            >
               Stop camera
             </button>
           </>
@@ -107,7 +111,8 @@ export default function RoomCheckin() {
                 fontWeight: 700,
                 cursor: "pointer",
                 marginBottom: 16,
-              }}>
+              }}
+            >
               Scan room QR
             </button>
             <div
@@ -116,7 +121,8 @@ export default function RoomCheckin() {
                 color: "#9b9db2",
                 textAlign: "center",
                 marginBottom: 10,
-              }}>
+              }}
+            >
               OR type the code printed below the QR
             </div>
             <input
@@ -149,7 +155,8 @@ export default function RoomCheckin() {
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: busy ? "default" : "pointer",
-              }}>
+              }}
+            >
               {busy ? "Checking in…" : "Check in"}
             </button>
           </>
@@ -165,7 +172,8 @@ export default function RoomCheckin() {
               background: lastResult.ok ? "#f0fdf4" : "#fef2f2",
               color: lastResult.ok ? "#166534" : "#b91c1c",
               border: `1px solid ${lastResult.ok ? "#bbf7d0" : "#fecaca"}`,
-            }}>
+            }}
+          >
             {lastResult.ok
               ? `Checked into ${lastResult.name}. Enjoy your session.`
               : lastResult.msg}

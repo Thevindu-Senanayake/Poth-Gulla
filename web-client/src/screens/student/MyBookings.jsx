@@ -89,7 +89,8 @@ export default function MyBookings() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       <div style={{ marginBottom: 28 }}>
         <h1
           style={{
@@ -98,7 +99,8 @@ export default function MyBookings() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: "0 0 4px",
-          }}>
+          }}
+        >
           My Bookings
         </h1>
         <p style={{ color: "#7c7e93", fontSize: 13, margin: 0 }}>
@@ -114,7 +116,8 @@ export default function MyBookings() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: "0 0 16px",
-          }}>
+          }}
+        >
           Active loans
           <span
             style={{
@@ -123,7 +126,8 @@ export default function MyBookings() {
               fontWeight: 400,
               color: "#9b9db2",
               marginLeft: 8,
-            }}>
+            }}
+          >
             {active.length} active
           </span>
         </h2>
@@ -143,7 +147,8 @@ export default function MyBookings() {
                   display: "flex",
                   alignItems: "center",
                   gap: 16,
-                }}>
+                }}
+              >
                 <Cover resourceType={b.resourceType} color={b.color} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
@@ -152,7 +157,8 @@ export default function MyBookings() {
                       fontWeight: 700,
                       color: "#1a1b2e",
                       marginBottom: 3,
-                    }}>
+                    }}
+                  >
                     {b.title}
                   </div>
                   <div
@@ -161,7 +167,8 @@ export default function MyBookings() {
                       color: "#7c7e93",
                       marginBottom: 8,
                       textTransform: "capitalize",
-                    }}>
+                    }}
+                  >
                     {b.type}
                   </div>
                   <div style={{ fontSize: 12, color: "#5a5c74" }}>
@@ -180,7 +187,8 @@ export default function MyBookings() {
                     fontWeight: 700,
                     cursor: "pointer",
                     whiteSpace: "nowrap",
-                  }}>
+                  }}
+                >
                   Show QR
                 </button>
                 <button
@@ -194,7 +202,8 @@ export default function MyBookings() {
                     fontSize: 13,
                     fontWeight: 700,
                     cursor: "pointer",
-                  }}>
+                  }}
+                >
                   Cancel
                 </button>
               </div>
@@ -211,7 +220,8 @@ export default function MyBookings() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: "0 0 16px",
-          }}>
+          }}
+        >
           Pending & waitlisted
         </h2>
         {upcoming.length === 0 ? (
@@ -222,7 +232,8 @@ export default function MyBookings() {
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
               gap: 12,
-            }}>
+            }}
+          >
             {upcoming.map((b) => (
               <div
                 key={b.id}
@@ -235,7 +246,8 @@ export default function MyBookings() {
                   display: "flex",
                   gap: 14,
                   alignItems: "flex-start",
-                }}>
+                }}
+              >
                 <Cover
                   resourceType={b.resourceType}
                   color={b.color}
@@ -252,11 +264,13 @@ export default function MyBookings() {
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
-                    }}>
+                    }}
+                  >
                     {b.title}
                   </div>
                   <div
-                    style={{ fontSize: 12, color: "#7c7e93", marginBottom: 8 }}>
+                    style={{ fontSize: 12, color: "#7c7e93", marginBottom: 8 }}
+                  >
                     {fmt(b.startAt)} → {fmt(b.endAt)}
                   </div>
                   <span
@@ -267,7 +281,8 @@ export default function MyBookings() {
                       background: b.statusBg,
                       borderRadius: 6,
                       padding: "3px 8px",
-                    }}>
+                    }}
+                  >
                     {b.statusLabel}
                   </span>
                 </div>
@@ -282,7 +297,8 @@ export default function MyBookings() {
                     fontSize: 12,
                     fontWeight: 700,
                     cursor: "pointer",
-                  }}>
+                  }}
+                >
                   Cancel
                 </button>
               </div>
@@ -299,7 +315,8 @@ export default function MyBookings() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: "0 0 16px",
-          }}>
+          }}
+        >
           History
         </h2>
         {history.length === 0 ? (
@@ -310,7 +327,8 @@ export default function MyBookings() {
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
               gap: 12,
-            }}>
+            }}
+          >
             {history.map((b) => (
               <div
                 key={b.id}
@@ -323,7 +341,8 @@ export default function MyBookings() {
                   display: "flex",
                   gap: 12,
                   alignItems: "center",
-                }}>
+                }}
+              >
                 <Cover
                   resourceType={b.resourceType}
                   color={b.color}
@@ -339,7 +358,8 @@ export default function MyBookings() {
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
-                    }}>
+                    }}
+                  >
                     {b.title}
                   </div>
                   <div style={{ fontSize: 11, color: "#9b9db2" }}>
@@ -355,7 +375,8 @@ export default function MyBookings() {
                     borderRadius: 6,
                     padding: "3px 8px",
                     flexShrink: 0,
-                  }}>
+                  }}
+                >
                   {b.statusLabel}
                 </span>
               </div>

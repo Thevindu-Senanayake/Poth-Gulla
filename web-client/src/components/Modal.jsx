@@ -44,7 +44,8 @@ export default function Modal({
         justifyContent: "center",
         padding: 16,
         fontFamily: "'Public Sans', sans-serif",
-      }}>
+      }}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -55,7 +56,8 @@ export default function Modal({
           maxHeight: "92vh",
           overflowY: "auto",
           boxShadow: "0 24px 60px rgba(6,24,15,0.22)",
-        }}>
+        }}
+      >
         {children}
       </div>
     </div>,
