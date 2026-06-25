@@ -18,6 +18,7 @@ import {
   HIGH_TIER_DEVICE_MIN,
   TIER_LIMITS,
 } from '../common/domain.constants.js';
+import { NotificationService } from '../notification/notification.service.js';
 import { PointsService } from '../points/points.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WaitlistService } from '../waitlist/waitlist.service.js';
@@ -43,6 +44,7 @@ export class BookingService {
     private points: PointsService,
     private systemConfig: SystemConfigService,
     private audit: AuditService,
+    private notif: NotificationService,
   ) {}
 
   async create(userId: string, dto: CreateBookingDto): Promise<Booking> {
@@ -71,7 +73,6 @@ export class BookingService {
     if (user.tier != null) {
       const config = await this.systemConfig.get();
       const tierInfo = config.tiers[user.tier - 1]; // tier is 1-indexed
-      // Map ResourceType to config field names (BOOK -> books, DEVICE -> devices, ROOM -> rooms)
       const fieldMap: Record<ResourceType, string> = {
         BOOK: 'books',
         DEVICE: 'devices',
@@ -153,6 +154,24 @@ export class BookingService {
       },
     );
 
+    if (status === BookingStatus.WAITLIST) {
+      this.notif
+        .create(
+          userId,
+          'BOOKING_WAITLISTED',
+          `Added to waitlist for "${resourceName}"`,
+        )
+        .catch(() => {});
+    } else if (status === BookingStatus.PENDING) {
+      this.notif
+        .create(
+          userId,
+          'BOOKING_PENDING',
+          `Your booking for "${resourceName}" is pending staff approval`,
+        )
+        .catch(() => {});
+    }
+
     return booking;
   }
 
@@ -175,7 +194,6 @@ export class BookingService {
       });
       if (!device) throw new NotFoundException('Device not found');
       if (device.status !== ItemStatus.AVAILABLE) return BookingStatus.WAITLIST;
-      // High-tier devices (tier ≥ 4) require manual staff approval
       return device.deviceTier >= HIGH_TIER_DEVICE_MIN
         ? BookingStatus.PENDING
         : BookingStatus.APPROVED;
@@ -230,6 +248,14 @@ export class BookingService {
       },
     );
 
+    this.notif
+      .create(
+        booking.userId,
+        'BOOKING_APPROVED',
+        `Your booking for "${resourceName}" has been approved`,
+      )
+      .catch(() => {});
+
     return updated;
   }
 
@@ -270,6 +296,14 @@ export class BookingService {
       },
     );
 
+    this.notif
+      .create(
+        booking.userId,
+        'BOOKING_REJECTED',
+        `Your booking for "${resourceName}" was rejected`,
+      )
+      .catch(() => {});
+
     return updated;
   }
 
@@ -298,7 +332,6 @@ export class BookingService {
       );
     }
 
-    // Dismiss waitlist entry if booking is queued
     if (booking.waitlistEntry && booking.status === BookingStatus.WAITLIST) {
       await this.waitlist.dismiss(booking.waitlistEntry.id);
     }
@@ -314,7 +347,6 @@ export class BookingService {
       },
     });
 
-    // If slot was live (APPROVED), apply cancellation charges and free the slot
     if (booking.status === BookingStatus.APPROVED) {
       await this.applyCancelPoints(booking);
       const resourceKey = (booking.bookTitleId ??
@@ -343,13 +375,23 @@ export class BookingService {
       },
     );
 
+    // Only notify the booking owner if an admin/staff cancelled on their behalf
+    if (adminOverride && booking.userId !== actorId) {
+      this.notif
+        .create(
+          booking.userId,
+          'BOOKING_CANCELLED',
+          `Your booking for "${resourceName}" was cancelled by staff`,
+        )
+        .catch(() => {});
+    }
+
     return updated;
   }
 
   private async applyCancelPoints(booking: Booking): Promise<void> {
     const meta = { bookingId: booking.id };
     if (booking.resourceType === ResourceType.ROOM) {
-      // Room: charge based on notice period
       const notice = booking.startAt.getTime() - Date.now();
       if (notice >= TWO_HOURS_MS) {
         await this.points.applyFixed(booking.userId, 'ROOM_CANCEL_EARLY', meta);
@@ -357,7 +399,6 @@ export class BookingService {
         await this.points.applyFixed(booking.userId, 'ROOM_CANCEL_LATE', meta);
       }
     } else {
-      // Book / Device: flat -25
       await this.points.applyFixed(booking.userId, 'BOOKING_CANCELLED', meta);
     }
   }

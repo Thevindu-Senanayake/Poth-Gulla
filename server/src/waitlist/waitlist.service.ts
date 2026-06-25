@@ -11,6 +11,7 @@ import {
   AuditTargetType,
 } from '../../generated/prisma/client.js';
 import { ROLE_WEIGHT } from '../common/domain.constants.js';
+import { NotificationService } from '../notification/notification.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 
@@ -19,6 +20,7 @@ export class WaitlistService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    private notif: NotificationService,
   ) {}
 
   /** priority_score = tier * 0.6 + role_weight * 0.4 */
@@ -178,6 +180,14 @@ export class WaitlistService {
       },
     );
 
+    this.notif
+      .create(
+        entry.booking.userId ?? '',
+        'WAITLIST_PROMOTED',
+        `You've been promoted from the waitlist for "${resourceName}" — your booking is now approved`,
+      )
+      .catch(() => {});
+
     return updated;
   }
 
@@ -223,6 +233,14 @@ export class WaitlistService {
         staffNotes,
       },
     );
+
+    this.notif
+      .create(
+        entry.booking.userId ?? '',
+        'WAITLIST_DISMISSED',
+        `Your waitlist entry for "${resourceName}" was dismissed by staff`,
+      )
+      .catch(() => {});
 
     return updated;
   }

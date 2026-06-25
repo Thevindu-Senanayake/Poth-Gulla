@@ -6,6 +6,7 @@ import {
 } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { tierFromPointsWithConfig } from '../users/tier.utils.js';
 
 const SINGLETON_ID = 'singleton';
 
@@ -283,6 +284,25 @@ export class SystemConfigService {
         differences: differences,
       },
     );
+
+    // Recompute every patron user's tier when tier thresholds changed
+    const thresholdChanged = differences.tiers?.some(
+      (t) => 'threshold' in t.changes,
+    );
+    if (thresholdChanged) {
+      const allUsers = await this.prisma.user.findMany({
+        where: { tier: { not: null } },
+        select: { id: true, userPoints: true },
+      });
+      await Promise.all(
+        allUsers.map((u) =>
+          this.prisma.user.update({
+            where: { id: u.id },
+            data: { tier: tierFromPointsWithConfig(u.userPoints, next.tiers) },
+          }),
+        ),
+      );
+    }
 
     return row.data as unknown as SystemConfigData;
   }

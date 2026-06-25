@@ -44,12 +44,14 @@ describe('BookingService.create (routing, limits, caps)', () => {
       }),
     };
     audit = { log: jest.fn() };
+    const notif = { create: jest.fn().mockResolvedValue(undefined) };
     service = new BookingService(
       prisma as any,
       waitlist as any,
       points as any,
       systemConfig as any,
       audit as any,
+      notif as any,
     );
   });
 
