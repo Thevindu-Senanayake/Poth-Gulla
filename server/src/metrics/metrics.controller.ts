@@ -5,12 +5,12 @@ import { MetricsService } from './metrics.service.js';
 
 @Controller()
 export class MetricsController {
-    constructor(private metrics: MetricsService) {}
+  constructor(private metrics: MetricsService) {}
 
-    @Public()
-    @Get('metrics')
-    async scrape(@Res() res: Response) {
-        res.set('Content-Type', this.metrics.contentType());
-        res.end(await this.metrics.getMetrics());
-    }
+  @Public()
+  @Get('metrics')
+  async scrape(@Res() res: Response) {
+    res.set('Content-Type', this.metrics.contentType());
+    res.end(await this.metrics.getMetrics());
+  }
 }

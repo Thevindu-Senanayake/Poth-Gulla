@@ -4,8 +4,8 @@ import { OverdueController } from './overdue.controller.js';
 import { OverdueService } from './overdue.service.js';
 
 @Module({
-    imports: [PointsModule],
-    controllers: [OverdueController],
-    providers: [OverdueService],
+  imports: [PointsModule],
+  controllers: [OverdueController],
+  providers: [OverdueService],
 })
 export class OverdueModule {}

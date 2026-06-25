@@ -5,8 +5,8 @@ import { ScanController } from './scan.controller.js';
 import { ScanService } from './scan.service.js';
 
 @Module({
-    imports: [PointsModule, WaitlistModule],
-    controllers: [ScanController],
-    providers: [ScanService],
+  imports: [PointsModule, WaitlistModule],
+  controllers: [ScanController],
+  providers: [ScanService],
 })
 export class ScanModule {}

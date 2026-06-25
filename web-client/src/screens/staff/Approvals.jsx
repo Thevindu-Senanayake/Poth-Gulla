@@ -15,7 +15,8 @@ function SvgIcon({ path, color, size = 16 }) {
       stroke={color}
       strokeWidth="2"
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+    >
       {path
         .split("M")
         .filter(Boolean)
@@ -50,7 +51,8 @@ function ConfirmDialog({
         alignItems: "center",
         justifyContent: "center",
         animation: "pg-pop .15s ease both",
-      }}>
+      }}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -60,14 +62,16 @@ function ConfirmDialog({
           width: 400,
           maxWidth: "92vw",
           boxShadow: "0 20px 50px rgba(6,24,15,0.22)",
-        }}>
+        }}
+      >
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 10,
             marginBottom: 10,
-          }}>
+          }}
+        >
           <div
             style={{
               width: 36,
@@ -78,7 +82,8 @@ function ConfirmDialog({
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
-            }}>
+            }}
+          >
             <SvgIcon
               path="M12 9v4M12 17h.01M12 3l9.5 16.5H2.5z"
               color={confirmColor}
@@ -92,7 +97,8 @@ function ConfirmDialog({
               fontWeight: 700,
               color: "#1a1b2e",
               margin: 0,
-            }}>
+            }}
+          >
             {title}
           </h3>
         </div>
@@ -103,7 +109,8 @@ function ConfirmDialog({
             lineHeight: 1.65,
             margin: "0 0 20px",
             paddingLeft: 46,
-          }}>
+          }}
+        >
           {message}
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -118,7 +125,8 @@ function ConfirmDialog({
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}>
+            }}
+          >
             Cancel
           </button>
           <button
@@ -133,7 +141,8 @@ function ConfirmDialog({
               fontWeight: 700,
               cursor: "pointer",
               boxShadow: `0 2px 10px ${confirmColor}40`,
-            }}>
+            }}
+          >
             {confirmLabel}
           </button>
         </div>
@@ -244,7 +253,8 @@ export default function Approvals() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       {/* Confirmation modal */}
       <ConfirmDialog
         open={confirm.open}
@@ -267,7 +277,8 @@ export default function Approvals() {
             fontWeight: 600,
             color: "#1a1b2e",
             margin: 0,
-          }}>
+          }}
+        >
           Device approvals
         </h1>
       </div>
@@ -282,7 +293,8 @@ export default function Approvals() {
           display: "flex",
           gap: 14,
           alignItems: "flex-start",
-        }}>
+        }}
+      >
         <div
           style={{
             background: "#fef2e2",
@@ -294,7 +306,8 @@ export default function Approvals() {
             justifyContent: "center",
             flexShrink: 0,
             marginTop: 1,
-          }}>
+          }}
+        >
           <SvgIcon
             path="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"
             color="#d97706"
@@ -309,7 +322,8 @@ export default function Approvals() {
               fontWeight: 600,
               color: "#78350f",
               marginBottom: 4,
-            }}>
+            }}
+          >
             Tier 4–5 device approval required
           </div>
           <div style={{ fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
@@ -328,7 +342,8 @@ export default function Approvals() {
               borderRadius: 20,
               flexShrink: 0,
               alignSelf: "flex-start",
-            }}>
+            }}
+          >
             {list.length} pending
           </span>
         )}
@@ -358,14 +373,16 @@ export default function Approvals() {
                 e.currentTarget.style.boxShadow = "none";
                 e.currentTarget.style.borderColor = "#e7e7ef";
                 e.currentTarget.style.transform = "translateY(0)";
-              }}>
+              }}
+            >
               <div
                 style={{
                   display: "flex",
                   gap: 14,
                   alignItems: "flex-start",
                   marginBottom: 16,
-                }}>
+                }}
+              >
                 <div
                   style={{
                     width: 44,
@@ -379,7 +396,8 @@ export default function Approvals() {
                     fontSize: 15,
                     fontWeight: 800,
                     color: "#fff",
-                  }}>
+                  }}
+                >
                   {initialsOf(entry.userName)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -389,11 +407,13 @@ export default function Approvals() {
                       fontWeight: 700,
                       color: "#1a1b2e",
                       marginBottom: 3,
-                    }}>
+                    }}
+                  >
                     {entry.userName || "Member"}
                   </div>
                   <div
-                    style={{ fontSize: 12, color: "#7c7e93", marginBottom: 8 }}>
+                    style={{ fontSize: 12, color: "#7c7e93", marginBottom: 8 }}
+                  >
                     Device request
                   </div>
                   <div
@@ -406,7 +426,8 @@ export default function Approvals() {
                       gap: 16,
                       alignItems: "center",
                       flexWrap: "wrap",
-                    }}>
+                    }}
+                  >
                     <div>
                       <div
                         style={{
@@ -416,7 +437,8 @@ export default function Approvals() {
                           textTransform: "uppercase",
                           letterSpacing: 0.5,
                           marginBottom: 3,
-                        }}>
+                        }}
+                      >
                         Device
                       </div>
                       <div
@@ -424,7 +446,8 @@ export default function Approvals() {
                           fontSize: 13,
                           fontWeight: 700,
                           color: "#1a1b2e",
-                        }}>
+                        }}
+                      >
                         {entry.title}
                       </div>
                     </div>
@@ -440,7 +463,8 @@ export default function Approvals() {
                           textTransform: "uppercase",
                           letterSpacing: 0.5,
                           marginBottom: 3,
-                        }}>
+                        }}
+                      >
                         Schedule
                       </div>
                       <div
@@ -448,7 +472,8 @@ export default function Approvals() {
                           fontSize: 13,
                           fontWeight: 600,
                           color: "#4b4d63",
-                        }}>
+                        }}
+                      >
                         {fmt(entry.startAt)} → {fmt(entry.endAt)}
                       </div>
                     </div>
@@ -463,7 +488,8 @@ export default function Approvals() {
                         border: "1px solid #fde49e",
                         borderRadius: 8,
                         padding: "8px 12px",
-                      }}>
+                      }}
+                    >
                       \u201c{entry.message}\u201d
                     </div>
                   )}
@@ -499,7 +525,8 @@ export default function Approvals() {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "#fff";
                     e.currentTarget.style.borderColor = "#e7e7ef";
-                  }}>
+                  }}
+                >
                   Reject
                 </button>
                 <button
@@ -536,7 +563,8 @@ export default function Approvals() {
                     e.currentTarget.style.transform = "translateY(0)";
                     e.currentTarget.style.boxShadow =
                       "0 2px 10px rgba(22,163,74,.25)";
-                  }}>
+                  }}
+                >
                   Approve pickup
                 </button>
               </div>

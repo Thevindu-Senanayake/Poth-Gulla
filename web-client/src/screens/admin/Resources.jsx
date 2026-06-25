@@ -40,14 +40,16 @@ export default function Resources() {
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
         minHeight: "100%",
-      }}>
+      }}
+    >
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
           marginBottom: 22,
-        }}>
+        }}
+      >
         <div>
           <h1
             style={{
@@ -56,7 +58,8 @@ export default function Resources() {
               fontWeight: 700,
               color: "#1a1b2e",
               margin: "0 0 4px",
-            }}>
+            }}
+          >
             Resources
           </h1>
           <p style={{ fontSize: 13, color: "#7c7e93", margin: 0 }}>
@@ -87,7 +90,8 @@ export default function Resources() {
             fontSize: 13,
             fontWeight: 700,
             cursor: "pointer",
-          }}>
+          }}
+        >
           + Add resource
         </button>
       </div>
@@ -98,7 +102,8 @@ export default function Resources() {
           gridTemplateColumns: "repeat(4,1fr)",
           gap: 14,
           marginBottom: 24,
-        }}>
+        }}
+      >
         {stats.map((stat, i) => (
           <div
             className="pg-card-stat"
@@ -109,7 +114,8 @@ export default function Resources() {
               borderRadius: 13,
               padding: "18px 22px",
               borderTop: `4px solid ${stat.col}`,
-            }}>
+            }}
+          >
             <div
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -117,7 +123,8 @@ export default function Resources() {
                 fontWeight: 700,
                 color: stat.col,
                 marginBottom: 4,
-              }}>
+              }}
+            >
               {stat.value}
             </div>
             <div style={{ fontSize: 12, color: "#7c7e93", fontWeight: 600 }}>
@@ -134,7 +141,8 @@ export default function Resources() {
           border: "1px solid #e7e7ef",
           borderRadius: 14,
           overflow: "hidden",
-        }}>
+        }}
+      >
         <div
           style={{
             display: "grid",
@@ -142,7 +150,8 @@ export default function Resources() {
             padding: "10px 20px",
             background: "#f8f8fc",
             borderBottom: "1px solid #e7e7ef",
-          }}>
+          }}
+        >
           {["Title", "Category", "Availability", ""].map((col, i) => (
             <span
               key={i}
@@ -152,7 +161,8 @@ export default function Resources() {
                 color: "#9b9db2",
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
-              }}>
+              }}
+            >
               {col}
             </span>
           ))}
@@ -171,7 +181,8 @@ export default function Resources() {
                   i < books.length - 1 ? "1px solid #f0f0f6" : "none",
                 alignItems: "center",
                 gap: 12,
-              }}>
+              }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <div
                   style={{
@@ -183,7 +194,8 @@ export default function Resources() {
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
-                  }}>
+                  }}
+                >
                   <svg
                     width="20"
                     height="20"
@@ -192,7 +204,8 @@ export default function Resources() {
                     stroke="rgba(255,255,255,0.85)"
                     strokeWidth="1.8"
                     strokeLinecap="round"
-                    strokeLinejoin="round">
+                    strokeLinejoin="round"
+                  >
                     {BOOK_ICON.split("M")
                       .filter(Boolean)
                       .map((d, j) => (
@@ -207,7 +220,8 @@ export default function Resources() {
                       fontWeight: 600,
                       color: "#1a1b2e",
                       marginBottom: 2,
-                    }}>
+                    }}
+                  >
                     {book.title}
                   </div>
                   <div style={{ fontSize: 12, color: "#9b9db2" }}>
@@ -223,7 +237,8 @@ export default function Resources() {
                     fontSize: 12,
                     fontWeight: 700,
                     color: hasAvailable ? "#16a34a" : "#ef4444",
-                  }}>
+                  }}
+                >
                   {book.available} available
                 </span>
               </div>
@@ -253,7 +268,8 @@ export default function Resources() {
                   fontWeight: 600,
                   cursor: "pointer",
                   whiteSpace: "nowrap",
-                }}>
+                }}
+              >
                 Manage copies
               </button>
             </div>

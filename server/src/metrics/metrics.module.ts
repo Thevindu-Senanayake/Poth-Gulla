@@ -4,8 +4,8 @@ import { MetricsService } from './metrics.service.js';
 
 @Global()
 @Module({
-    controllers: [MetricsController],
-    providers: [MetricsService],
-    exports: [MetricsService],
+  controllers: [MetricsController],
+  providers: [MetricsService],
+  exports: [MetricsService],
 })
 export class MetricsModule {}

@@ -17,24 +17,24 @@ import { ScanModule } from './scan/scan.module.js';
 import { WaitlistModule } from './waitlist/waitlist.module.js';
 
 @Module({
-    imports: [
-        ConfigModule.forRoot({ isGlobal: true }),
-        PrismaModule,
-        RedisModule,
-        MetricsModule,
-        AuthModule,
-        BookingModule,
-        WaitlistModule,
-        CatalogueModule,
-        PointsModule,
-        ScanModule,
-        OverdueModule,
-        ReviewModule,
-        RecommendationModule,
-        AuditModule,
-        SystemConfigModule,
-    ],
-    controllers: [AppController],
-    providers: [],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    RedisModule,
+    MetricsModule,
+    AuthModule,
+    BookingModule,
+    WaitlistModule,
+    CatalogueModule,
+    PointsModule,
+    ScanModule,
+    OverdueModule,
+    ReviewModule,
+    RecommendationModule,
+    AuditModule,
+    SystemConfigModule,
+  ],
+  controllers: [AppController],
+  providers: [],
 })
 export class AppModule {}

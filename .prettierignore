@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.turbo/
+.expo/
+web-client/dist/
+client/dist/
+server/dist/
+
+# Generated database typings
+server/generated/

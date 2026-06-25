@@ -9,7 +9,12 @@ import { DeviceService } from './services/device.service.js';
 import { RoomService } from './services/room.service.js';
 
 @Module({
-    controllers: [CategoryController, BookController, DeviceController, RoomController],
-    providers: [CategoryService, BookService, DeviceService, RoomService],
+  controllers: [
+    CategoryController,
+    BookController,
+    DeviceController,
+    RoomController,
+  ],
+  providers: [CategoryService, BookService, DeviceService, RoomService],
 })
 export class CatalogueModule {}

@@ -7,61 +7,69 @@ import { SystemConfigService } from '../config/system-config.service.js';
 
 @Injectable()
 export class PointsService {
-    constructor(
-        private prisma: PrismaService,
-        private systemConfig: SystemConfigService,
-    ) {}
+  constructor(
+    private prisma: PrismaService,
+    private systemConfig: SystemConfigService,
+  ) {}
 
-    /**
-     * Apply an arbitrary delta to a user's balance.
-     * Floor is 0. Tier is recomputed (patron roles only) using dynamic config. A PointEvent is persisted.
-     */
-    async apply(
-        userId: string,
-        action: PointAction,
-        delta: number,
-        metadata?: Prisma.InputJsonObject,
-    ): Promise<User> {
-        const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-        const newPoints = Math.max(0, user.userPoints + delta);
+  /**
+   * Apply an arbitrary delta to a user's balance.
+   * Floor is 0. Tier is recomputed (patron roles only) using dynamic config. A PointEvent is persisted.
+   */
+  async apply(
+    userId: string,
+    action: PointAction,
+    delta: number,
+    metadata?: Prisma.InputJsonObject,
+  ): Promise<User> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    const newPoints = Math.max(0, user.userPoints + delta);
 
-        // Fetch dynamic tier config from SystemConfigService
-        const config = await this.systemConfig.get();
-        const newTier =
-            user.tier != null ? tierFromPointsWithConfig(newPoints, config.tiers) : null;
+    // Fetch dynamic tier config from SystemConfigService
+    const config = await this.systemConfig.get();
+    const newTier =
+      user.tier != null
+        ? tierFromPointsWithConfig(newPoints, config.tiers)
+        : null;
 
-        const [updated] = await this.prisma.$transaction([
-            this.prisma.user.update({
-                where: { id: userId },
-                data: { userPoints: newPoints, tier: newTier },
-            }),
-            this.prisma.pointEvent.create({
-                data: { userId, action, delta, balanceAfter: newPoints, metadata },
-            }),
-        ]);
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { userPoints: newPoints, tier: newTier },
+      }),
+      this.prisma.pointEvent.create({
+        data: { userId, action, delta, balanceAfter: newPoints, metadata },
+      }),
+    ]);
 
-        return updated;
-    }
+    return updated;
+  }
 
-    /** Convenience wrapper: looks up the fixed delta from POINT_DELTA. */
-    applyFixed(
-        userId: string,
-        action: Exclude<PointAction, 'BOOK_LATE_2_7D'>,
-        metadata?: Prisma.InputJsonObject,
-    ): Promise<User> {
-        return this.apply(userId, action, POINT_DELTA[action], metadata);
-    }
+  /** Convenience wrapper: looks up the fixed delta from POINT_DELTA. */
+  applyFixed(
+    userId: string,
+    action: Exclude<PointAction, 'BOOK_LATE_2_7D'>,
+    metadata?: Prisma.InputJsonObject,
+  ): Promise<User> {
+    return this.apply(userId, action, POINT_DELTA[action], metadata);
+  }
 
-    async history(userId: string, page: number, limit: number): Promise<[PointEvent[], number]> {
-        const where = { userId };
-        return Promise.all([
-            this.prisma.pointEvent.findMany({
-                where,
-                skip: (page - 1) * limit,
-                take: limit,
-                orderBy: { createdAt: 'desc' },
-            }),
-            this.prisma.pointEvent.count({ where }),
-        ]);
-    }
+  async history(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<[PointEvent[], number]> {
+    const where = { userId };
+    return Promise.all([
+      this.prisma.pointEvent.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.pointEvent.count({ where }),
+    ]);
+  }
 }
