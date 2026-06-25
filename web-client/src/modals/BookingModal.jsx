@@ -1,6 +1,7 @@
 import { useApp } from "../App";
 import { createBooking } from "../api/bookings";
 import ResourceImage from "../components/ResourceImage";
+import RealQRCode from "../components/RealQRCode";
 import { useNavigate } from "react-router-dom";
 
 function QRGrid({ cells }) {
@@ -62,18 +63,33 @@ function DatePicker({ label, value, onChange }) {
 
 function CoverIcon({ resource }) {
   if (!resource) return null;
-  // Use the shared ResourceImage so real book/device images appear in the
-  // booking modal too (#24). Falls back to the vector glyph automatically.
+  const paths = (resource.iconPath || "").split("M").filter(Boolean);
   return (
-    <ResourceImage
-      imageUrl={resource.imageUrl}
-      resourceType={(resource.type || "").toUpperCase() || "BOOK"}
-      iconPath={resource.iconPath}
-      color={resource.color || "#15803d"}
-      w={54}
-      h={66}
-      radius={8}
-    />
+    <div
+      style={{
+        width: 54,
+        height: 66,
+        background: resource.color || "#15803d",
+        borderRadius: 8,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}>
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="rgba(255,255,255,0.9)"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round">
+        {paths.map((d, j) => (
+          <path key={j} d={"M" + d} />
+        ))}
+      </svg>
+    </div>
   );
 }
 
@@ -643,23 +659,10 @@ export default function BookingModal() {
             Show this QR at the collection desk
           </div>
 
-          <QRGrid cells={qrCells} />
-
-          <div
-            style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: 14,
-              fontWeight: 700,
-              color: "#0c2a1a",
-              letterSpacing: 2,
-              marginTop: 16,
-              marginBottom: 20,
-              wordBreak: "break-all",
-              textAlign: "center",
-              maxWidth: 280,
-            }}>
-            {loanToken || "—"}
-          </div>
+          {/* Real scannable QR encoding the asset tag (booking.qrToken
+              now equals the assigned copy's asset tag). */}
+          <RealQRCode value={loanToken} size={200} />
+          <div style={{ marginBottom: 20 }} />
 
           <div
             style={{
@@ -907,23 +910,8 @@ export default function BookingModal() {
             {resource?.meta || resource?.author}
           </div>
 
-          <QRGrid cells={qrCells} />
-
-          <div
-            style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: 14,
-              fontWeight: 700,
-              color: "#0c2a1a",
-              letterSpacing: 2,
-              marginTop: 16,
-              marginBottom: 14,
-              wordBreak: "break-all",
-              textAlign: "center",
-              maxWidth: 280,
-            }}>
-            {loanToken || "—"}
-          </div>
+          <RealQRCode value={loanToken} size={200} />
+          <div style={{ marginBottom: 14 }} />
 
           <div
             style={{

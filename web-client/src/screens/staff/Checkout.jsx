@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useApp } from "../../App";
 import { scanCheckout, scanReturn } from "../../api/misc";
+import QRScanner from "../../components/QRScanner";
 
 function SvgIcon({ path, color, size = 18 }) {
   return (
@@ -38,13 +39,13 @@ const inputStyle = {
 
 export default function Checkout() {
   const { staffScan, setStaffScan, showToast } = useApp();
-  // The printed QR on every resource IS its asset tag, so checkout and
-  // return both need only one input. The booking QR / token is no longer a
-  // separate piece of paper to scan.
+  // The printed QR on every resource encodes the asset tag, so checkout and
+  // return both need only one value.
   const [assetTag, setAssetTag] = useState("");
   const [condition, setCondition] = useState("GOOD");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
+  const [scanning, setScanning] = useState(false);
 
   const isCheckout = staffScan.mode === "checkout";
 
@@ -52,17 +53,18 @@ export default function Checkout() {
     setStaffScan((prev) => ({ ...prev, mode, stage: "ready" }));
     setResult(null);
     setAssetTag("");
+    setScanning(false);
   }
 
-  async function submit() {
+  async function submit(rawTag) {
     setBusy(true);
     setResult(null);
     try {
-      const tag = assetTag.trim();
+      const tag = (rawTag ?? assetTag).trim();
       if (!tag) throw new Error("Scan or enter the asset tag");
       if (isCheckout) {
-        // Asset tag doubles as the booking QR — backend resolves the
-        // pending APPROVED booking from the asset.
+        // Backend resolves the booking from the asset tag — same value is
+        // sent in both body fields for compatibility with the existing route.
         const b = await scanCheckout(tag, tag);
         setResult({
           ok: true,
@@ -78,8 +80,17 @@ export default function Checkout() {
         showToast("Return processed");
       }
       setAssetTag("");
+      setScanning(false);
     } catch (e) {
-      const msg = e?.response?.data?.message ?? e?.message ?? "Scan failed";
+      const data = e?.response?.data;
+      const status = e?.response?.status;
+      const base =
+        (typeof data === "string" && data) ||
+        data?.message ||
+        data?.error ||
+        e?.message ||
+        "Scan failed";
+      const msg = status ? `${base} (HTTP ${status})` : base;
       setResult({ ok: false, msg });
       showToast(typeof msg === "string" ? msg : "Scan failed");
     } finally {
@@ -153,78 +164,70 @@ export default function Checkout() {
             ))}
           </div>
 
-          {/* Scanner visual */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginBottom: 22,
-            }}>
-            <div
-              style={{
-                width: 180,
-                height: 180,
-                background: "#0c1a12",
-                borderRadius: 14,
-                position: "relative",
-                overflow: "hidden",
-              }}>
-              {[
-                {
-                  top: 12,
-                  left: 12,
-                  borderTop: "3px solid #22c55e",
-                  borderLeft: "3px solid #22c55e",
-                },
-                {
-                  top: 12,
-                  right: 12,
-                  borderTop: "3px solid #22c55e",
-                  borderRight: "3px solid #22c55e",
-                },
-                {
-                  bottom: 12,
-                  left: 12,
-                  borderBottom: "3px solid #22c55e",
-                  borderLeft: "3px solid #22c55e",
-                },
-                {
-                  bottom: 12,
-                  right: 12,
-                  borderBottom: "3px solid #22c55e",
-                  borderRight: "3px solid #22c55e",
-                },
-              ].map((style, i) => (
-                <div
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    width: 22,
-                    height: 22,
-                    borderRadius: 2,
-                    ...style,
-                  }}
+          {/* Real camera scanner — uses BarcodeDetector when available
+              (Chrome / Edge / Android). On Safari / Firefox the component
+              falls back to the manual entry field below. */}
+          <div style={{ marginBottom: 22 }}>
+            {scanning ? (
+              <>
+                <QRScanner
+                  onDetect={(val) => submit(val)}
+                  onError={() => setScanning(false)}
                 />
-              ))}
-              <div
+                <button
+                  onClick={() => setScanning(false)}
+                  style={{
+                    width: "100%",
+                    marginTop: 12,
+                    background: "#f0f0f6",
+                    color: "#3a3b4e",
+                    border: "none",
+                    borderRadius: 9,
+                    padding: "10px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}>
+                  Stop camera
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setScanning(true)}
                 style={{
-                  position: "absolute",
-                  left: 16,
-                  right: 16,
-                  height: 2,
-                  background:
-                    "linear-gradient(90deg, transparent, #22c55e, transparent)",
-                  animation: "scanLine 2s ease-in-out infinite",
-                  top: "50%",
-                }}
-              />
-              <style>{`@keyframes scanLine{0%{top:20px;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:calc(100% - 20px);opacity:0}}`}</style>
-            </div>
+                  width: "100%",
+                  background: "linear-gradient(135deg,#16a34a,#22c55e)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "14px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                }}>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+                Scan QR with camera
+              </button>
+            )}
           </div>
 
-          {/* Manual entry - the desk scanner writes into this single field.
-              The asset-tag QR on each item is the only code needed; backend
-              resolves the booking from it. */}
+          {/* Manual entry — used when the camera isn't available or a USB
+              barcode scanner is wired up (it types into the focused input). */}
           {isCheckout ? (
             <>
               <label
@@ -240,7 +243,10 @@ export default function Checkout() {
               <input
                 value={assetTag}
                 onChange={(e) => setAssetTag(e.target.value)}
-                placeholder="Scan the QR on the book / device"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submit();
+                }}
+                placeholder="Scan the QR or type the asset tag"
                 autoFocus
                 style={{ ...inputStyle, marginBottom: 8 }}
               />
@@ -250,8 +256,8 @@ export default function Checkout() {
                   color: "#9b9db2",
                   marginBottom: 18,
                 }}>
-                One scan is enough — the QR encodes the asset tag, which the
-                system uses to find the member's approved booking.
+                One scan is enough — the QR encodes the asset tag and the system
+                finds the member's approved booking from it.
               </div>
             </>
           ) : (
@@ -269,6 +275,9 @@ export default function Checkout() {
               <input
                 value={assetTag}
                 onChange={(e) => setAssetTag(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submit();
+                }}
                 placeholder="Scan the item's asset tag"
                 autoFocus
                 style={{ ...inputStyle, marginBottom: 14 }}

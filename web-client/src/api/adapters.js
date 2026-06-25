@@ -142,6 +142,20 @@ const STATUS_META = {
 export function adaptBooking(b) {
   const meta = STATUS_META[b.status] ?? STATUS_META.PENDING;
   const resourceId = b.bookTitleId ?? b.deviceId ?? b.studyRoomId ?? "";
+  // The "asset tag" for the booking is whichever physical identifier the QR
+  // should encode. For an APPROVED/CHECKED_OUT book it's the assigned
+  // BookCopy.assetTag; for a device booking it's the device's own assetTag;
+  // for a room it's the door QR. Backend responses can shape these a few
+  // different ways depending on the route — try every known path.
+  const assetTag =
+    b.bookCopy?.assetTag ??
+    b.bookCopyAssetTag ??
+    b.assignedCopy?.assetTag ??
+    b.copy?.assetTag ??
+    b.assetTag ??
+    b.device?.assetTag ??
+    b.studyRoom?.roomQr ??
+    null;
   return {
     id: b.id,
     resourceType: b.resourceType,
@@ -164,6 +178,7 @@ export function adaptBooking(b) {
     updatedAt: b.updatedAt,
     message: b.message,
     qrToken: b.qrToken,
+    assetTag,
     color: colorFor(resourceId || b.id),
     imageUrl: b.bookTitle?.imageUrl ?? b.device?.imageUrl ?? null,
     raw: b,

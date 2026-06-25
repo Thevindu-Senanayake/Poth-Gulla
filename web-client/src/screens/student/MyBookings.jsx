@@ -1,6 +1,6 @@
 import { useApp } from "../../App";
 import { useFetch } from "../../hooks/useFetch";
-import { myBookings, cancelBooking } from "../../api/bookings";
+import { myBookings, cancelBooking, getBooking } from "../../api/bookings";
 import { Loading, ErrorState, Empty } from "../../components/States";
 import ResourceImage from "../../components/ResourceImage";
 
@@ -36,11 +36,10 @@ export default function MyBookings() {
   if (error) return <ErrorState error={error} onRetry={reload} />;
 
   const all = data?.items || [];
-  // APPROVED = approved by staff but the student hasn't picked it up yet —
-  // show the QR for in-person checkout.
-  // CHECKED_OUT = currently on loan in the student's hands.
-  const pendingCheckout = all.filter((b) => b.status === "APPROVED");
-  const activeLoans = all.filter((b) => b.status === "CHECKED_OUT");
+  // APPROVED = ready for pickup, CHECKED_OUT = currently on loan - both are "active".
+  const active = all.filter(
+    (b) => b.status === "APPROVED" || b.status === "CHECKED_OUT",
+  );
   const upcoming = all.filter(
     (b) => b.status === "PENDING" || b.status === "WAITLIST",
   );
@@ -48,14 +47,29 @@ export default function MyBookings() {
     ["COMPLETED", "CANCELLED", "REJECTED"].includes(b.status),
   );
 
-  function showQR(b) {
+  // The QR must encode the asset tag of the assigned copy (e.g. "BK-CC-001"),
+  // NOT the booking uuid. The adapter pulls assetTag from whichever nested
+  // field the backend provides; if the list endpoint omits it we fetch the
+  // single booking to be sure before opening the modal.
+  async function showQR(b) {
+    let token = b.assetTag;
+    if (!token) {
+      try {
+        const fresh = await getBooking(b.id);
+        token = fresh?.assetTag || fresh?.qrToken;
+      } catch {
+        /* fall through */
+      }
+    }
+    if (!token) token = b.qrToken;
+
     setBookingModal({
       open: true,
       stage: "loanQR",
       resource: b,
       loanTitle: b.title,
       loanMeta: b.statusLabel,
-      loanToken: b.qrToken || "PENDING",
+      loanToken: token || "PENDING",
     });
   }
 
@@ -67,86 +81,6 @@ export default function MyBookings() {
     } catch (e) {
       showToast(e?.response?.data?.message ?? "Could not cancel");
     }
-  }
-
-  function BookingRow({ b, qrLabel, showCancel = true, accent }) {
-    return (
-      <div
-        key={b.id}
-        className="pg-card-list"
-        style={{
-          background: "#fff",
-          border: `1px solid ${accent ? "#bbf7d0" : "#e7e7ef"}`,
-          borderLeft: accent ? `4px solid ${accent}` : "1px solid #e7e7ef",
-          borderRadius: 13,
-          padding: "18px 20px",
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-        }}>
-        <Cover
-          imageUrl={b.imageUrl}
-          resourceType={b.resourceType}
-          color={b.color}
-        />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: "#1a1b2e",
-              marginBottom: 3,
-            }}>
-            {b.title}
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: "#7c7e93",
-              marginBottom: 8,
-              textTransform: "capitalize",
-            }}>
-            {b.type}
-          </div>
-          <div style={{ fontSize: 12, color: "#5a5c74" }}>
-            {fmt(b.startAt)} → {fmt(b.endAt)}
-          </div>
-        </div>
-        {qrLabel && (
-          <button
-            onClick={() => showQR(b)}
-            style={{
-              background: accent || "#0c2a1a",
-              color: "#fff",
-              border: "none",
-              borderRadius: 9,
-              padding: "10px 18px",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}>
-            {qrLabel}
-          </button>
-        )}
-        {showCancel && (
-          <button
-            onClick={() => doCancel(b)}
-            style={{
-              background: "#f4f4f8",
-              color: "#ef4444",
-              border: "none",
-              borderRadius: 9,
-              padding: "10px 14px",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-            }}>
-            Cancel
-          </button>
-        )}
-      </div>
-    );
   }
 
   return (
@@ -168,52 +102,10 @@ export default function MyBookings() {
           My Bookings
         </h1>
         <p style={{ color: "#7c7e93", fontSize: 13, margin: 0 }}>
-          Pending checkouts, active loans, requests and history
+          Active loans, pending requests and history
         </p>
       </div>
 
-      {/* Pending checkout — approved bookings waiting for in-person pickup */}
-      <section style={{ marginBottom: 36 }}>
-        <h2
-          style={{
-            fontFamily: "'Spectral', serif",
-            fontSize: 17,
-            fontWeight: 600,
-            color: "#1a1b2e",
-            margin: "0 0 6px",
-          }}>
-          Pending checkout
-          <span
-            style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: 13,
-              fontWeight: 400,
-              color: "#9b9db2",
-              marginLeft: 8,
-            }}>
-            {pendingCheckout.length} ready
-          </span>
-        </h2>
-        <p style={{ fontSize: 12, color: "#7c7e93", margin: "0 0 14px" }}>
-          Show the QR at the library counter to complete checkout.
-        </p>
-        {pendingCheckout.length === 0 ? (
-          <Empty label="Nothing waiting for checkout." />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {pendingCheckout.map((b) => (
-              <BookingRow
-                key={b.id}
-                b={b}
-                qrLabel="Show checkout QR"
-                accent="#16a34a"
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Active loans — items already checked out and currently with the user */}
       <section style={{ marginBottom: 36 }}>
         <h2
           style={{
@@ -232,15 +124,80 @@ export default function MyBookings() {
               color: "#9b9db2",
               marginLeft: 8,
             }}>
-            {activeLoans.length} active
+            {active.length} active
           </span>
         </h2>
-        {activeLoans.length === 0 ? (
+        {active.length === 0 ? (
           <Empty label="No active loans." />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {activeLoans.map((b) => (
-              <BookingRow key={b.id} b={b} qrLabel="Show QR" />
+            {active.map((b) => (
+              <div
+                key={b.id}
+                className="pg-card-list"
+                style={{
+                  background: "#fff",
+                  border: "1px solid #e7e7ef",
+                  borderRadius: 13,
+                  padding: "18px 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                }}>
+                <Cover resourceType={b.resourceType} color={b.color} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: "#1a1b2e",
+                      marginBottom: 3,
+                    }}>
+                    {b.title}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#7c7e93",
+                      marginBottom: 8,
+                      textTransform: "capitalize",
+                    }}>
+                    {b.type}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#5a5c74" }}>
+                    {fmt(b.startAt)} → {fmt(b.endAt)}
+                  </div>
+                </div>
+                <button
+                  onClick={() => showQR(b)}
+                  style={{
+                    background: "#0c2a1a",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 9,
+                    padding: "10px 18px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}>
+                  Show QR
+                </button>
+                <button
+                  onClick={() => doCancel(b)}
+                  style={{
+                    background: "#f4f4f8",
+                    color: "#ef4444",
+                    border: "none",
+                    borderRadius: 9,
+                    padding: "10px 14px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}>
+                  Cancel
+                </button>
+              </div>
             ))}
           </div>
         )}
@@ -255,7 +212,7 @@ export default function MyBookings() {
             color: "#1a1b2e",
             margin: "0 0 16px",
           }}>
-          Pending &amp; waitlisted
+          Pending & waitlisted
         </h2>
         {upcoming.length === 0 ? (
           <Empty label="Nothing pending." />
@@ -280,7 +237,6 @@ export default function MyBookings() {
                   alignItems: "flex-start",
                 }}>
                 <Cover
-                  imageUrl={b.imageUrl}
                   resourceType={b.resourceType}
                   color={b.color}
                   w={42}
@@ -369,7 +325,6 @@ export default function MyBookings() {
                   alignItems: "center",
                 }}>
                 <Cover
-                  imageUrl={b.imageUrl}
                   resourceType={b.resourceType}
                   color={b.color}
                   w={38}
