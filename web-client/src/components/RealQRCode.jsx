@@ -10,8 +10,7 @@ import { useEffect, useRef, useState } from "react";
 // For an offline-only install: `npm i qrcode` and replace the dynamic
 // loader with `import QRCode from "qrcode";`.
 
-const CDN_URL =
-  "https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js";
+const CDN_URL = "https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js";
 const FALLBACK_PNG = (value, size) =>
   `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(value)}`;
 
@@ -86,15 +85,20 @@ export default function RealQRCode({
           justifyContent: "center",
           color: "#9b9db2",
           fontSize: 12,
-        }}
-      >
+        }}>
         No code yet
       </div>
     );
   }
 
   return (
-    <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+    <div
+      style={{
+        display: "inline-flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 8,
+      }}>
       {fallback ? (
         <img
           src={FALLBACK_PNG(text, size)}
@@ -137,8 +141,7 @@ export default function RealQRCode({
             maxWidth: size + 12,
             textAlign: "center",
           }}
-          aria-label={label || "asset tag"}
-        >
+          aria-label={label || "asset tag"}>
           {text}
         </code>
       )}
