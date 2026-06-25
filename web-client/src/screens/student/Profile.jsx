@@ -32,6 +32,7 @@ export default function Profile() {
       style={{
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
+        ...(contactOpen && { background: "rgba(6,24,15,0.58)" }),
       }}
     >
       {/* Profile header */}
@@ -130,7 +131,6 @@ export default function Profile() {
             position: "fixed",
             inset: 0,
             zIndex: 1000,
-            background: "rgba(6,24,15,0.58)",
             backdropFilter: "blur(6px)",
             display: "flex",
             alignItems: "center",
