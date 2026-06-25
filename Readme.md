@@ -4,7 +4,7 @@
 >
 > A decentralized library resource management system featuring ELO-style User Point tiers, fair waitlist scoring, QR-driven check-in/checkout, and real-time availability across book copies, devices, and study rooms.
 >
-> Status: v0.3.0 - Core logic complete and production-ready. UI layers in progress.
+> Status: v0.4.0 - Core logic complete, React Router DOM navigation migrated, and UI layers ready.
 
 ---
 
