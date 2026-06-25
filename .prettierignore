@@ -12,3 +12,9 @@ server/dist/
 
 # Generated database typings
 server/generated/
+
+# Coverage & lockfiles
+coverage/
+**/coverage/
+yarn.lock
+package-lock.json

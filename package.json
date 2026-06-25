@@ -1,59 +1,59 @@
 {
-  "name": "poth-gulla",
-  "private": true,
-  "packageManager": "yarn@1.22.22",
-  "workspaces": {
-    "packages": [
-      "server",
-      "web-client",
-      "client"
-    ],
-    "nohoist": [
-      "**/react-native",
-      "**/react-native/**",
-      "**/expo",
-      "**/expo/**",
-      "**/expo-*",
-      "**/expo-*/**",
-      "**/react-native-*",
-      "**/react-native-*/**",
-      "**/@react-native*",
-      "**/@react-native*/**",
-      "**/@expo*",
-      "**/@expo*/**"
-    ]
-  },
-  "scripts": {
-    "dev": "node scripts/dev.mjs",
-    "build": "turbo build",
-    "prepare": "husky install",
-    "lint": "yarn workspace poth-gulla-backend lint && yarn workspace web-client lint && yarn workspace client lint",
-    "format": "prettier --write \"**/*.{ts,js,tsx,jsx,json,md}\"",
-    "format-check": "prettier --check \"**/*.{ts,js,tsx,jsx,json,md}\"",
-    "lint:ci": "yarn lint && yarn format-check"
-  },
-  "devDependencies": {
-    "turbo": "^2",
-    "husky": "^8.0.0",
-    "lint-staged": "^14.0.0",
-    "prettier": "^3.4.2",
-    "eslint": "^9.18.0"
-  },
-  "lint-staged": {
-    "**/*.{json,md,yml,yaml,css}": [
-      "prettier --write"
-    ],
-    "server/**/*.{ts,tsx,js,jsx}": [
-      "eslint --config server/eslint.config.mjs --fix",
-      "prettier --write"
-    ],
-    "web-client/**/*.{ts,tsx,js,jsx}": [
-      "eslint --config web-client/eslint.config.js --fix",
-      "prettier --write"
-    ],
-    "client/**/*.{ts,tsx,js,jsx}": [
-      "eslint --config client/eslint.config.js --fix",
-      "prettier --write"
-    ]
-  }
+    "name": "poth-gulla",
+    "private": true,
+    "packageManager": "yarn@1.22.22",
+    "workspaces": {
+        "packages": [
+            "server",
+            "web-client",
+            "client"
+        ],
+        "nohoist": [
+            "**/react-native",
+            "**/react-native/**",
+            "**/expo",
+            "**/expo/**",
+            "**/expo-*",
+            "**/expo-*/**",
+            "**/react-native-*",
+            "**/react-native-*/**",
+            "**/@react-native*",
+            "**/@react-native*/**",
+            "**/@expo*",
+            "**/@expo*/**"
+        ]
+    },
+    "scripts": {
+        "dev": "node scripts/dev.mjs",
+        "build": "turbo build",
+        "prepare": "husky install",
+        "lint": "yarn workspace poth-gulla-backend lint && yarn workspace web-client lint && yarn workspace client lint",
+        "format": "prettier --write \"**/*.{ts,js,tsx,jsx,json,md}\"",
+        "format-check": "prettier --check \"**/*.{ts,js,tsx,jsx,json,md}\"",
+        "lint:ci": "yarn lint && yarn format-check"
+    },
+    "devDependencies": {
+        "turbo": "^2",
+        "husky": "^8.0.0",
+        "lint-staged": "^14.0.0",
+        "prettier": "^3.4.2",
+        "eslint": "^9.18.0"
+    },
+    "lint-staged": {
+        "**/*.{json,md,yml,yaml,css}": [
+            "prettier --write"
+        ],
+        "server/**/*.{ts,tsx,js,jsx}": [
+            "prettier --write",
+            "eslint --config server/eslint.config.mjs --fix"
+        ],
+        "web-client/**/*.{ts,tsx,js,jsx}": [
+            "prettier --write",
+            "eslint --config web-client/eslint.config.js --fix"
+        ],
+        "client/**/*.{ts,tsx,js,jsx}": [
+            "prettier --write",
+            "eslint --config client/eslint.config.js --fix"
+        ]
+    }
 }
