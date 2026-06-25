@@ -20,6 +20,9 @@ const CATS_DEVICE = ["Computing", "Tablet", "Audio", "Peripherals", "Other"];
 const CATS_ROOM = ["Study Room", "Pod", "Conference", "Other"];
 const STATUSES = ["available", "on_loan", "maintenance"];
 
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2 MB
+const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
 const inputStyle = {
   width: "100%",
   border: "1.5px solid #e7e7ef",
@@ -52,6 +55,15 @@ function Field({ label, children }) {
   );
 }
 
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+
 export default function StaffModal() {
   const { staffModal, setStaffModal, showToast, refresh } = useApp();
 
@@ -63,6 +75,8 @@ export default function StaffModal() {
   const [devTier, setDevTier] = useState(1);
   const [serial, setSerial] = useState("");
   const [status, setStatus] = useState("available");
+  const [imageDataUrl, setImageDataUrl] = useState("");
+  const [imageName, setImageName] = useState("");
   const [busy, setBusy] = useState(false);
 
   function close() {
@@ -75,6 +89,31 @@ export default function StaffModal() {
       .replace(/[^A-Z0-9]+/g, "-")
       .replace(/^-|-$/g, "")
       .slice(0, 10);
+  }
+
+  async function handleImageChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      showToast("Image must be PNG, JPG, or WEBP");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      showToast("Image must be under 2 MB");
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setImageDataUrl(dataUrl);
+      setImageName(file.name);
+    } catch {
+      showToast("Could not read image");
+    }
+  }
+
+  function clearImage() {
+    setImageDataUrl("");
+    setImageName("");
   }
 
   async function handleSubmit() {
@@ -91,6 +130,7 @@ export default function StaffModal() {
           author: author.trim() || "Unknown",
           description: author.trim(),
           tags: cat ? [cat] : [],
+          imageUrl: imageDataUrl || undefined,
         });
         const base = slug(title);
         for (let i = 1; i <= n; i++) {
@@ -109,6 +149,7 @@ export default function StaffModal() {
           name: title.trim(),
           assetTag: serial.trim(),
           deviceTier: devTier,
+          imageUrl: imageDataUrl || undefined,
         });
       } else {
         await createRoom({
@@ -140,8 +181,8 @@ export default function StaffModal() {
       : type === "Device"
         ? "Description / Model"
         : "Description";
-  const copiesLabel =
-    type === "Study Room" ? "Quantity / rooms" : "Number of copies";
+  const copiesLabel = type === "Study Room" ? "Capacity" : "Number of copies";
+  const showImageUpload = type === "Book" || type === "Device";
 
   return (
     <div
@@ -155,8 +196,7 @@ export default function StaffModal() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-      }}
-    >
+      }}>
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -167,8 +207,7 @@ export default function StaffModal() {
           maxHeight: "92vh",
           overflowY: "auto",
           boxShadow: "0 24px 60px rgba(6,24,15,0.22)",
-        }}
-      >
+        }}>
         {/* Header */}
         <div
           style={{
@@ -177,8 +216,7 @@ export default function StaffModal() {
             alignItems: "center",
             padding: "20px 24px 16px",
             borderBottom: "1px solid #f0f0f6",
-          }}
-        >
+          }}>
           <h2
             style={{
               fontFamily: "'Spectral', serif",
@@ -186,8 +224,7 @@ export default function StaffModal() {
               fontWeight: 700,
               color: "#1a1b2e",
               margin: 0,
-            }}
-          >
+            }}>
             Add resource
           </h2>
           <button
@@ -198,8 +235,7 @@ export default function StaffModal() {
               cursor: "pointer",
               padding: 4,
               borderRadius: 6,
-            }}
-          >
+            }}>
             <svg
               width="18"
               height="18"
@@ -208,8 +244,7 @@ export default function StaffModal() {
               stroke="#9b9db2"
               strokeWidth="2"
               strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+              strokeLinejoin="round">
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
@@ -225,6 +260,7 @@ export default function StaffModal() {
                   onClick={() => {
                     setType(t);
                     setCat("");
+                    if (t === "Study Room") clearImage();
                   }}
                   style={{
                     flex: 1,
@@ -236,8 +272,7 @@ export default function StaffModal() {
                     fontSize: 12,
                     fontWeight: 700,
                     cursor: "pointer",
-                  }}
-                >
+                  }}>
                   {t}
                 </button>
               ))}
@@ -283,8 +318,7 @@ export default function StaffModal() {
             <select
               value={cat}
               onChange={(e) => setCat(e.target.value)}
-              style={{ ...inputStyle, cursor: "pointer" }}
-            >
+              style={{ ...inputStyle, cursor: "pointer" }}>
               <option value="">Select category...</option>
               {catOptions.map((c) => (
                 <option key={c} value={c}>
@@ -294,7 +328,7 @@ export default function StaffModal() {
             </select>
           </Field>
 
-          {/* Copies / quantity */}
+          {/* Copies / capacity */}
           <Field label={copiesLabel}>
             <input
               type="number"
@@ -339,12 +373,87 @@ export default function StaffModal() {
                       fontSize: 13,
                       fontWeight: 700,
                       cursor: "pointer",
-                    }}
-                  >
+                    }}>
                     T{n}
                   </button>
                 ))}
               </div>
+            </Field>
+          )}
+
+          {/* Image upload — books and devices only */}
+          {showImageUpload && (
+            <Field label="Cover image (optional)">
+              {imageDataUrl ? (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    border: "1.5px solid #e7e7ef",
+                    borderRadius: 8,
+                    padding: 10,
+                    background: "#f8f8fc",
+                  }}>
+                  <img
+                    src={imageDataUrl}
+                    alt="preview"
+                    style={{
+                      width: 56,
+                      height: 56,
+                      objectFit: "cover",
+                      borderRadius: 6,
+                      border: "1px solid #e7e7ef",
+                    }}
+                  />
+                  <div style={{ flex: 1, fontSize: 12, color: "#3a3b4e" }}>
+                    {imageName || "image"}
+                  </div>
+                  <button
+                    onClick={clearImage}
+                    style={{
+                      background: "#fff",
+                      color: "#ef4444",
+                      border: "1px solid #fecaca",
+                      borderRadius: 7,
+                      padding: "6px 10px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}>
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <label
+                  style={{
+                    display: "block",
+                    border: "1.5px dashed #c4c5d4",
+                    borderRadius: 8,
+                    padding: "18px 12px",
+                    textAlign: "center",
+                    cursor: "pointer",
+                    background: "#f8f8fc",
+                    color: "#7c7e93",
+                    fontSize: 12,
+                  }}>
+                  <input
+                    type="file"
+                    accept={ACCEPTED_IMAGE_TYPES.join(",")}
+                    onChange={handleImageChange}
+                    style={{ display: "none" }}
+                  />
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      color: "#3a3b4e",
+                      marginBottom: 4,
+                    }}>
+                    Click to upload
+                  </div>
+                  <div>PNG, JPG, or WEBP · up to 2 MB</div>
+                </label>
+              )}
             </Field>
           )}
 
@@ -353,8 +462,7 @@ export default function StaffModal() {
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              style={{ ...inputStyle, cursor: "pointer" }}
-            >
+              style={{ ...inputStyle, cursor: "pointer" }}>
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
@@ -378,8 +486,7 @@ export default function StaffModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-            }}
-          >
+            }}>
             Cancel
           </button>
           <button
@@ -395,8 +502,7 @@ export default function StaffModal() {
               fontSize: 13,
               fontWeight: 700,
               cursor: busy ? "default" : "pointer",
-            }}
-          >
+            }}>
             {busy ? "Adding…" : "Add to catalogue"}
           </button>
         </div>

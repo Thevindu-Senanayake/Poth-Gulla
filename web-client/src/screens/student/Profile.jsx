@@ -32,9 +32,7 @@ export default function Profile() {
       style={{
         padding: "30px 30px 40px",
         fontFamily: "'Public Sans', sans-serif",
-        ...(contactOpen && { background: "rgba(6,24,15,0.58)" }),
-      }}
-    >
+      }}>
       {/* Profile header */}
       <div
         style={{
@@ -46,8 +44,7 @@ export default function Profile() {
           display: "flex",
           alignItems: "center",
           gap: 22,
-        }}
-      >
+        }}>
         <div
           style={{
             width: 72,
@@ -61,8 +58,7 @@ export default function Profile() {
             fontSize: 26,
             fontWeight: 800,
             flexShrink: 0,
-          }}
-        >
+          }}>
           {user?.initials || "SW"}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -72,8 +68,7 @@ export default function Profile() {
               fontWeight: 700,
               color: "#16231b",
               marginBottom: 2,
-            }}
-          >
+            }}>
             {user?.name || "Sahan Wickrama"}
           </div>
           <div style={{ fontSize: 13, color: "#7c7e93", marginBottom: 8 }}>
@@ -88,8 +83,7 @@ export default function Profile() {
                 color: "#16a34a",
                 fontSize: 11,
                 fontWeight: 700,
-              }}
-            >
+              }}>
               {user?.tierLabel || "Tier 3 · Regular"}
             </div>
             <div
@@ -100,8 +94,7 @@ export default function Profile() {
                 color: "#5c5e72",
                 fontSize: 11,
                 fontWeight: 600,
-              }}
-            >
+              }}>
               {user?.roleLabel || "Student"}
             </div>
           </div>
@@ -117,112 +110,10 @@ export default function Profile() {
             fontSize: 13,
             fontWeight: 600,
             cursor: "pointer",
-          }}
-        >
+          }}>
           Edit Profile
         </button>
       </div>
-
-      {/* Profile fields are administrator-managed (account CRUD is Admin/Staff only). */}
-      {contactOpen && (
-        <div
-          onClick={() => setContactOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1000,
-            backdropFilter: "blur(6px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#fff",
-              borderRadius: 16,
-              width: 420,
-              maxWidth: "92vw",
-              padding: "26px 26px 22px",
-              boxShadow: "0 24px 60px rgba(6,24,15,0.22)",
-            }}
-          >
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                marginBottom: 14,
-                background: "#f0fdf4",
-                color: "#16a34a",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#16a34a"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 16v-4M12 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
-              </svg>
-            </div>
-            <h2
-              style={{
-                fontFamily: "'Spectral', serif",
-                fontSize: 19,
-                fontWeight: 700,
-                color: "#16231b",
-                margin: "0 0 8px",
-              }}
-            >
-              Contact an administrator
-            </h2>
-            <p
-              style={{
-                fontSize: 13,
-                color: "#5c5e72",
-                lineHeight: 1.55,
-                margin: "0 0 20px",
-              }}
-            >
-              Profile details - your name, email, role and tier - are managed by
-              library staff. To request a change, please contact an
-              administrator at{" "}
-              <a
-                href="mailto:admin@iit.ac.lk"
-                style={{ color: "#16a34a", fontWeight: 600 }}
-              >
-                admin@iit.ac.lk
-              </a>
-              .
-            </p>
-            <button
-              onClick={() => setContactOpen(false)}
-              style={{
-                width: "100%",
-                padding: "11px",
-                borderRadius: 9,
-                border: "none",
-                background: "#16a34a",
-                color: "#fff",
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              Got it
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Stats row */}
       <div
@@ -231,8 +122,7 @@ export default function Profile() {
           gridTemplateColumns: "repeat(3,1fr)",
           gap: 14,
           marginBottom: 20,
-        }}
-      >
+        }}>
         {profileStats.map((s, i) => (
           <div
             key={i}
@@ -242,8 +132,7 @@ export default function Profile() {
               padding: "18px 20px",
               border: "1px solid #e7e7ef",
               textAlign: "center",
-            }}
-          >
+            }}>
             <div style={{ fontSize: 28, fontWeight: 800, color: "#16231b" }}>
               {s.value}
             </div>
@@ -261,8 +150,7 @@ export default function Profile() {
           borderRadius: 16,
           border: "1px solid #e7e7ef",
           overflow: "hidden",
-        }}
-      >
+        }}>
         <div
           style={{
             padding: "16px 20px",
@@ -270,8 +158,7 @@ export default function Profile() {
             fontWeight: 600,
             color: "#16231b",
             fontSize: 14,
-          }}
-        >
+          }}>
           Account Details
         </div>
         {[
@@ -295,8 +182,7 @@ export default function Profile() {
               justifyContent: "space-between",
               padding: "13px 20px",
               borderBottom: i < arr.length - 1 ? "1px solid #f0f0f8" : "none",
-            }}
-          >
+            }}>
             <div style={{ fontSize: 13, color: "#7c7e93" }}>{row.label}</div>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#16231b" }}>
               {row.value}
@@ -304,6 +190,104 @@ export default function Profile() {
           </div>
         ))}
       </div>
+
+      {/* Edit profile = administrator contact modal. The overlay covers the
+          whole viewport with a single dark backdrop so the dialog reads as a
+          true modal (not a stray card floating over a half-styled page). */}
+      {contactOpen && (
+        <div
+          onClick={() => setContactOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            background: "rgba(6,24,15,0.58)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              width: 420,
+              maxWidth: "92vw",
+              padding: "26px 26px 22px",
+              boxShadow: "0 24px 60px rgba(6,24,15,0.22)",
+              fontFamily: "'Public Sans', sans-serif",
+            }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                marginBottom: 14,
+                background: "#f0fdf4",
+                color: "#16a34a",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#16a34a"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round">
+                <path d="M12 16v-4M12 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+              </svg>
+            </div>
+            <h2
+              style={{
+                fontFamily: "'Spectral', serif",
+                fontSize: 19,
+                fontWeight: 700,
+                color: "#16231b",
+                margin: "0 0 8px",
+              }}>
+              Contact an administrator
+            </h2>
+            <p
+              style={{
+                fontSize: 13,
+                color: "#5c5e72",
+                lineHeight: 1.55,
+                margin: "0 0 20px",
+              }}>
+              Profile details — your name, email, role and tier — are managed by
+              library staff. To request a change, please contact an
+              administrator at{" "}
+              <a
+                href="mailto:admin@iit.ac.lk"
+                style={{ color: "#16a34a", fontWeight: 600 }}>
+                admin@iit.ac.lk
+              </a>
+              .
+            </p>
+            <button
+              onClick={() => setContactOpen(false)}
+              style={{
+                width: "100%",
+                padding: "11px",
+                borderRadius: 9,
+                border: "none",
+                background: "#16a34a",
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}>
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
