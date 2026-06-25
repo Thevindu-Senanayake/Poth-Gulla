@@ -2,8 +2,6 @@ import { useApp } from "../App";
 import { createBooking } from "../api/bookings";
 import ResourceImage from "../components/ResourceImage";
 import { useNavigate } from "react-router-dom";
-import { useApp } from "../App";
-import { createBooking } from "../api/bookings";
 
 function QRGrid({ cells }) {
   const size = 11;

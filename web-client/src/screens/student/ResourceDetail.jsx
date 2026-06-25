@@ -13,12 +13,39 @@ export default function ResourceDetail() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!selectedResource) setPage("search");
-  }, [selectedResource]);
+    let alive = true;
+    setLoading(true);
+    setError(null);
 
-  if (!selectedResource) return null;
+    Promise.any([
+      getBook(resourceId),
+      getDevice(resourceId),
+      getRoom(resourceId),
+    ])
+      .then((res) => {
+        if (alive) {
+          setResource(res);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (alive) {
+          setError("Resource not found");
+          setLoading(false);
+        }
+      });
 
-  const r = selectedResource;
+    return () => {
+      alive = false;
+    };
+  }, [resourceId]);
+
+  if (loading) return <Loading />;
+  if (error || !resource) {
+    return <ErrorState error={error || "Resource not found"} />;
+  }
+
+  const r = resource;
   const isAvail = r.available > 0;
   const needsTierWarn = r.tier && r.tier >= 4;
 
