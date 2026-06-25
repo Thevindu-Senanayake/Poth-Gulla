@@ -24,6 +24,8 @@ export async function myNotifications(params = {}) {
 }
 export const markAllNotificationsRead = () =>
     api.post('/notifications/read-all').then((r) => r.data);
+export const markNotificationRead = (id) =>
+    api.patch(`/notifications/${id}/read`).then((r) => r.data);
 
 // ---- Overdue sweep (ADMIN, LIBRARY_STAFF) ----
 export const runOverdueSweep = () => api.post('/overdue/run').then((r) => r.data);

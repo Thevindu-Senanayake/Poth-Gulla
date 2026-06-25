@@ -1,22 +1,24 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useApp } from '../../App';
 import { useFetch } from '../../hooks/useFetch';
-import { usePaginated } from '../../hooks/usePaginated';
 import { auditLogs as fetchAuditLogs } from '../../api/misc';
 import { colorFor } from '../../api/adapters';
 import { Loading, ErrorState } from '../../components/States';
 import Pagination from '../../components/Pagination';
 
-const FILTER_CHIPS = [
-    'All',
-    'User',
-    'Booking',
-    'Borrowing',
-    'Waitlist',
-    'Device',
-    'Book',
-    'Config',
-];
+// Maps our UI category names to backend AuditTargetType values
+const CATEGORY_TO_TARGET = {
+    All: undefined,
+    User: 'User',
+    Booking: 'Booking',
+    Borrowing: 'Borrowing',
+    Waitlist: 'WaitlistEntry',
+    Device: 'Device',
+    Book: 'BookCopy',
+    Config: 'SystemConfig',
+};
+
+const CATEGORY_OPTIONS = Object.keys(CATEGORY_TO_TARGET);
 
 const DATE_PRESETS = [
     { key: 'all', label: 'All time' },
@@ -29,21 +31,19 @@ const DATE_PRESETS = [
 function categoryFor(action, targetType) {
     const a = (action || '').toUpperCase();
     const t = (targetType || '').toLowerCase();
-
     if (a.startsWith('USER_') || t === 'user') return 'User';
     if (a.startsWith('BOOKING_') || t === 'booking') return 'Booking';
     if (
         a === 'ITEM_CHECKED_OUT' ||
         a === 'ITEM_RETURNED' ||
         a === 'ROOM_CHECKED_IN' ||
-        t === 'borrowing' ||
-        t === 'checkout'
+        t === 'borrowing'
     )
         return 'Borrowing';
-    if (a.startsWith('WAITLIST_') || t === 'waitlistentry' || t === 'waitlist') return 'Waitlist';
+    if (a.startsWith('WAITLIST_') || t === 'waitlistentry') return 'Waitlist';
     if (a.startsWith('DEVICE_') || t === 'device') return 'Device';
-    if (a.startsWith('BOOK_') || t === 'book' || t === 'bookcopy') return 'Book';
-    if (a === 'CONFIG_UPDATED' || t === 'config') return 'Config';
+    if (a.startsWith('BOOK_') || t === 'bookcopy') return 'Book';
+    if (a === 'CONFIG_UPDATED' || t === 'systemconfig') return 'Config';
     return 'Other';
 }
 
@@ -58,13 +58,12 @@ function fmt(d) {
 function getEventDescription(log) {
     const meta = log.metadata || {};
     const action = log.action || '';
-
     switch (action) {
         case 'CONFIG_UPDATED': {
             if (meta.differences) {
                 const parts = [];
                 const diffs = meta.differences;
-                if (diffs.tiers && diffs.tiers.length > 0) {
+                if (diffs.tiers?.length > 0) {
                     diffs.tiers.forEach((t) => {
                         const fieldChanges = [];
                         Object.entries(t.changes).forEach(([field, val]) => {
@@ -73,27 +72,28 @@ function getEventDescription(log) {
                         parts.push(`${t.tier} (${fieldChanges.join(', ')})`);
                     });
                 }
-                if (diffs.penalties && diffs.penalties.length > 0) {
+                if (diffs.penalties?.length > 0) {
                     diffs.penalties.forEach((p) => {
                         parts.push(`penalty rule "${p.rule}" from "${p.from}" to "${p.to}"`);
                     });
                 }
-                if (diffs.toggles && diffs.toggles.length > 0) {
+                if (diffs.toggles?.length > 0) {
                     diffs.toggles.forEach((t) => {
                         parts.push(
                             `toggle "${t.label}" from "${t.from ? 'ON' : 'OFF'}" to "${t.to ? 'ON' : 'OFF'}"`
                         );
                     });
                 }
-                if (parts.length > 0) {
+                if (parts.length > 0)
                     return `Updated system configuration. Changed: ${parts.join('; ')}`;
-                }
             }
             const keys = meta.patch ? Object.keys(meta.patch) : [];
             return keys.length > 0
                 ? `Updated system configuration. Changed keys: ${keys.join(', ')}`
                 : 'Updated system configuration.';
         }
+        case 'USER_LOGGED_IN':
+            return `User logged in: ${meta.name || '-'} (${meta.email || '-'})`;
         case 'USER_REGISTERED':
             return `Registered new user: ${meta.name || '-'} (${meta.email || '-'}) as ${meta.role || '-'}`;
         case 'USER_UPDATED':
@@ -103,52 +103,27 @@ function getEventDescription(log) {
         case 'USER_DISABLED':
             return `Disabled account of ${meta.name || '-'} (${meta.email || '-'})`;
         case 'BOOKING_CREATED':
-            return `Created booking for ${meta.userName || '-'} (${meta.userEmail || '-'}): ${meta.resourceType || '-'} "${meta.resourceName || '-'}"`;
+            return `Booking created for ${meta.userName || '-'}: ${meta.resourceType || '-'} "${meta.resourceName || '-'}"`;
         case 'BOOKING_APPROVED':
-            return `Approved booking for ${meta.userName || '-'} (${meta.userEmail || '-'}): ${meta.resourceType || '-'} "${meta.resourceName || '-'}"`;
+            return `Approved booking for ${meta.userName || '-'}: ${meta.resourceType || '-'} "${meta.resourceName || '-'}"`;
         case 'BOOKING_REJECTED':
-            return `Rejected booking for ${meta.userName || '-'} (${meta.userEmail || '-'}): ${meta.resourceType || '-'} "${meta.resourceName || '-'}"`;
+            return `Rejected booking for ${meta.userName || '-'}: ${meta.resourceType || '-'} "${meta.resourceName || '-'}"`;
         case 'BOOKING_CANCELLED':
-            return `Cancelled booking for ${meta.userName || '-'} (${meta.userEmail || '-'}): ${meta.resourceType || '-'} "${meta.resourceName || '-'}"${meta.adminOverride ? ' (by Admin)' : ''}`;
+            return `Cancelled booking for ${meta.userName || '-'}: ${meta.resourceType || '-'} "${meta.resourceName || '-'}"${meta.adminOverride ? ' (by Admin)' : ''}`;
         case 'ITEM_CHECKED_OUT':
-            return `Checked out ${meta.resourceType || '-'} "${meta.resourceName || '-'}" (Asset: ${meta.assetTag || '-'}) to ${meta.userName || '-'} (${meta.userEmail || '-'})`;
+            return `Checked out ${meta.resourceType || '-'} "${meta.resourceName || '-'}" (Asset: ${meta.assetTag || '-'}) to ${meta.userName || '-'}`;
         case 'ROOM_CHECKED_IN':
-            return `Checked in to room "${meta.resourceName || '-'}" for ${meta.userName || '-'} (${meta.userEmail || '-'})`;
+            return `Checked in to room "${meta.resourceName || '-'}" for ${meta.userName || '-'}`;
         case 'ITEM_RETURNED':
-            return `Returned ${meta.resourceType || '-'} "${meta.resourceName || '-'}" (Asset: ${meta.assetTag || '-'}) from ${meta.userName || '-'} (${meta.userEmail || '-'}) · Condition: ${meta.condition || '-'}`;
+            return `Returned ${meta.resourceType || '-'} "${meta.resourceName || '-'}" (Asset: ${meta.assetTag || '-'}) · Condition: ${meta.condition || '-'}`;
         case 'WAITLIST_ENQUEUED':
-            return `Enqueued ${meta.userName || '-'} (${meta.userEmail || '-'}) on waitlist for ${meta.resourceType || '-'} "${meta.resourceName || '-'}" (Score: ${meta.priorityScore || '-'})`;
+            return `${meta.userName || '-'} added to waitlist for ${meta.resourceType || '-'} "${meta.resourceName || '-'}" (Score: ${meta.priorityScore ?? '-'})`;
         case 'WAITLIST_PROMOTED':
-            return `Promoted ${meta.userName || '-'} (${meta.userEmail || '-'}) from waitlist for ${meta.resourceType || '-'} "${meta.resourceName || '-'}"${meta.staffNotes ? ` · Notes: ${meta.staffNotes}` : ''}`;
+            return `${meta.userName || '-'} promoted from waitlist for "${meta.resourceName || '-'}"${meta.staffNotes ? ` · ${meta.staffNotes}` : ''}`;
         case 'WAITLIST_DISMISSED':
-            return `Dismissed ${meta.userName || '-'} (${meta.userEmail || '-'}) from waitlist for ${meta.resourceType || '-'} "${meta.resourceName || '-'}"${meta.staffNotes ? ` · Notes: ${meta.staffNotes}` : ''}`;
+            return `${meta.userName || '-'} dismissed from waitlist for "${meta.resourceName || '-'}"${meta.staffNotes ? ` · ${meta.staffNotes}` : ''}`;
         default:
             return 'Performed administrative action.';
-    }
-}
-
-function startOfToday() {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d.getTime();
-}
-
-function rangeFor(preset, customFrom, customTo) {
-    const now = Date.now();
-    switch (preset) {
-        case 'today':
-            return { from: startOfToday(), to: now };
-        case '7d':
-            return { from: now - 7 * 86400000, to: now };
-        case '30d':
-            return { from: now - 30 * 86400000, to: now };
-        case 'custom': {
-            const from = customFrom ? new Date(customFrom).getTime() : 0;
-            const to = customTo ? new Date(customTo).getTime() + 86400000 - 1 : now;
-            return { from, to };
-        }
-        default:
-            return null;
     }
 }
 
@@ -161,19 +136,72 @@ async function copyToClipboard(text) {
     }
 }
 
+function startOfTodayISO() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+}
+
+function endOfNowISO() {
+    return new Date().toISOString();
+}
+
+function dateParamsForPreset(preset, customFrom, customTo) {
+    const now = new Date();
+    switch (preset) {
+        case 'today':
+            return { startDate: startOfTodayISO(), endDate: endOfNowISO() };
+        case '7d':
+            return {
+                startDate: new Date(now - 7 * 86400000).toISOString(),
+                endDate: endOfNowISO(),
+            };
+        case '30d':
+            return {
+                startDate: new Date(now - 30 * 86400000).toISOString(),
+                endDate: endOfNowISO(),
+            };
+        case 'custom':
+            return {
+                startDate: customFrom ? new Date(customFrom).toISOString() : undefined,
+                endDate: customTo ? new Date(customTo + 'T23:59:59').toISOString() : undefined,
+            };
+        default:
+            return {};
+    }
+}
+
 export default function AuditLog() {
-    const { auditFilter, setAuditFilter, showToast } = useApp();
-    const { data, loading, error, reload } = useFetch(() => fetchAuditLogs({ limit: 500 }), []);
+    const { showToast } = useApp();
 
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(30);
+    const [category, setCategory] = useState('All');
     const [datePreset, setDatePreset] = useState('all');
     const [customFrom, setCustomFrom] = useState('');
     const [customTo, setCustomTo] = useState('');
     const [idQuery, setIdQuery] = useState('');
+    const [idInput, setIdInput] = useState('');
+    const [sortOrder, setSortOrder] = useState('desc');
+
+    const dateParams = dateParamsForPreset(datePreset, customFrom, customTo);
+    const targetType = CATEGORY_TO_TARGET[category];
+
+    const { data, loading, error, reload } = useFetch(
+        () =>
+            fetchAuditLogs({
+                page,
+                limit: pageSize,
+                ...(targetType ? { targetType } : {}),
+                ...dateParams,
+                ...(idQuery ? { id: idQuery } : {}),
+                sortOrder,
+            }),
+        [page, pageSize, category, datePreset, customFrom, customTo, idQuery, sortOrder]
+    );
 
     const auditLogs = (data?.items || []).map((l) => {
-        const category = categoryFor(l.action, l.targetType);
+        const cat = categoryFor(l.action, l.targetType);
         return {
             id: l.id,
             action: (l.action || '').replace(/_/g, ' '),
@@ -181,44 +209,35 @@ export default function AuditLog() {
             target: [l.targetType, l.targetId && String(l.targetId).slice(0, 8)]
                 .filter(Boolean)
                 .join(' · '),
-            kind: category,
-            ts: l.createdAt ? new Date(l.createdAt).getTime() : 0,
+            kind: cat,
             time: fmt(l.createdAt),
-            ip: l.metadata?.ip || '-',
-            col: colorFor(category || l.targetType || l.action || 'x'),
+            col: colorFor(cat || l.targetType || l.action || 'x'),
             description: getEventDescription(l),
         };
     });
 
-    const counts = FILTER_CHIPS.reduce((acc, chip) => {
-        acc[chip] =
-            chip === 'All' ? auditLogs.length : auditLogs.filter((l) => l.kind === chip).length;
-        return acc;
-    }, {});
+    const meta = data?.meta ?? {};
+    const total = meta.total ?? 0;
 
-    const range = rangeFor(datePreset, customFrom, customTo);
-    const idQ = idQuery.trim().toLowerCase();
+    const gridCols = '7px 170px 1.8fr 1.8fr 2.6fr 100px 140px';
 
-    let filtered = auditLogs;
-    if (auditFilter && auditFilter !== 'All')
-        filtered = filtered.filter((l) => l.kind === auditFilter);
-    if (range) filtered = filtered.filter((l) => l.ts >= range.from && l.ts <= range.to);
-    if (idQ) filtered = filtered.filter((l) => String(l.id).toLowerCase().includes(idQ));
-
-    const paged = usePaginated(filtered, page, pageSize);
-
-    if (loading) return <Loading label="Loading audit log…" />;
-    if (error) return <ErrorState error={error} onRetry={reload} />;
+    function handleSearch() {
+        setIdQuery(idInput.trim().toLowerCase());
+        setPage(1);
+    }
 
     async function copyId(id) {
         const ok = await copyToClipboard(String(id));
         showToast(ok ? `Copied ${String(id).slice(0, 8)}…` : 'Could not copy');
     }
 
-    // Six narrow columns + ID. The ID is included as the leftmost numeric
-    // column because backend uses it as the canonical reference for tickets
-    // and debug reports.
-    const gridCols = '7px 170px 1.8fr 1.8fr 2.6fr 100px 150px';
+    function changeFilter(key, value) {
+        setPage(1);
+        if (key === 'category') setCategory(value);
+        if (key === 'date') setDatePreset(value);
+        if (key === 'customFrom') setCustomFrom(value);
+        if (key === 'customTo') setCustomTo(value);
+    }
 
     return (
         <div
@@ -240,158 +259,99 @@ export default function AuditLog() {
                 >
                     Audit Log
                 </h1>
-                <p style={{ fontSize: 13, color: '#7c7e93', margin: 0 }}>
-                    {auditLogs.length} entries · {filtered.length} shown
-                </p>
+                <p style={{ fontSize: 13, color: '#7c7e93', margin: 0 }}>{total} entries matched</p>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-                {FILTER_CHIPS.map((chip) => {
-                    const active = (auditFilter || 'All') === chip;
-                    return (
-                        <button
-                            key={chip}
-                            onClick={() => {
-                                setAuditFilter(chip);
-                                setPage(1);
-                            }}
-                            style={{
-                                background: active ? '#16a34a' : '#fff',
-                                color: active ? '#fff' : '#3a3b4e',
-                                border: `1px solid ${active ? '#16a34a' : '#e7e7ef'}`,
-                                borderRadius: 20,
-                                padding: '5px 14px',
-                                fontSize: 12,
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 6,
-                            }}
-                        >
-                            {chip}
-                            <span
-                                style={{
-                                    fontFamily: "'IBM Plex Mono', monospace",
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    background: active ? 'rgba(255,255,255,0.22)' : '#f0f0f6',
-                                    color: active ? '#fff' : '#7c7e93',
-                                    borderRadius: 10,
-                                    padding: '1px 7px',
-                                }}
-                            >
-                                {counts[chip] ?? 0}
-                            </span>
-                        </button>
-                    );
-                })}
-            </div>
-
+            {/* Filters row */}
             <div
                 style={{
                     display: 'flex',
-                    gap: 10,
+                    gap: 12,
                     marginBottom: 14,
                     flexWrap: 'wrap',
                     alignItems: 'center',
                 }}
             >
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#7c7e93' }}>Date:</span>
-                {DATE_PRESETS.map((p) => {
-                    const active = datePreset === p.key;
-                    return (
-                        <button
-                            key={p.key}
-                            onClick={() => {
-                                setDatePreset(p.key);
-                                setPage(1);
-                            }}
-                            style={{
-                                background: active ? '#0c2a1a' : '#fff',
-                                color: active ? '#fff' : '#3a3b4e',
-                                border: `1px solid ${active ? '#0c2a1a' : '#e7e7ef'}`,
-                                borderRadius: 8,
-                                padding: '5px 12px',
-                                fontSize: 12,
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                            }}
-                        >
-                            {p.label}
-                        </button>
-                    );
-                })}
+                {/* Category dropdown */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={labelStyle}>Category</span>
+                    <select
+                        value={category}
+                        onChange={(e) => changeFilter('category', e.target.value)}
+                        style={selectStyle}
+                    >
+                        {CATEGORY_OPTIONS.map((c) => (
+                            <option key={c} value={c}>
+                                {c}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Date dropdown */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={labelStyle}>Date</span>
+                    <select
+                        value={datePreset}
+                        onChange={(e) => changeFilter('date', e.target.value)}
+                        style={selectStyle}
+                    >
+                        {DATE_PRESETS.map((p) => (
+                            <option key={p.key} value={p.key}>
+                                {p.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Custom date range inputs */}
                 {datePreset === 'custom' && (
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <input
                             type="date"
                             value={customFrom}
-                            onChange={(e) => {
-                                setCustomFrom(e.target.value);
-                                setPage(1);
-                            }}
+                            onChange={(e) => changeFilter('customFrom', e.target.value)}
                             style={dateInput}
                         />
                         <span style={{ fontSize: 12, color: '#7c7e93' }}>→</span>
                         <input
                             type="date"
                             value={customTo}
-                            onChange={(e) => {
-                                setCustomTo(e.target.value);
-                                setPage(1);
-                            }}
+                            onChange={(e) => changeFilter('customTo', e.target.value)}
                             style={dateInput}
                         />
                     </div>
                 )}
             </div>
 
-            {/* Look up by log id — paste the id from a bug report */}
-            <div
-                style={{
-                    display: 'flex',
-                    gap: 8,
-                    marginBottom: 20,
-                    alignItems: 'center',
-                }}
-            >
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#7c7e93' }}>Log ID:</span>
+            {/* Log ID search */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20, alignItems: 'center' }}>
+                <span style={labelStyle}>Log ID</span>
                 <input
-                    value={idQuery}
-                    onChange={(e) => {
-                        setIdQuery(e.target.value);
-                        setPage(1);
-                    }}
-                    placeholder="Paste a log id (full or first 8 chars)"
-                    style={{
-                        ...dateInput,
-                        width: 320,
-                        fontFamily: "'IBM Plex Mono', monospace",
-                    }}
+                    value={idInput}
+                    onChange={(e) => setIdInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    placeholder="Paste a log id (full or prefix)"
+                    style={{ ...dateInput, width: 300, fontFamily: "'IBM Plex Mono', monospace" }}
                 />
+                <button onClick={handleSearch} style={searchBtn}>
+                    Search
+                </button>
                 {idQuery && (
                     <button
                         onClick={() => {
                             setIdQuery('');
+                            setIdInput('');
                             setPage(1);
                         }}
-                        style={{
-                            background: '#f0f0f6',
-                            border: 'none',
-                            color: '#7c7e93',
-                            borderRadius: 6,
-                            padding: '5px 10px',
-                            fontSize: 11,
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                        }}
+                        style={clearBtn}
                     >
                         Clear
                     </button>
                 )}
             </div>
 
+            {/* Table */}
             <div
                 style={{
                     background: '#fff',
@@ -400,6 +360,7 @@ export default function AuditLog() {
                     overflow: 'hidden',
                 }}
             >
+                {/* Header row */}
                 <div
                     style={{
                         display: 'grid',
@@ -412,30 +373,72 @@ export default function AuditLog() {
                     }}
                 >
                     <div />
-                    {[
-                        'Log ID',
-                        'Actor / Action',
-                        'Target',
-                        'Description',
-                        'Kind',
-                        'Timestamp · IP',
-                    ].map((col) => (
-                        <span
-                            key={col}
-                            style={{
-                                fontSize: 11,
-                                fontWeight: 700,
-                                color: '#9b9db2',
-                                textTransform: 'uppercase',
-                                letterSpacing: 0.5,
-                            }}
-                        >
+                    {['Log ID', 'Actor / Action', 'Target', 'Description', 'Kind'].map((col) => (
+                        <span key={col} style={thStyle}>
                             {col}
                         </span>
                     ))}
+                    {/* Timestamp with sort toggle */}
+                    <button
+                        onClick={() => {
+                            setSortOrder((s) => (s === 'desc' ? 'asc' : 'desc'));
+                            setPage(1);
+                        }}
+                        style={{
+                            ...thStyle,
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            padding: 0,
+                            textTransform: 'uppercase',
+                            letterSpacing: 0.5,
+                        }}
+                        title={`Sort ${sortOrder === 'desc' ? 'oldest first' : 'newest first'}`}
+                    >
+                        Timestamp
+                        <span style={{ fontSize: 10 }}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                    </button>
                 </div>
 
-                {paged.slice.length === 0 && (
+                {loading && (
+                    <div
+                        style={{
+                            padding: '30px 20px',
+                            textAlign: 'center',
+                            color: '#9b9db2',
+                            fontSize: 13,
+                        }}
+                    >
+                        Loading…
+                    </div>
+                )}
+                {error && !loading && (
+                    <div
+                        style={{
+                            padding: '30px 20px',
+                            textAlign: 'center',
+                            color: '#ef4444',
+                            fontSize: 13,
+                        }}
+                    >
+                        Failed to load.{' '}
+                        <button
+                            onClick={reload}
+                            style={{
+                                color: '#16a34a',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            Retry
+                        </button>
+                    </div>
+                )}
+                {!loading && !error && auditLogs.length === 0 && (
                     <div
                         style={{
                             padding: '40px 20px',
@@ -447,7 +450,8 @@ export default function AuditLog() {
                         No entries for this filter.
                     </div>
                 )}
-                {paged.slice.map((log, i) => {
+
+                {auditLogs.map((log, i) => {
                     const idStr = String(log.id);
                     const short = idStr.length > 12 ? idStr.slice(0, 8) + '…' : idStr;
                     return (
@@ -458,7 +462,7 @@ export default function AuditLog() {
                                 gridTemplateColumns: gridCols,
                                 gap: 16,
                                 borderBottom:
-                                    i < paged.slice.length - 1 ? '1px solid #f0f0f6' : 'none',
+                                    i < auditLogs.length - 1 ? '1px solid #f0f0f6' : 'none',
                                 alignItems: 'center',
                             }}
                         >
@@ -510,13 +514,7 @@ export default function AuditLog() {
                                     {log.actor}
                                 </div>
                             </div>
-                            <div
-                                style={{
-                                    padding: '14px 0',
-                                    fontSize: 12,
-                                    color: '#3a3b4e',
-                                }}
-                            >
+                            <div style={{ padding: '14px 0', fontSize: 12, color: '#3a3b4e' }}>
                                 {log.target}
                             </div>
                             <div
@@ -551,21 +549,19 @@ export default function AuditLog() {
                                         fontFamily: "'IBM Plex Mono', monospace",
                                         fontSize: 11,
                                         color: '#3a3b4e',
-                                        marginBottom: 2,
                                     }}
                                 >
                                     {log.time}
                                 </div>
-                                <div style={{ fontSize: 11, color: '#9b9db2' }}>{log.ip}</div>
                             </div>
                         </div>
                     );
                 })}
 
                 <Pagination
-                    page={paged.page}
+                    page={page}
                     pageSize={pageSize}
-                    total={paged.total}
+                    total={total}
                     onPageChange={setPage}
                     onPageSizeChange={(s) => {
                         setPageSize(s);
@@ -578,6 +574,20 @@ export default function AuditLog() {
     );
 }
 
+const labelStyle = { fontSize: 12, fontWeight: 700, color: '#7c7e93', whiteSpace: 'nowrap' };
+
+const selectStyle = {
+    border: '1px solid #e7e7ef',
+    borderRadius: 7,
+    padding: '5px 28px 5px 10px',
+    fontSize: 12,
+    background: '#fff',
+    fontFamily: "'Public Sans', sans-serif",
+    color: '#1a1b2e',
+    cursor: 'pointer',
+    appearance: 'auto',
+};
+
 const dateInput = {
     border: '1px solid #e7e7ef',
     borderRadius: 7,
@@ -585,4 +595,33 @@ const dateInput = {
     fontSize: 12,
     background: '#fff',
     fontFamily: "'IBM Plex Mono', monospace",
+};
+
+const searchBtn = {
+    background: '#16a34a',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 7,
+    padding: '5px 14px',
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: 'pointer',
+};
+
+const clearBtn = {
+    background: '#f0f0f6',
+    border: 'none',
+    color: '#7c7e93',
+    borderRadius: 6,
+    padding: '5px 10px',
+    fontSize: 11,
+    fontWeight: 700,
+    cursor: 'pointer',
+};
+
+const thStyle = {
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#9b9db2',
+    letterSpacing: 0.5,
 };

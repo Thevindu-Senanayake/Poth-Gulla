@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../App';
+import NotificationPanel from './NotificationPanel';
 
 const BOOK_SVG = 'M5 4a1 1 0 0 1 1-1h11v15H6a1 1 0 0 0-1 1z';
 
@@ -238,7 +239,16 @@ function NavItem({ item, active, onClick, badge }) {
 }
 
 export default function Sidebar() {
-    const { currentRole, user, logout, badges } = useApp();
+    const {
+        currentRole,
+        user,
+        logout,
+        badges,
+        notifOpen,
+        setNotifOpen,
+        notifCount,
+        refreshNotifCount,
+    } = useApp();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -395,6 +405,62 @@ export default function Sidebar() {
                     </div>
                     <div style={{ fontSize: 11, color: '#9b9db2', marginTop: 1 }}>{roleLabel}</div>
                 </div>
+                {/* Notification bell */}
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <button
+                        onClick={() => setNotifOpen((o) => !o)}
+                        title="Notifications"
+                        style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 8,
+                            border: 'none',
+                            background: notifOpen ? '#e8f5e9' : '#f4f4f8',
+                            color: notifOpen ? '#16a34a' : '#7c7e93',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            position: 'relative',
+                        }}
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                        </svg>
+                        {notifCount > 0 && (
+                            <span
+                                style={{
+                                    position: 'absolute',
+                                    top: -3,
+                                    right: -3,
+                                    background: '#ef4444',
+                                    color: '#fff',
+                                    fontSize: 9,
+                                    fontWeight: 700,
+                                    padding: '1px 4px',
+                                    borderRadius: 20,
+                                    minWidth: 15,
+                                    textAlign: 'center',
+                                    lineHeight: '14px',
+                                }}
+                            >
+                                {notifCount > 99 ? '99+' : notifCount}
+                            </span>
+                        )}
+                    </button>
+                </div>
+
+                {/* Logout */}
                 <button
                     onClick={logout}
                     title="Sign out"
@@ -428,6 +494,10 @@ export default function Sidebar() {
                     </svg>
                 </button>
             </div>
+
+            {notifOpen && (
+                <NotificationPanel onClose={() => setNotifOpen(false)} onRead={refreshNotifCount} />
+            )}
         </div>
     );
 }

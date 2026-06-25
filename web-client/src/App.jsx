@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, useCallback } from 'react';
+import { useState, useEffect, useRef, createContext, useContext, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Login from './components/Login';
 import DesktopApp from './components/DesktopApp';
@@ -12,6 +12,7 @@ import { generateQRCells } from './data/mockData';
 import * as authApi from './api/auth';
 import { ROLE_MAP, ROLE_LABEL } from './api/auth';
 import { useBadgeCounts } from './hooks/useBadgeCounts';
+import { myNotifications } from './api/misc';
 
 // Lazy-load all screens
 import StudentDashboard from './screens/student/Dashboard';
@@ -132,6 +133,7 @@ export default function App() {
     const [sortOpt, setSortOpt] = useState('Name');
     const [auditFilter, setAuditFilter] = useState('All');
     const [refreshKey, setRefreshKey] = useState(0);
+    const [notifCount, setNotifCount] = useState(0);
 
     const currentRole = user?.role ?? 'student';
 
@@ -145,6 +147,28 @@ export default function App() {
 
     // Live sidebar badge counts; refetches on refresh and polls every 60s.
     const badges = useBadgeCounts(user ? currentRole : null, refreshKey);
+
+    // Notification unread count — polled every 30s when logged in.
+    const notifIntervalRef = useRef(null);
+    const refreshNotifCount = useCallback(async () => {
+        if (!user) return;
+        try {
+            const { items } = await myNotifications({ limit: 50 });
+            setNotifCount((items || []).filter((n) => !n.read).length);
+        } catch {
+            /* keep last known count */
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (!user) {
+            setNotifCount(0);
+            return;
+        }
+        refreshNotifCount();
+        notifIntervalRef.current = setInterval(refreshNotifCount, 30_000);
+        return () => clearInterval(notifIntervalRef.current);
+    }, [user, refreshNotifCount]);
 
     // --- Auth bootstrap: validate an existing token on load ---
     useEffect(() => {
@@ -266,6 +290,8 @@ export default function App() {
         openBooking,
         qrCells,
         badges,
+        notifCount,
+        refreshNotifCount,
     };
 
     if (authLoading) {

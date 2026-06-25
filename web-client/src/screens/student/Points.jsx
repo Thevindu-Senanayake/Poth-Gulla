@@ -1,45 +1,12 @@
 import { useApp } from '../../App';
 import { useFetch } from '../../hooks/useFetch';
 import { myPoints } from '../../api/points';
+import { getSystemConfig } from '../../api/config';
+import { me as fetchMe } from '../../api/auth';
 import { Loading, ErrorState } from '../../components/States';
 
-const TIER_META = [
-    {
-        tier: 'Tier 1',
-        label: 'Restricted',
-        range: '0–199',
-        col: '#ef4444',
-        floor: 0,
-    },
-    {
-        tier: 'Tier 2',
-        label: 'Basic',
-        range: '200–499',
-        col: '#d97706',
-        floor: 200,
-    },
-    {
-        tier: 'Tier 3',
-        label: 'Regular',
-        range: '500–999',
-        col: '#16a34a',
-        floor: 500,
-    },
-    {
-        tier: 'Tier 4',
-        label: 'Trusted',
-        range: '1,000–1,999',
-        col: '#3b82f6',
-        floor: 1000,
-    },
-    {
-        tier: 'Tier 5',
-        label: 'Elite',
-        range: '2,000+',
-        col: '#8b5cf6',
-        floor: 2000,
-    },
-];
+// Fallback tier colours (matched to default config labels)
+const TIER_COLOURS = ['#ef4444', '#d97706', '#16a34a', '#3b82f6', '#8b5cf6'];
 
 function fmtDate(d) {
     try {
@@ -55,48 +22,85 @@ function fmtDate(d) {
 
 export default function Points() {
     const { user } = useApp();
-    const { data, loading, error, reload } = useFetch(() => myPoints(), []);
 
-    const pts = user?.points ?? 0;
-    const tierNum = user?.tier ?? 3;
-    const cur = TIER_META[Math.min(Math.max(tierNum, 1), 5) - 1];
-    const nextFloor = TIER_META[Math.min(tierNum, 4)]?.floor ?? 2000;
+    // Fetch points history, system config, and fresh user data in parallel
+    const { data, loading, error, reload } = useFetch(
+        () => Promise.all([myPoints(), getSystemConfig(), fetchMe()]),
+        []
+    );
+
+    const [pointData, configData, freshUser] = data || [];
+
+    // Use freshUser (from /auth/me) so tier/points reflect post-config-recompute state
+    const pts = freshUser?.userPoints ?? user?.points ?? 0;
+    const tierNum = freshUser?.tier ?? user?.tier ?? 3;
+
+    // Build tier meta from config (falls back to sensible defaults if not yet loaded)
+    const configTiers = configData?.tiers ?? [];
+    const tierMeta = configTiers.map((t, i) => ({
+        tier: t.tier,
+        label: t.label,
+        col: t.col || TIER_COLOURS[i] || '#7c7e93',
+        floor: Number(t.threshold),
+    }));
+
+    // Derive range strings from thresholds dynamically
+    const tiersWithRange = tierMeta.map((t, i) => {
+        const next = tierMeta[i + 1];
+        const range = next
+            ? `${t.floor.toLocaleString()}–${(next.floor - 1).toLocaleString()}`
+            : `${t.floor.toLocaleString()}+`;
+        return { ...t, range };
+    });
+
+    const cur = tiersWithRange[Math.min(Math.max(tierNum, 1), tiersWithRange.length) - 1] ?? {
+        tier: `Tier ${tierNum}`,
+        label: '',
+        col: '#7c7e93',
+        floor: 0,
+        range: '',
+    };
+    const nextFloor = tiersWithRange[Math.min(tierNum, tiersWithRange.length - 1)]?.floor ?? 2000;
     const toNext = Math.max(0, nextFloor - pts);
     const nextTierAt = nextFloor;
     const progressPct =
-        tierNum >= 5 ? '100%' : `${Math.min(100, Math.round((pts / nextFloor) * 100))}%`;
+        tierNum >= tiersWithRange.length
+            ? '100%'
+            : `${Math.min(100, Math.round((pts / nextFloor) * 100))}%`;
     const tierLabel = `${cur.tier} · ${cur.label}`;
 
-    const tiers = TIER_META.map((t, i) => ({
-        tier: t.tier,
-        label: t.label,
-        range: t.range,
-        col: t.col,
+    // Build penalty reference table from config
+    const configPenalties = configData?.penalties ?? [];
+
+    const tiers = tiersWithRange.map((t, i) => ({
+        ...t,
         cur: i === tierNum - 1 ? t.col + '14' : 'transparent',
         curBorder: i === tierNum - 1 ? t.col + '55' : '#f0f0f6',
     }));
 
-    // Reference table of how points move (matches backend scoring).
-    const pointEvents = [
-        { action: 'Book returned early (3+ days)', delta: '+50', positive: true },
-        { action: 'Book returned on time', delta: '+25', positive: true },
-        {
-            action: 'Device returned early / on time',
-            delta: '+40 / +30',
-            positive: true,
-        },
-        { action: 'Room attended (QR check-in)', delta: '+20', positive: true },
-        { action: 'Review submitted', delta: '+15', positive: true },
-        { action: 'Book late (per day)', delta: '−20', positive: false },
-        { action: 'Device late', delta: '−80 to −160', positive: false },
-        { action: 'Room no-show', delta: '−150', positive: false },
-        { action: 'Device returned damaged', delta: '−300', positive: false },
-    ];
+    // Reference table of how points move: use config penalties if loaded, fallback otherwise
+    const pointEvents =
+        configPenalties.length > 0
+            ? configPenalties.map((p) => ({
+                  action: p.rule,
+                  delta: p.value,
+                  positive: String(p.value).startsWith('+'),
+              }))
+            : [
+                  { action: 'Book returned early (3+ days)', delta: '+50', positive: true },
+                  { action: 'Book returned on time', delta: '+25', positive: true },
+                  { action: 'Device returned early / on time', delta: '+40 / +30', positive: true },
+                  { action: 'Room attended (QR check-in)', delta: '+20', positive: true },
+                  { action: 'Review submitted', delta: '+15', positive: true },
+                  { action: 'Book late (per day)', delta: '−20', positive: false },
+                  { action: 'Room no-show', delta: '−150', positive: false },
+                  { action: 'Device returned damaged', delta: '−300', positive: false },
+              ];
 
     if (loading) return <Loading label="Loading your points…" />;
     if (error) return <ErrorState error={error} onRetry={reload} />;
 
-    const pointHistory = (data?.items || []).map((e) => ({
+    const pointHistory = (pointData?.items || []).map((e) => ({
         action: (e.action || '')
             .replace(/_/g, ' ')
             .toLowerCase()
