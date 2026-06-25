@@ -52,10 +52,70 @@ export class ScanService {
       where: { qrToken: dto.bookingQr },
       include: { waitlistEntry: true },
     });
-    if (!booking)
-      throw new NotFoundException(
-        'Invalid booking QR - no matching booking found',
-      );
+
+    if (!booking) {
+      // Check if bookingQr is actually a User ID or Email for direct checkout
+      const user = await this.prisma.user.findFirst({
+        where: {
+          OR: [{ id: dto.bookingQr }, { email: dto.bookingQr }],
+        },
+      });
+
+      if (!user) {
+        throw new NotFoundException(
+          'Invalid booking QR - no matching booking or user found',
+        );
+      }
+      if (!user.isActive) {
+        throw new BadRequestException('User account is disabled');
+      }
+
+      // Check if the assetTag belongs to a BOOK copy
+      const copy = await this.prisma.bookCopy.findUnique({
+        where: { assetTag: dto.assetTag },
+      });
+
+      if (!copy) {
+        throw new NotFoundException(
+          `No book copy with asset tag ${dto.assetTag}`,
+        );
+      }
+      if (copy.status !== ItemStatus.AVAILABLE) {
+        throw new BadRequestException(`Copy is ${copy.status}, not AVAILABLE`);
+      }
+
+      // Create a direct checkout booking
+      const startAt = new Date();
+      const endAt = new Date(startAt.getTime() + 14 * DAY_MS); // default 14 days
+
+      return this.prisma.$transaction(async (tx) => {
+        const b = await tx.booking.create({
+          data: {
+            userId: user.id,
+            resourceType: ResourceType.BOOK,
+            bookTitleId: copy.bookTitleId,
+            bookCopyId: copy.id,
+            startAt,
+            endAt,
+            status: BookingStatus.CHECKED_OUT,
+          },
+        });
+        await tx.bookCopy.update({
+          where: { id: copy.id },
+          data: { status: ItemStatus.BORROWED },
+        });
+        await tx.borrowing.create({
+          data: {
+            bookingId: b.id,
+            userId: user.id,
+            bookCopyId: copy.id,
+            dueAt: endAt,
+          },
+        });
+        return b;
+      });
+    }
+
     if (booking.status !== BookingStatus.APPROVED) {
       throw new BadRequestException(
         `Booking is ${booking.status}, not APPROVED`,
