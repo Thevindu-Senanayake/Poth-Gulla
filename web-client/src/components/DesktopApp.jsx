@@ -5,7 +5,6 @@ import Header from "./Header";
 export default function DesktopApp() {
   return (
     <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
-    <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
       <Sidebar />
       <div
         style={{
