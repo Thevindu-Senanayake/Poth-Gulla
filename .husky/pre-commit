@@ -1,12 +1,15 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-# Run lint-staged on staged files; fail the commit if lint errors remain
-yarn lint-staged
+# 1. Format (Prettier) then lint (ESLint) staged files
+yarn lint-staged || { echo "Pre-commit: lint-staged failed."; exit 1; }
 
-if [ $? -ne 0 ]; then
-  echo "Pre-commit check failed. Fix linting issues and try again."
-  exit 1
-fi
+# 2. Backend unit tests
+echo "Pre-commit: running server unit tests..."
+(cd server && yarn test --passWithNoTests) || { echo "Pre-commit: unit tests failed."; exit 1; }
+
+# 3. Backend e2e smoke tests
+echo "Pre-commit: running server e2e tests..."
+(cd server && yarn test:e2e --passWithNoTests) || { echo "Pre-commit: e2e tests failed."; exit 1; }
 
 echo "Pre-commit checks passed"

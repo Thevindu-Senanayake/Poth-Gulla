@@ -75,6 +75,9 @@ describe('App (e2e smoke)', () => {
           return null;
         }),
       },
+      // Audit and notification writes are fire-and-forget in e2e; silence them.
+      log: { create: jest.fn(async () => ({})) },
+      notification: { create: jest.fn(async () => ({})) },
     };
 
     const redisMock = {
