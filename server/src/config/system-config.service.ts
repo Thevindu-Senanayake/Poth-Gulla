@@ -185,6 +185,89 @@ export class SystemConfigService {
       update: { data: next as unknown as Prisma.InputJsonObject },
     });
 
+    const differences: {
+      tiers?: Array<{
+        tier: string;
+        changes: Record<string, { from: any; to: any }>;
+      }>;
+      penalties?: Array<{ rule: string; from: string; to: string }>;
+      toggles?: Array<{ label: string; from: boolean; to: boolean }>;
+    } = {};
+
+    // 1. Compare Tiers
+    if (patch.tiers) {
+      const tierDiffs: Array<{
+        tier: string;
+        changes: Record<string, { from: any; to: any }>;
+      }> = [];
+      for (const nextTier of next.tiers) {
+        const currTier = current.tiers.find((t) => t.tier === nextTier.tier);
+        if (currTier) {
+          const changes: Record<string, { from: any; to: any }> = {};
+          for (const field of [
+            'threshold',
+            'books',
+            'devices',
+            'rooms',
+            'label',
+            'col',
+          ] as const) {
+            if (currTier[field] !== nextTier[field]) {
+              changes[field] = { from: currTier[field], to: nextTier[field] };
+            }
+          }
+          if (Object.keys(changes).length > 0) {
+            tierDiffs.push({ tier: nextTier.tier, changes });
+          }
+        }
+      }
+      if (tierDiffs.length > 0) {
+        differences.tiers = tierDiffs;
+      }
+    }
+
+    // 2. Compare Penalties
+    if (patch.penalties) {
+      const penaltyDiffs: Array<{ rule: string; from: string; to: string }> =
+        [];
+      for (const nextPen of next.penalties) {
+        const currPen = current.penalties.find((p) => p.rule === nextPen.rule);
+        if (currPen) {
+          if (currPen.value !== nextPen.value) {
+            penaltyDiffs.push({
+              rule: nextPen.rule,
+              from: currPen.value,
+              to: nextPen.value,
+            });
+          }
+        }
+      }
+      if (penaltyDiffs.length > 0) {
+        differences.penalties = penaltyDiffs;
+      }
+    }
+
+    // 3. Compare Toggles
+    if (patch.toggles) {
+      const toggleDiffs: Array<{ label: string; from: boolean; to: boolean }> =
+        [];
+      for (const nextTog of next.toggles) {
+        const currTog = current.toggles.find((t) => t.label === nextTog.label);
+        if (currTog) {
+          if (currTog.on !== nextTog.on) {
+            toggleDiffs.push({
+              label: nextTog.label,
+              from: currTog.on,
+              to: nextTog.on,
+            });
+          }
+        }
+      }
+      if (toggleDiffs.length > 0) {
+        differences.toggles = toggleDiffs;
+      }
+    }
+
     // Log the configuration update
     await this.audit.log(
       actorId ?? null,
@@ -193,6 +276,7 @@ export class SystemConfigService {
       SINGLETON_ID,
       {
         patch: patch as unknown as Prisma.InputJsonObject,
+        differences: differences,
       },
     );
 

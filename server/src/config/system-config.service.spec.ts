@@ -90,7 +90,10 @@ describe('SystemConfigService', () => {
       'CONFIG_UPDATED',
       'SystemConfig',
       'singleton',
-      { patch: { tiers: newTiers } },
+      {
+        patch: { tiers: newTiers },
+        differences: {},
+      },
     );
   });
 });

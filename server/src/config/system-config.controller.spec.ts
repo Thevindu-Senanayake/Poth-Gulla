@@ -17,7 +17,7 @@ describe('SystemConfigController', () => {
 
   it('PUT /config forwards the patch with actorId', () => {
     const dto = { tiers: [{ tier: 'Tier 2', threshold: 250 }] } as any;
-    const user = { id: 'admin-user-123' };
+    const user = { userId: 'admin-user-123' } as any;
     controller.update(dto, user);
     expect(config.update).toHaveBeenCalledWith(dto, 'admin-user-123');
   });

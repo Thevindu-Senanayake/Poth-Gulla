@@ -50,8 +50,8 @@ export class SystemConfigController {
   @Put()
   update(
     @Body() dto: UpdateSystemConfigDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { userId: string },
   ) {
-    return this.config.update(dto, user.id);
+    return this.config.update(dto, user.userId);
   }
 }

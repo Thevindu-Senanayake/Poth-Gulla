@@ -28,6 +28,44 @@ function getEventDescription(log) {
 
   switch (action) {
     case "CONFIG_UPDATED": {
+      if (meta.differences) {
+        const parts = [];
+        const diffs = meta.differences;
+
+        // Tiers
+        if (diffs.tiers && diffs.tiers.length > 0) {
+          diffs.tiers.forEach((t) => {
+            const fieldChanges = [];
+            Object.entries(t.changes).forEach(([field, val]) => {
+              fieldChanges.push(`"${field}" from "${val.from}" to "${val.to}"`);
+            });
+            parts.push(`${t.tier} (${fieldChanges.join(", ")})`);
+          });
+        }
+
+        // Penalties
+        if (diffs.penalties && diffs.penalties.length > 0) {
+          diffs.penalties.forEach((p) => {
+            parts.push(
+              `penalty rule "${p.rule}" from "${p.from}" to "${p.to}"`,
+            );
+          });
+        }
+
+        // Toggles
+        if (diffs.toggles && diffs.toggles.length > 0) {
+          diffs.toggles.forEach((t) => {
+            parts.push(
+              `toggle "${t.label}" from "${t.from ? "ON" : "OFF"}" to "${t.to ? "ON" : "OFF"}"`,
+            );
+          });
+        }
+
+        if (parts.length > 0) {
+          return `Updated system configuration. Changed: ${parts.join("; ")}`;
+        }
+      }
+
       const keys = meta.patch ? Object.keys(meta.patch) : [];
       return keys.length > 0
         ? `Updated system configuration. Changed keys: ${keys.join(", ")}`
