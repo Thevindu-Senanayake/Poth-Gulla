@@ -14,7 +14,8 @@ export default function DesktopApp() {
           flexDirection: "column",
           overflow: "hidden",
           minWidth: 0,
-        }}>
+        }}
+      >
         <Header />
         <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
           <Outlet />

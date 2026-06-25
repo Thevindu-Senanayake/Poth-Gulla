@@ -1,11 +1,11 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import { useApp } from '../App';
+import { Navigate, useLocation } from "react-router-dom";
+import { useApp } from "../App";
 
 const HOME_PATH = {
-  admin: '/admin/dashboard',
-  staff: '/staff/dashboard',
-  lecturer: '/dashboard',
-  student: '/dashboard',
+  admin: "/admin/dashboard",
+  staff: "/staff/dashboard",
+  lecturer: "/dashboard",
+  student: "/dashboard",
 };
 
 /**
@@ -25,7 +25,7 @@ export default function ProtectedRoute({ children, roles }) {
   }
 
   if (roles && !roles.includes(user.role)) {
-    return <Navigate to={HOME_PATH[user.role] || '/dashboard'} replace />;
+    return <Navigate to={HOME_PATH[user.role] || "/dashboard"} replace />;
   }
 
   return children;
