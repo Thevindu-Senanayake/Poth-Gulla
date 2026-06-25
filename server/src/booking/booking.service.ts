@@ -10,6 +10,8 @@ import {
   BookingStatus,
   ItemStatus,
   ResourceType,
+  AuditAction,
+  AuditTargetType,
 } from '../../generated/prisma/client.js';
 import {
   DURATION_CAP_MS,
@@ -138,12 +140,18 @@ export class BookingService {
       resourceName = room?.name ?? '';
     }
 
-    await this.audit.log(userId, 'BOOKING_CREATED', 'Booking', booking.id, {
-      userName: user.name,
-      userEmail: user.email,
-      resourceType,
-      resourceName,
-    });
+    await this.audit.log(
+      userId,
+      AuditAction.BOOKING_CREATED,
+      AuditTargetType.Booking,
+      booking.id,
+      {
+        userName: user.name,
+        userEmail: user.email,
+        resourceType,
+        resourceName,
+      },
+    );
 
     return booking;
   }
@@ -211,8 +219,8 @@ export class BookingService {
 
     await this.audit.log(
       actorId ?? null,
-      'BOOKING_APPROVED',
-      'Booking',
+      AuditAction.BOOKING_APPROVED,
+      AuditTargetType.Booking,
       updated.id,
       {
         userName: updated.user.name,
@@ -251,8 +259,8 @@ export class BookingService {
 
     await this.audit.log(
       actorId ?? null,
-      'BOOKING_REJECTED',
-      'Booking',
+      AuditAction.BOOKING_REJECTED,
+      AuditTargetType.Booking,
       updated.id,
       {
         userName: updated.user.name,
@@ -321,13 +329,19 @@ export class BookingService {
       updated.studyRoom?.name ??
       '';
 
-    await this.audit.log(actorId, 'BOOKING_CANCELLED', 'Booking', updated.id, {
-      userName: updated.user.name,
-      userEmail: updated.user.email,
-      resourceType: updated.resourceType,
-      resourceName,
-      adminOverride,
-    });
+    await this.audit.log(
+      actorId,
+      AuditAction.BOOKING_CANCELLED,
+      AuditTargetType.Booking,
+      updated.id,
+      {
+        userName: updated.user.name,
+        userEmail: updated.user.email,
+        resourceType: updated.resourceType,
+        resourceName,
+        adminOverride,
+      },
+    );
 
     return updated;
   }

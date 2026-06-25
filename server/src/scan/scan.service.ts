@@ -11,6 +11,8 @@ import {
   ItemCondition,
   ItemStatus,
   ResourceType,
+  AuditAction,
+  AuditTargetType,
 } from '../../generated/prisma/client.js';
 import { PointsService } from '../points/points.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -123,8 +125,8 @@ export class ScanService {
 
         await this.audit.log(
           actorId ?? null,
-          'ITEM_CHECKED_OUT',
-          'Booking',
+          AuditAction.ITEM_CHECKED_OUT,
+          AuditTargetType.Booking,
           b.id,
           {
             userName: user.name,
@@ -204,8 +206,8 @@ export class ScanService {
 
     await this.audit.log(
       actorId ?? null,
-      'ITEM_CHECKED_OUT',
-      'Booking',
+      AuditAction.ITEM_CHECKED_OUT,
+      AuditTargetType.Booking,
       updated.id,
       {
         userName: booking.user?.name ?? '',
@@ -268,8 +270,8 @@ export class ScanService {
 
     await this.audit.log(
       actorId ?? null,
-      'ITEM_CHECKED_OUT',
-      'Booking',
+      AuditAction.ITEM_CHECKED_OUT,
+      AuditTargetType.Booking,
       updated.id,
       {
         userName: booking.user?.name ?? '',
@@ -324,12 +326,18 @@ export class ScanService {
       bookingId: booking.id,
     });
 
-    await this.audit.log(userId, 'ROOM_CHECKED_IN', 'Booking', updated.id, {
-      userName: updated.user.name,
-      userEmail: updated.user.email,
-      resourceType: ResourceType.ROOM,
-      resourceName: room.name,
-    });
+    await this.audit.log(
+      userId,
+      AuditAction.ROOM_CHECKED_IN,
+      AuditTargetType.Booking,
+      updated.id,
+      {
+        userName: updated.user.name,
+        userEmail: updated.user.email,
+        resourceType: ResourceType.ROOM,
+        resourceName: room.name,
+      },
+    );
 
     return updated;
   }
@@ -417,8 +425,8 @@ export class ScanService {
 
     await this.audit.log(
       actorId ?? null,
-      'ITEM_RETURNED',
-      'Booking',
+      AuditAction.ITEM_RETURNED,
+      AuditTargetType.Booking,
       borrowing.bookingId,
       {
         userName: borrowing.user?.name ?? '',

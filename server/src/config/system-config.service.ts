@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '../../generated/prisma/client.js';
+import {
+  Prisma,
+  AuditAction,
+  AuditTargetType,
+} from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 
@@ -271,8 +275,8 @@ export class SystemConfigService {
     // Log the configuration update
     await this.audit.log(
       actorId ?? null,
-      'CONFIG_UPDATED',
-      'SystemConfig',
+      AuditAction.CONFIG_UPDATED,
+      AuditTargetType.SystemConfig,
       SINGLETON_ID,
       {
         patch: patch as unknown as Prisma.InputJsonObject,

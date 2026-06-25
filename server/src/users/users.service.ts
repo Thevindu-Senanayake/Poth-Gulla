@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { Role, User } from '../../generated/prisma/client.js';
+import {
+  Role,
+  User,
+  AuditAction,
+  AuditTargetType,
+} from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import {
@@ -91,11 +96,17 @@ export class UsersService {
       data: { ...data, role, userPoints: points, tier },
     });
 
-    await this.audit.log(null, 'USER_REGISTERED', 'User', user.id, {
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    });
+    await this.audit.log(
+      null,
+      AuditAction.USER_REGISTERED,
+      AuditTargetType.User,
+      user.id,
+      {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    );
 
     return user;
   }
@@ -153,16 +164,22 @@ export class UsersService {
       },
     });
 
-    await this.audit.log(actorId ?? null, 'USER_UPDATED', 'User', updated.id, {
-      dto: {
-        name: dto.name,
-        role: dto.role,
-        userPoints: dto.userPoints,
-        tier: dto.tier,
+    await this.audit.log(
+      actorId ?? null,
+      AuditAction.USER_UPDATED,
+      AuditTargetType.User,
+      updated.id,
+      {
+        dto: {
+          name: dto.name,
+          role: dto.role,
+          userPoints: dto.userPoints,
+          tier: dto.tier,
+        },
+        name: updated.name,
+        email: updated.email,
       },
-      name: updated.name,
-      email: updated.email,
-    });
+    );
 
     return updated;
   }
@@ -178,8 +195,8 @@ export class UsersService {
     });
     await this.audit.log(
       actorId ?? null,
-      isActive ? 'USER_ENABLED' : 'USER_DISABLED',
-      'User',
+      isActive ? AuditAction.USER_ENABLED : AuditAction.USER_DISABLED,
+      AuditTargetType.User,
       updated.id,
       {
         name: updated.name,

@@ -7,6 +7,8 @@ import {
   Role,
   WaitlistEntry,
   WaitlistStatus,
+  AuditAction,
+  AuditTargetType,
 } from '../../generated/prisma/client.js';
 import { ROLE_WEIGHT } from '../common/domain.constants.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -72,8 +74,8 @@ export class WaitlistService {
 
     await this.audit.log(
       booking.userId,
-      'WAITLIST_ENQUEUED',
-      'Waitlist',
+      AuditAction.WAITLIST_ENQUEUED,
+      AuditTargetType.WaitlistEntry,
       entry.id,
       {
         userName,
@@ -164,8 +166,8 @@ export class WaitlistService {
 
     await this.audit.log(
       actorId ?? null,
-      'WAITLIST_PROMOTED',
-      'Waitlist',
+      AuditAction.WAITLIST_PROMOTED,
+      AuditTargetType.WaitlistEntry,
       entry.id,
       {
         userName: entry.booking.user.name,
@@ -210,8 +212,8 @@ export class WaitlistService {
 
     await this.audit.log(
       actorId ?? null,
-      'WAITLIST_DISMISSED',
-      'Waitlist',
+      AuditAction.WAITLIST_DISMISSED,
+      AuditTargetType.WaitlistEntry,
       entry.id,
       {
         userName: entry.booking.user.name,

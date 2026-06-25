@@ -1,13 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '../../generated/prisma/client.js';
+import {
+  Prisma,
+  AuditAction,
+  AuditTargetType,
+} from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 export type AuditListParams = {
   page: number;
   limit: number;
   actorId?: string;
-  action?: string;
-  targetType?: string;
+  action?: AuditAction;
+  targetType?: AuditTargetType;
 };
 
 @Injectable()
@@ -16,8 +20,8 @@ export class AuditService {
 
   log(
     actorId: string | null,
-    action: string,
-    targetType: string,
+    action: AuditAction,
+    targetType: AuditTargetType,
     targetId?: string,
     metadata?: Prisma.InputJsonObject,
   ) {
@@ -30,9 +34,7 @@ export class AuditService {
     const { page, limit, actorId, action, targetType } = params;
     const where = {
       ...(actorId ? { actorId } : {}),
-      ...(action
-        ? { action: { contains: action, mode: 'insensitive' as const } }
-        : {}),
+      ...(action ? { action } : {}),
       ...(targetType ? { targetType } : {}),
     };
     const [data, total] = await Promise.all([

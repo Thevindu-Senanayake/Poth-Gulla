@@ -245,15 +245,43 @@ model PointEvent {
     @@index([userId, createdAt])
 }
 
+enum AuditAction {
+    CONFIG_UPDATED
+    USER_REGISTERED
+    USER_UPDATED
+    USER_ENABLED
+    USER_DISABLED
+    BOOKING_CREATED
+    BOOKING_APPROVED
+    BOOKING_REJECTED
+    BOOKING_CANCELLED
+    ITEM_CHECKED_OUT
+    ROOM_CHECKED_IN
+    ITEM_RETURNED
+    WAITLIST_ENQUEUED
+    WAITLIST_PROMOTED
+    WAITLIST_DISMISSED
+}
+
+enum AuditTargetType {
+    User
+    Booking
+    Borrowing
+    WaitlistEntry
+    Device
+    BookCopy
+    SystemConfig
+}
+
 model Log {
-    id         String   @id @default(uuid())
+    id         String          @id @default(uuid())
     actorId    String?
-    actor      User?    @relation("ActorLogs", fields: [actorId], references: [id])
-    action     String
-    targetType String
+    actor      User?           @relation("ActorLogs", fields: [actorId], references: [id])
+    action     AuditAction
+    targetType AuditTargetType
     targetId   String?
     metadata   Json?
-    createdAt  DateTime @default(now())
+    createdAt  DateTime        @default(now())
 
     @@index([createdAt])
     @@index([actorId, createdAt])

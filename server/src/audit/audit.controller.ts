@@ -1,24 +1,28 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Role } from '../../generated/prisma/client.js';
+import {
+  Role,
+  AuditAction,
+  AuditTargetType,
+} from '../../generated/prisma/client.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { AuditService } from './audit.service.js';
 
 @ApiTags('Audit Log')
 @ApiBearerAuth('JWT')
 @Controller('audit')
+@Roles(Role.ADMIN)
 export class AuditController {
   constructor(private audit: AuditService) {}
 
   @ApiOperation({ summary: 'Query the system-wide audit log (Admin only)' })
   @Get('logs')
-  @Roles(Role.ADMIN)
   findMany(
     @Query('page') page = '1',
     @Query('limit') limit = '50',
     @Query('actorId') actorId?: string,
-    @Query('action') action?: string,
-    @Query('targetType') targetType?: string,
+    @Query('action') action?: AuditAction,
+    @Query('targetType') targetType?: AuditTargetType,
   ) {
     return this.audit.findMany({
       page: Math.max(1, parseInt(page, 10)),
