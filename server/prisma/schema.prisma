@@ -251,6 +251,7 @@ enum AuditAction {
     USER_UPDATED
     USER_ENABLED
     USER_DISABLED
+    USER_LOGGED_IN
     BOOKING_CREATED
     BOOKING_APPROVED
     BOOKING_REJECTED
@@ -297,6 +298,7 @@ model Notification {
     createdAt DateTime @default(now())
 
     @@index([userId, read])
+    @@index([userId, createdAt])
 }
 
 // Singleton row (id = "singleton") holding admin-editable runtime rules:

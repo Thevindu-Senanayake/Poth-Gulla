@@ -7,6 +7,7 @@ import { BookingModule } from './booking/booking.module.js';
 import { CatalogueModule } from './catalogue/catalogue.module.js';
 import { SystemConfigModule } from './config/system-config.module.js';
 import { MetricsModule } from './metrics/metrics.module.js';
+import { NotificationModule } from './notification/notification.module.js';
 import { OverdueModule } from './overdue/overdue.module.js';
 import { PointsModule } from './points/points.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -22,6 +23,8 @@ import { WaitlistModule } from './waitlist/waitlist.module.js';
     PrismaModule,
     RedisModule,
     MetricsModule,
+    AuditModule,
+    NotificationModule,
     AuthModule,
     BookingModule,
     WaitlistModule,
@@ -31,7 +34,6 @@ import { WaitlistModule } from './waitlist/waitlist.module.js';
     OverdueModule,
     ReviewModule,
     RecommendationModule,
-    AuditModule,
     SystemConfigModule,
   ],
   controllers: [AppController],
