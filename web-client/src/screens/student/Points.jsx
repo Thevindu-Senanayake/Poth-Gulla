@@ -80,22 +80,12 @@ export default function Points() {
 
     // Reference table of how points move: use config penalties if loaded, fallback otherwise
     const pointEvents =
-        configPenalties.length > 0
-            ? configPenalties.map((p) => ({
-                  action: p.rule,
-                  delta: p.value,
-                  positive: String(p.value).startsWith('+'),
-              }))
-            : [
-                  { action: 'Book returned early (3+ days)', delta: '+50', positive: true },
-                  { action: 'Book returned on time', delta: '+25', positive: true },
-                  { action: 'Device returned early / on time', delta: '+40 / +30', positive: true },
-                  { action: 'Room attended (QR check-in)', delta: '+20', positive: true },
-                  { action: 'Review submitted', delta: '+15', positive: true },
-                  { action: 'Book late (per day)', delta: '−20', positive: false },
-                  { action: 'Room no-show', delta: '−150', positive: false },
-                  { action: 'Device returned damaged', delta: '−300', positive: false },
-              ];
+        configPenalties.length > 0 &&
+        configPenalties.map((p) => ({
+            action: p.rule,
+            delta: p.value,
+            positive: String(p.value).startsWith('+'),
+        }));
 
     if (loading) return <Loading label="Loading your points…" />;
     if (error) return <ErrorState error={error} onRetry={reload} />;
