@@ -27,7 +27,7 @@
     "dev": "node scripts/dev.mjs",
     "build": "turbo build",
     "prepare": "husky install",
-    "lint": "yarn workspace server lint && yarn workspace web-client lint && yarn workspace client lint",
+    "lint": "yarn workspace poth-gulla-backend lint && yarn workspace web-client lint && yarn workspace client lint",
     "format": "prettier --write \"**/*.{ts,js,tsx,jsx,json,md}\"",
     "format-check": "prettier --check \"**/*.{ts,js,tsx,jsx,json,md}\"",
     "lint:ci": "yarn lint && yarn format-check"
