@@ -408,8 +408,9 @@ export class BookingService {
       where: { id },
       include: {
         bookTitle: { select: { title: true, imageUrl: true } },
-        device: { select: { name: true, imageUrl: true } },
-        studyRoom: { select: { name: true } },
+        borrowing: { select: { bookCopy: { select: { assetTag: true } } } },
+        device: { select: { name: true, imageUrl: true, assetTag: true } },
+        studyRoom: { select: { name: true, roomQr: true } },
         user: { select: { id: true, name: true } },
       },
     });
@@ -430,8 +431,9 @@ export class BookingService {
         orderBy: { createdAt: 'desc' },
         include: {
           bookTitle: { select: { title: true, imageUrl: true } },
-          device: { select: { name: true, imageUrl: true } },
-          studyRoom: { select: { name: true } },
+          borrowing: { select: { bookCopy: { select: { assetTag: true } } } },
+          device: { select: { name: true, imageUrl: true, assetTag: true } },
+          studyRoom: { select: { name: true, roomQr: true } },
           user: { select: { id: true, name: true } },
         },
       }),
@@ -462,8 +464,9 @@ export class BookingService {
         orderBy: { createdAt: 'desc' },
         include: {
           bookTitle: { select: { title: true, imageUrl: true } },
-          device: { select: { name: true, imageUrl: true } },
-          studyRoom: { select: { name: true } },
+          borrowing: { select: { bookCopy: { select: { assetTag: true } } } },
+          device: { select: { name: true, imageUrl: true, assetTag: true } },
+          studyRoom: { select: { name: true, roomQr: true } },
           user: { select: { id: true, name: true } },
         },
       }),

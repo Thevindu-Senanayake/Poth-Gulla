@@ -145,6 +145,7 @@ export function adaptBooking(b) {
     // for a room it's the door QR. Backend responses can shape these a few
     // different ways depending on the route — try every known path.
     const assetTag =
+        b.borrowing?.bookCopy?.assetTag ??
         b.bookCopy?.assetTag ??
         b.bookCopyAssetTag ??
         b.assignedCopy?.assetTag ??
