@@ -4,6 +4,32 @@ import { myBookings, cancelBooking, getBooking } from '../../api/bookings';
 import { Loading, ErrorState, Empty } from '../../components/States';
 import ResourceImage from '../../components/ResourceImage';
 
+const TYPE_META = {
+    BOOK: { label: 'Book', col: '#1d4ed8', bg: '#dbeafe' },
+    DEVICE: { label: 'Device', col: '#7c3aed', bg: '#ede9fe' },
+    ROOM: { label: 'Study Room', col: '#0d9488', bg: '#ccfbf1' },
+};
+
+function typeChip(b) {
+    const key = (b.resourceType || b.type || '').toUpperCase();
+    const meta = TYPE_META[key] || { label: key || '—', col: '#3a3b4e', bg: '#f0f0f6' };
+    return (
+        <span
+            style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: meta.col,
+                background: meta.bg,
+                border: `1px solid ${meta.col}25`,
+                borderRadius: 6,
+                padding: '2px 8px',
+            }}
+        >
+            {meta.label}
+        </span>
+    );
+}
+
 function Cover({ imageUrl, resourceType, color, w = 52, h = 64 }) {
     return (
         <ResourceImage
@@ -36,16 +62,11 @@ export default function MyBookings() {
     if (error) return <ErrorState error={error} onRetry={reload} />;
 
     const all = data?.items || [];
-    // APPROVED = approved but not yet picked up (Pending checkout).
-    // CHECKED_OUT = physically with the patron (Active loans).
     const pendingCheckout = all.filter((b) => b.status === 'APPROVED');
     const activeLoans = all.filter((b) => b.status === 'CHECKED_OUT');
     const upcoming = all.filter((b) => b.status === 'PENDING' || b.status === 'WAITLIST');
     const history = all.filter((b) => ['COMPLETED', 'CANCELLED', 'REJECTED'].includes(b.status));
 
-    // Resolve the QR value: prefer the assigned copy's asset tag (set by
-    // backend when a copy is reserved at approval / promotion). Falls back to
-    // qrToken only if no asset has been tied to the booking yet.
     async function showQR(b) {
         let token = b.assetTag;
         if (!token) {
@@ -101,20 +122,20 @@ export default function MyBookings() {
                             fontSize: 15,
                             fontWeight: 700,
                             color: '#1a1b2e',
-                            marginBottom: 3,
+                            marginBottom: 4,
                         }}
                     >
                         {b.title}
                     </div>
                     <div
                         style={{
-                            fontSize: 12,
-                            color: '#7c7e93',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
                             marginBottom: 8,
-                            textTransform: 'capitalize',
                         }}
                     >
-                        {b.type}
+                        {typeChip(b)}
                     </div>
                     <div style={{ fontSize: 12, color: '#5a5c74' }}>
                         {fmt(b.startAt)} → {fmt(b.endAt)}
@@ -157,6 +178,15 @@ export default function MyBookings() {
         );
     }
 
+    // Sections only render when they have items. History is the catch-all and
+    // gets a friendly "no past bookings yet" when empty. When everything is
+    // empty we show a single hero empty state so the page never looks broken.
+    const everythingEmpty =
+        pendingCheckout.length === 0 &&
+        activeLoans.length === 0 &&
+        upcoming.length === 0 &&
+        history.length === 0;
+
     return (
         <div
             style={{
@@ -182,37 +212,57 @@ export default function MyBookings() {
                 </p>
             </div>
 
-            {/* Pending checkout — APPROVED bookings waiting for pickup */}
-            <section style={{ marginBottom: 36 }}>
-                <h2
+            {everythingEmpty && (
+                <div
                     style={{
-                        fontFamily: "'Spectral', serif",
-                        fontSize: 17,
-                        fontWeight: 600,
-                        color: '#1a1b2e',
-                        margin: '0 0 6px',
+                        background: '#fff',
+                        border: '1px solid #e7e7ef',
+                        borderRadius: 14,
+                        padding: '40px 22px',
+                        textAlign: 'center',
+                        color: '#7c7e93',
                     }}
                 >
-                    Pending checkout
-                    <span
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>📚</div>
+                    <div
+                        style={{ fontSize: 15, fontWeight: 700, color: '#1a1b2e', marginBottom: 4 }}
+                    >
+                        You have no bookings yet
+                    </div>
+                    <div style={{ fontSize: 13 }}>
+                        Head to the Catalogue to borrow your first book, device or room.
+                    </div>
+                </div>
+            )}
+
+            {pendingCheckout.length > 0 && (
+                <section style={{ marginBottom: 36 }}>
+                    <h2
                         style={{
-                            fontFamily: "'IBM Plex Mono', monospace",
-                            fontSize: 13,
-                            fontWeight: 400,
-                            color: '#9b9db2',
-                            marginLeft: 8,
+                            fontFamily: "'Spectral', serif",
+                            fontSize: 17,
+                            fontWeight: 600,
+                            color: '#1a1b2e',
+                            margin: '0 0 6px',
                         }}
                     >
-                        {pendingCheckout.length} ready
-                    </span>
-                </h2>
-                <p style={{ fontSize: 12, color: '#7c7e93', margin: '0 0 14px' }}>
-                    Books: scan the QR via Self Checkout. Devices & rooms: bring the QR to the front
-                    desk.
-                </p>
-                {pendingCheckout.length === 0 ? (
-                    <Empty label="Nothing waiting for checkout." />
-                ) : (
+                        Pending checkout
+                        <span
+                            style={{
+                                fontFamily: "'IBM Plex Mono', monospace",
+                                fontSize: 13,
+                                fontWeight: 400,
+                                color: '#9b9db2',
+                                marginLeft: 8,
+                            }}
+                        >
+                            {pendingCheckout.length} ready
+                        </span>
+                    </h2>
+                    <p style={{ fontSize: 12, color: '#7c7e93', margin: '0 0 14px' }}>
+                        Books: scan the QR via Self Checkout. Devices & rooms: bring the QR to the
+                        front desk.
+                    </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {pendingCheckout.map((b) => (
                             <BookingRow
@@ -223,60 +273,61 @@ export default function MyBookings() {
                             />
                         ))}
                     </div>
-                )}
-            </section>
+                </section>
+            )}
 
-            {/* Active loans — CHECKED_OUT only */}
-            <section style={{ marginBottom: 36 }}>
-                <h2
-                    style={{
-                        fontFamily: "'Spectral', serif",
-                        fontSize: 17,
-                        fontWeight: 600,
-                        color: '#1a1b2e',
-                        margin: '0 0 16px',
-                    }}
-                >
-                    Active loans
-                    <span
+            {activeLoans.length > 0 && (
+                <section style={{ marginBottom: 36 }}>
+                    <h2
                         style={{
-                            fontFamily: "'IBM Plex Mono', monospace",
-                            fontSize: 13,
-                            fontWeight: 400,
-                            color: '#9b9db2',
-                            marginLeft: 8,
+                            fontFamily: "'Spectral', serif",
+                            fontSize: 17,
+                            fontWeight: 600,
+                            color: '#1a1b2e',
+                            margin: '0 0 16px',
                         }}
                     >
-                        {activeLoans.length} active
-                    </span>
-                </h2>
-                {activeLoans.length === 0 ? (
-                    <Empty label="No active loans." />
-                ) : (
+                        Active loans
+                        <span
+                            style={{
+                                fontFamily: "'IBM Plex Mono', monospace",
+                                fontSize: 13,
+                                fontWeight: 400,
+                                color: '#9b9db2',
+                                marginLeft: 8,
+                            }}
+                        >
+                            {activeLoans.length} active
+                        </span>
+                    </h2>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {activeLoans.map((b) => (
                             <BookingRow key={b.id} b={b} qrLabel="Show QR" />
                         ))}
                     </div>
-                )}
-            </section>
+                </section>
+            )}
 
-            <section style={{ marginBottom: 36 }}>
-                <h2
-                    style={{
-                        fontFamily: "'Spectral', serif",
-                        fontSize: 17,
-                        fontWeight: 600,
-                        color: '#1a1b2e',
-                        margin: '0 0 16px',
-                    }}
-                >
-                    Pending &amp; waitlisted
-                </h2>
-                {upcoming.length === 0 ? (
-                    <Empty label="Nothing pending." />
-                ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {upcoming.length > 0 && (
+                <section style={{ marginBottom: 36 }}>
+                    <h2
+                        style={{
+                            fontFamily: "'Spectral', serif",
+                            fontSize: 17,
+                            fontWeight: 600,
+                            color: '#1a1b2e',
+                            margin: '0 0 16px',
+                        }}
+                    >
+                        Pending &amp; waitlisted
+                    </h2>
+                    <div
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: 12,
+                        }}
+                    >
                         {upcoming.map((b) => (
                             <div
                                 key={b.id}
@@ -304,13 +355,23 @@ export default function MyBookings() {
                                             fontSize: 14,
                                             fontWeight: 700,
                                             color: '#1a1b2e',
-                                            marginBottom: 2,
+                                            marginBottom: 4,
                                             overflow: 'hidden',
                                             textOverflow: 'ellipsis',
                                             whiteSpace: 'nowrap',
                                         }}
                                     >
                                         {b.title}
+                                    </div>
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            marginBottom: 6,
+                                        }}
+                                    >
+                                        {typeChip(b)}
                                     </div>
                                     <div
                                         style={{ fontSize: 12, color: '#7c7e93', marginBottom: 8 }}
@@ -348,25 +409,29 @@ export default function MyBookings() {
                             </div>
                         ))}
                     </div>
-                )}
-            </section>
+                </section>
+            )}
 
-            <section>
-                <h2
-                    style={{
-                        fontFamily: "'Spectral', serif",
-                        fontSize: 17,
-                        fontWeight: 600,
-                        color: '#1a1b2e',
-                        margin: '0 0 16px',
-                    }}
-                >
-                    History
-                </h2>
-                {history.length === 0 ? (
-                    <Empty label="No past bookings yet." />
-                ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {history.length > 0 && (
+                <section>
+                    <h2
+                        style={{
+                            fontFamily: "'Spectral', serif",
+                            fontSize: 17,
+                            fontWeight: 600,
+                            color: '#1a1b2e',
+                            margin: '0 0 16px',
+                        }}
+                    >
+                        History
+                    </h2>
+                    <div
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: 12,
+                        }}
+                    >
                         {history.map((b) => (
                             <div
                                 key={b.id}
@@ -401,8 +466,18 @@ export default function MyBookings() {
                                     >
                                         {b.title}
                                     </div>
-                                    <div style={{ fontSize: 11, color: '#9b9db2' }}>
-                                        {fmt(b.createdAt || b.startAt)}
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            gap: 6,
+                                            alignItems: 'center',
+                                            marginTop: 3,
+                                        }}
+                                    >
+                                        {typeChip(b)}
+                                        <span style={{ fontSize: 11, color: '#9b9db2' }}>
+                                            {fmt(b.createdAt || b.startAt)}
+                                        </span>
                                     </div>
                                 </div>
                                 <span
@@ -421,8 +496,8 @@ export default function MyBookings() {
                             </div>
                         ))}
                     </div>
-                )}
-            </section>
+                </section>
+            )}
         </div>
     );
 }
