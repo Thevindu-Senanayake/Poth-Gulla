@@ -65,7 +65,23 @@ export class WaitlistController {
       : this.waitlist.promote(id, body.staffNotes);
   }
 
-  @ApiOperation({ summary: 'Dismiss a waitlist entry (Admin/Staff)' })
+  @ApiOperation({
+    summary:
+      'Decline a justification message — user stays in the auto-queue at their priority position (Admin/Staff)',
+  })
+  @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
+  @Post(':id/decline-message')
+  declineMessage(
+    @Param('id') id: string,
+    @Body() body: { staffNotes?: string },
+    @CurrentUser() user: JwtUser,
+  ) {
+    return user
+      ? this.waitlist.declineMessage(id, body.staffNotes, user.userId)
+      : this.waitlist.declineMessage(id, body.staffNotes);
+  }
+
+  @ApiOperation({ summary: 'Dismiss a waitlist entry entirely (Admin/Staff)' })
   @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
   @Post(':id/dismiss')
   dismiss(

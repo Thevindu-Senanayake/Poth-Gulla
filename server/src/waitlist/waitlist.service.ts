@@ -94,17 +94,19 @@ export class WaitlistService {
   }
 
   /**
-   * Ordered queue for a resource.
-   * hasMessage=true entries float to top (staff must review);
-   * within each group, higher priorityScore wins.
+   * Ordered queue for a resource, sorted by priorityScore only.
+   * Each entry carries a computed `needsReview` flag:
+   *   true  = hasMessage && not rank-#1 && queue has >1 entry
+   *   false = everything else (auto-promote eligible)
+   * The #1 ranked entry is always in the auto-queue regardless of its message.
    */
   async queue(
     resourceType: ResourceType,
     resourceKey: string,
   ): Promise<WaitlistEntry[]> {
-    return this.prisma.waitlistEntry.findMany({
+    const entries = await this.prisma.waitlistEntry.findMany({
       where: { resourceType, resourceKey, status: WaitlistStatus.PENDING },
-      orderBy: [{ hasMessage: 'desc' }, { priorityScore: 'desc' }],
+      orderBy: [{ priorityScore: 'desc' }],
       include: {
         booking: {
           include: {
@@ -124,27 +126,91 @@ export class WaitlistService {
         },
       },
     });
+
+    const total = entries.length;
+    return entries.map((e, index) => ({
+      ...e,
+      needsReview: e.hasMessage && index > 0 && total > 1,
+    }));
   }
 
   /**
    * Called when an APPROVED booking is freed.
-   * Auto-promotes the highest-score message-free entry.
-   * Messaged entries require explicit staff promotion.
+   * Auto-promotes the highest-priority entry regardless of hasMessage because
+   * rank-#1 is always in the auto-queue by the new flagging rules.
    */
   async onResourceFreed(
     resourceType: ResourceType,
     resourceKey: string,
   ): Promise<void> {
     const next = await this.prisma.waitlistEntry.findFirst({
-      where: {
-        resourceType,
-        resourceKey,
-        status: WaitlistStatus.PENDING,
-        hasMessage: false,
-      },
+      where: { resourceType, resourceKey, status: WaitlistStatus.PENDING },
       orderBy: { priorityScore: 'desc' },
     });
     if (next) await this.promote(next.id);
+  }
+
+  /**
+   * Decline a justification message without removing the user from the queue.
+   * Clears hasMessage so the entry joins the auto-queue at its natural priority.
+   */
+  async declineMessage(
+    entryId: string,
+    staffNotes?: string,
+    actorId?: string,
+  ): Promise<WaitlistEntry> {
+    const entry = await this.prisma.waitlistEntry.findUniqueOrThrow({
+      where: { id: entryId },
+      include: {
+        booking: {
+          include: {
+            user: { select: { name: true, email: true } },
+            bookTitle: { select: { title: true } },
+            device: { select: { name: true } },
+            studyRoom: { select: { name: true } },
+          },
+        },
+      },
+    });
+    if (entry.status !== WaitlistStatus.PENDING) {
+      throw new BadRequestException(`Entry is already ${entry.status}`);
+    }
+
+    const updated = await this.prisma.waitlistEntry.update({
+      where: { id: entryId },
+      data: { hasMessage: false, staffNotes },
+    });
+
+    const resourceName =
+      entry.booking.bookTitle?.title ??
+      entry.booking.device?.name ??
+      entry.booking.studyRoom?.name ??
+      '';
+
+    await this.audit.log(
+      actorId ?? null,
+      AuditAction.WAITLIST_DISMISSED,
+      AuditTargetType.WaitlistEntry,
+      entry.id,
+      {
+        userName: entry.booking.user.name,
+        userEmail: entry.booking.user.email,
+        resourceType: entry.resourceType,
+        resourceName,
+        messageDeclined: true,
+        staffNotes,
+      },
+    );
+
+    this.notif
+      .create(
+        entry.booking.userId ?? '',
+        'WAITLIST_MESSAGE_DECLINED',
+        `Your justification for "${resourceName}" was reviewed but not accepted. You remain in the queue at your priority position.`,
+      )
+      .catch(() => {});
+
+    return updated;
   }
 
   async promote(
@@ -169,12 +235,20 @@ export class WaitlistService {
       throw new BadRequestException(`Entry is already ${entry.status}`);
     }
 
-    // For book promotions: reserve a specific copy atomically (same logic as create()).
-    // qrToken for approved book bookings encodes the physical asset tag.
+    // For book/device promotions: set qrToken = physical asset tag for consistency.
     let bookCopyId: string | null = null;
     let qrToken: string = randomUUID();
 
     if (
+      entry.booking.resourceType === ResourceType.DEVICE &&
+      entry.booking.deviceId
+    ) {
+      const device = await this.prisma.device.findUnique({
+        where: { id: entry.booking.deviceId },
+        select: { assetTag: true },
+      });
+      if (device) qrToken = device.assetTag;
+    } else if (
       entry.booking.resourceType === ResourceType.BOOK &&
       entry.booking.bookTitleId
     ) {

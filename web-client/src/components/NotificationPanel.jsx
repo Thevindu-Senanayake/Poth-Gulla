@@ -20,10 +20,11 @@ const TYPE_ICON = {
     BOOKING_APPROVED: { icon: '✓', col: '#16a34a', bg: '#d7f8e9' },
     BOOKING_REJECTED: { icon: '✕', col: '#ef4444', bg: '#fee2e2' },
     BOOKING_CANCELLED: { icon: '✕', col: '#ef4444', bg: '#fee2e2' },
-    BOOKING_PENDING: { icon: '…', col: '#d97706', bg: '#fef3c7' },
-    BOOKING_WAITLISTED: { icon: '⏳', col: '#6366f1', bg: '#ede9fe' },
-    WAITLIST_PROMOTED: { icon: '↑', col: '#16a34a', bg: '#d7f8e9' },
-    WAITLIST_DISMISSED: { icon: '✕', col: '#7c7e93', bg: '#f4f4f8' },
+    BOOKING_PENDING: { icon: '...', col: '#d97706', bg: '#fef3c7' },
+    BOOKING_WAITLISTED: { icon: '#', col: '#6366f1', bg: '#ede9fe' },
+    WAITLIST_PROMOTED: { icon: '+', col: '#16a34a', bg: '#d7f8e9' },
+    WAITLIST_DISMISSED: { icon: 'x', col: '#7c7e93', bg: '#f4f4f8' },
+    WAITLIST_MESSAGE_DECLINED: { icon: '!', col: '#d97706', bg: '#fef3c7' },
 };
 
 export default function NotificationPanel({ onClose, onRead }) {

@@ -17,3 +17,5 @@ export const promote = (id, staffNotes) =>
     api.post(`/waitlist/${id}/promote`, { staffNotes }).then((r) => r.data);
 export const dismiss = (id, staffNotes) =>
     api.post(`/waitlist/${id}/dismiss`, { staffNotes }).then((r) => r.data);
+export const declineMessage = (id, staffNotes) =>
+    api.post(`/waitlist/${id}/decline-message`, { staffNotes }).then((r) => r.data);

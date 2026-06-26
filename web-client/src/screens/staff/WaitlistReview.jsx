@@ -3,7 +3,7 @@ import { useApp } from '../../App';
 import { useFetch } from '../../hooks/useFetch';
 import { allBookings } from '../../api/bookings';
 import { listAllResources } from '../../api/catalogue';
-import { queue, promote, dismiss } from '../../api/waitlist';
+import { queue, promote, dismiss, declineMessage } from '../../api/waitlist';
 import { Loading, ErrorState } from '../../components/States';
 
 function SvgIcon({ path, color, size = 16 }) {
@@ -151,6 +151,8 @@ async function loadReview() {
         listAllResources(''),
     ]);
     const nameById = new Map(resources.map((r) => [r.id, r.title]));
+    // available count per resource id — used to gate the Promote button
+    const availableById = new Map(resources.map((r) => [r.id, r.available ?? 0]));
     const msgByBooking = new Map(waitBookings.items.map((b) => [b.id, b.message]));
 
     // Unique (resourceType, resourceKey) pairs that currently have queued bookings.
@@ -166,21 +168,28 @@ async function loadReview() {
 
     const queues = await Promise.all(pairs.map((p) => queue(p.type, p.key).catch(() => [])));
 
-    // Map bookingId → original WAITLIST booking so we can recover user + window
+    // Map bookingId -> original WAITLIST booking so we can recover user + window
     // even when the /waitlist/:type/:key response doesn't yet include them.
     const bookingById = new Map(waitBookings.items.map((b) => [b.id, b]));
 
     const entries = [];
     queues.forEach((q, i) => {
+        const resourceKey = pairs[i].key;
+        const resourceAvailable = (availableById.get(resourceKey) ?? 0) > 0;
         q.forEach((e) => {
             const b = bookingById.get(e.bookingId);
             entries.push({
                 ...e,
-                resourceName: nameById.get(pairs[i].key) || e.resourceType,
+                resourceName: nameById.get(resourceKey) || e.resourceType,
+                // needsReview is computed server-side; fall back to false if absent
+                needsReview: e.needsReview ?? e.raw?.needsReview ?? false,
+                resourceAvailable,
                 message: msgByBooking.get(e.bookingId) || e.message || '',
                 userId: e.userId ?? b?.userId ?? null,
                 userName: e.userName ?? b?.userName ?? null,
                 userEmail: e.userEmail ?? null,
+                userTier: e.userTier ?? null,
+                userRole: e.userRole ?? null,
                 startAt: e.startAt ?? b?.startAt ?? null,
                 endAt: e.endAt ?? b?.endAt ?? null,
                 createdAt: e.createdAt ?? b?.createdAt ?? null,
@@ -239,25 +248,38 @@ export default function WaitlistReview() {
     if (error) return <ErrorState error={error} onRetry={reload} />;
 
     const entries = data || [];
-    const flagged = entries.filter((e) => e.hasMessage);
-    const autoQueue = entries.filter((e) => !e.hasMessage);
+    // needsReview is computed server-side: hasMessage AND not rank-#1 AND queue >1
+    const flagged = entries.filter((e) => e.needsReview);
+    const autoQueue = entries.filter((e) => !e.needsReview);
 
     async function doPromote(id) {
         try {
             await promote(id);
             showToast('Promoted - booking approved');
             refresh();
+            reload();
         } catch (e) {
             showToast(e?.response?.data?.message ?? 'Could not promote');
         }
     }
-    async function doDecline(id) {
+    async function doDeclineMessage(id) {
+        try {
+            await declineMessage(id);
+            showToast('Justification declined - member remains in auto-queue');
+            refresh();
+            reload();
+        } catch (e) {
+            showToast(e?.response?.data?.message ?? 'Could not decline message');
+        }
+    }
+    async function doRemove(id) {
         try {
             await dismiss(id);
-            showToast('Entry dismissed');
+            showToast('Removed from waitlist');
             refresh();
+            reload();
         } catch (e) {
-            showToast(e?.response?.data?.message ?? 'Could not dismiss');
+            showToast(e?.response?.data?.message ?? 'Could not remove');
         }
     }
 
@@ -342,9 +364,10 @@ export default function WaitlistReview() {
                             lineHeight: 1.6,
                         }}
                     >
-                        Entries with a justification message pause auto-promotion and float to the
-                        top for review. Promote one to approve its booking and issue a pickup QR;
-                        message-free entries auto-promote on a free event.
+                        A justification message only triggers a review when the sender is not at the
+                        top of the queue — if they rank #1, they auto-promote like everyone else.
+                        Decline a message to move the entry to the automatic queue; the member keeps
+                        their position. Promote is only available when a copy is ready for pickup.
                     </div>
                 </div>
             </div>
@@ -442,10 +465,10 @@ export default function WaitlistReview() {
                                             display: 'flex',
                                             justifyContent: 'space-between',
                                             alignItems: 'flex-start',
-                                            marginBottom: 14,
+                                            marginBottom: 12,
                                         }}
                                     >
-                                        <div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
                                             <div
                                                 style={{
                                                     fontSize: 14,
@@ -468,7 +491,13 @@ export default function WaitlistReview() {
                                                 {entry.resourceType}
                                             </span>
                                         </div>
-                                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                        <div
+                                            style={{
+                                                textAlign: 'right',
+                                                flexShrink: 0,
+                                                marginLeft: 12,
+                                            }}
+                                        >
                                             <div
                                                 style={{
                                                     fontSize: 10,
@@ -490,6 +519,75 @@ export default function WaitlistReview() {
                                             </div>
                                         </div>
                                     </div>
+                                    {/* User details */}
+                                    {(entry.userName || entry.userEmail) && (
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                flexWrap: 'wrap',
+                                                gap: 8,
+                                                alignItems: 'center',
+                                                fontSize: 12,
+                                                marginBottom: 12,
+                                                padding: '8px 12px',
+                                                background: '#f8f8fc',
+                                                borderRadius: 8,
+                                            }}
+                                        >
+                                            {entry.userName && (
+                                                <span style={{ fontWeight: 700, color: '#1a1b2e' }}>
+                                                    {entry.userName}
+                                                </span>
+                                            )}
+                                            {entry.userEmail && (
+                                                <span style={{ color: '#7c7e93' }}>
+                                                    {entry.userEmail}
+                                                </span>
+                                            )}
+                                            {entry.userTier && (
+                                                <span
+                                                    style={{
+                                                        background: '#dbeafe',
+                                                        color: '#1d4ed8',
+                                                        borderRadius: 20,
+                                                        padding: '1px 7px',
+                                                        fontSize: 11,
+                                                        fontWeight: 700,
+                                                    }}
+                                                >
+                                                    Tier {entry.userTier}
+                                                </span>
+                                            )}
+                                            {entry.userRole && (
+                                                <span
+                                                    style={{
+                                                        background: '#f3f3f8',
+                                                        color: '#5c5e72',
+                                                        borderRadius: 20,
+                                                        padding: '1px 7px',
+                                                        fontSize: 11,
+                                                        fontWeight: 600,
+                                                    }}
+                                                >
+                                                    {entry.userRole.replace('_', ' ')}
+                                                </span>
+                                            )}
+                                            {(entry.startAt || entry.endAt) && (
+                                                <span
+                                                    style={{
+                                                        fontFamily: "'IBM Plex Mono', monospace",
+                                                        color: '#5a5c74',
+                                                        fontSize: 11,
+                                                    }}
+                                                >
+                                                    {fmtWhen(entry.startAt)}
+                                                    {entry.endAt
+                                                        ? ` - ${fmtWhen(entry.endAt)}`
+                                                        : ''}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                     {entry.message && (
                                         <div
                                             style={{
@@ -497,7 +595,7 @@ export default function WaitlistReview() {
                                                 border: '1px solid #fde68a',
                                                 borderRadius: 8,
                                                 padding: '12px 14px',
-                                                marginBottom: 16,
+                                                marginBottom: 14,
                                             }}
                                         >
                                             <div
@@ -525,25 +623,58 @@ export default function WaitlistReview() {
                                             </p>
                                         </div>
                                     )}
-                                    <div style={{ display: 'flex', gap: 10 }}>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        {/* Decline justification — user stays in auto-queue */}
                                         <button
                                             onClick={() =>
                                                 askConfirm({
-                                                    title: 'Decline this entry?',
-                                                    message: `Dismiss "${entry.resourceName}" from the waitlist? The member will be notified that their request was declined.`,
-                                                    confirmLabel: 'Decline',
-                                                    confirmColor: '#ef4444',
-                                                    onConfirm: () => doDecline(entry.id),
+                                                    title: 'Decline justification?',
+                                                    message: `Decline the justification for "${entry.resourceName}"? ${entry.userName ?? 'The member'} will stay in the queue at their priority position without the message flag.`,
+                                                    confirmLabel: 'Decline message',
+                                                    confirmColor: '#d97706',
+                                                    onConfirm: () => doDeclineMessage(entry.id),
                                                 })
                                             }
                                             style={{
                                                 flex: 1,
-                                                padding: '10px 0',
+                                                padding: '9px 0',
+                                                borderRadius: 8,
+                                                border: '1.5px solid #fde68a',
+                                                background: '#fffbeb',
+                                                color: '#d97706',
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.15s ease',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = '#fef3c7';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = '#fffbeb';
+                                            }}
+                                        >
+                                            Decline message
+                                        </button>
+                                        {/* Remove from queue entirely */}
+                                        <button
+                                            onClick={() =>
+                                                askConfirm({
+                                                    title: 'Remove from queue?',
+                                                    message: `Remove ${entry.userName ?? 'this member'} from the waitlist for "${entry.resourceName}"? Their booking will be cancelled.`,
+                                                    confirmLabel: 'Remove',
+                                                    confirmColor: '#ef4444',
+                                                    onConfirm: () => doRemove(entry.id),
+                                                })
+                                            }
+                                            style={{
+                                                flex: 1,
+                                                padding: '9px 0',
                                                 borderRadius: 8,
                                                 border: '1.5px solid #e7e7ef',
                                                 background: '#fff',
                                                 color: '#ef4444',
-                                                fontSize: 13,
+                                                fontSize: 12,
                                                 fontWeight: 700,
                                                 cursor: 'pointer',
                                                 transition: 'all 0.15s ease',
@@ -557,43 +688,47 @@ export default function WaitlistReview() {
                                                 e.currentTarget.style.borderColor = '#e7e7ef';
                                             }}
                                         >
-                                            Decline
+                                            Remove
                                         </button>
-                                        <button
-                                            onClick={() =>
-                                                askConfirm({
-                                                    title: 'Promote this entry?',
-                                                    message: `Promote "${entry.resourceName}" to an approved booking? A pickup QR will be issued to the member.`,
-                                                    confirmLabel: 'Promote',
-                                                    confirmColor: '#16a34a',
-                                                    onConfirm: () => doPromote(entry.id),
-                                                })
-                                            }
-                                            style={{
-                                                flex: 1,
-                                                padding: '10px 0',
-                                                borderRadius: 8,
-                                                border: 'none',
-                                                background: '#16a34a',
-                                                color: '#fff',
-                                                fontSize: 13,
-                                                fontWeight: 700,
-                                                cursor: 'pointer',
-                                                boxShadow: '0 2px 10px rgba(22,163,74,.25)',
-                                                transition: 'all 0.15s ease',
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.background = '#15803d';
-                                                e.currentTarget.style.transform =
-                                                    'translateY(-1px)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.background = '#16a34a';
-                                                e.currentTarget.style.transform = 'translateY(0)';
-                                            }}
-                                        >
-                                            Promote
-                                        </button>
+                                        {/* Promote — only shown when resource has available copies */}
+                                        {entry.resourceAvailable && (
+                                            <button
+                                                onClick={() =>
+                                                    askConfirm({
+                                                        title: 'Promote this entry?',
+                                                        message: `Promote "${entry.resourceName}" to an approved booking? A pickup QR will be issued to ${entry.userName ?? 'the member'}.`,
+                                                        confirmLabel: 'Promote',
+                                                        confirmColor: '#16a34a',
+                                                        onConfirm: () => doPromote(entry.id),
+                                                    })
+                                                }
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '9px 0',
+                                                    borderRadius: 8,
+                                                    border: 'none',
+                                                    background: '#16a34a',
+                                                    color: '#fff',
+                                                    fontSize: 12,
+                                                    fontWeight: 700,
+                                                    cursor: 'pointer',
+                                                    boxShadow: '0 2px 10px rgba(22,163,74,.25)',
+                                                    transition: 'all 0.15s ease',
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.background = '#15803d';
+                                                    e.currentTarget.style.transform =
+                                                        'translateY(-1px)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.background = '#16a34a';
+                                                    e.currentTarget.style.transform =
+                                                        'translateY(0)';
+                                                }}
+                                            >
+                                                Promote
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -740,18 +875,18 @@ export default function WaitlistReview() {
                                     <button
                                         onClick={() =>
                                             askConfirm({
-                                                title: 'Promote this entry?',
-                                                message: `Manually promote "${entry.resourceName}" to an approved booking? This overrides the automatic queue order.`,
-                                                confirmLabel: 'Promote',
-                                                confirmColor: '#16a34a',
-                                                onConfirm: () => doPromote(entry.id),
+                                                title: 'Remove from queue?',
+                                                message: `Remove ${entry.userName ?? 'this member'} from the waitlist for "${entry.resourceName}"? Their booking will be cancelled.`,
+                                                confirmLabel: 'Remove',
+                                                confirmColor: '#ef4444',
+                                                onConfirm: () => doRemove(entry.id),
                                             })
                                         }
                                         style={{
                                             fontSize: 11,
-                                            color: '#16a34a',
-                                            background: '#d7f8e9',
-                                            border: '1px solid #bbf7d0',
+                                            color: '#ef4444',
+                                            background: '#fef2f2',
+                                            border: '1px solid #fecaca',
                                             borderRadius: 20,
                                             padding: '4px 12px',
                                             flexShrink: 0,
@@ -760,15 +895,13 @@ export default function WaitlistReview() {
                                             transition: 'all 0.15s ease',
                                         }}
                                         onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = '#bbf7d0';
-                                            e.currentTarget.style.borderColor = '#86efac';
+                                            e.currentTarget.style.background = '#fecaca';
                                         }}
                                         onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = '#d7f8e9';
-                                            e.currentTarget.style.borderColor = '#bbf7d0';
+                                            e.currentTarget.style.background = '#fef2f2';
                                         }}
                                     >
-                                        Promote
+                                        Remove
                                     </button>
                                 </div>
                             ))}
