@@ -36,15 +36,16 @@ export default function MyBookings() {
     if (error) return <ErrorState error={error} onRetry={reload} />;
 
     const all = data?.items || [];
-    // APPROVED = ready for pickup, CHECKED_OUT = currently on loan - both are "active".
-    const active = all.filter((b) => b.status === 'APPROVED' || b.status === 'CHECKED_OUT');
+    // APPROVED = approved but not yet picked up (Pending checkout).
+    // CHECKED_OUT = physically with the patron (Active loans).
+    const pendingCheckout = all.filter((b) => b.status === 'APPROVED');
+    const activeLoans = all.filter((b) => b.status === 'CHECKED_OUT');
     const upcoming = all.filter((b) => b.status === 'PENDING' || b.status === 'WAITLIST');
     const history = all.filter((b) => ['COMPLETED', 'CANCELLED', 'REJECTED'].includes(b.status));
 
-    // The QR must encode the asset tag of the assigned copy (e.g. "BK-CC-001"),
-    // NOT the booking uuid. The adapter pulls assetTag from whichever nested
-    // field the backend provides; if the list endpoint omits it we fetch the
-    // single booking to be sure before opening the modal.
+    // Resolve the QR value: prefer the assigned copy's asset tag (set by
+    // backend when a copy is reserved at approval / promotion). Falls back to
+    // qrToken only if no asset has been tied to the booking yet.
     async function showQR(b) {
         let token = b.assetTag;
         if (!token) {
@@ -77,6 +78,85 @@ export default function MyBookings() {
         }
     }
 
+    function BookingRow({ b, qrLabel, accent }) {
+        return (
+            <div
+                key={b.id}
+                className="pg-card-list"
+                style={{
+                    background: '#fff',
+                    border: `1px solid ${accent ? '#bbf7d0' : '#e7e7ef'}`,
+                    borderLeft: accent ? `4px solid ${accent}` : '1px solid #e7e7ef',
+                    borderRadius: 13,
+                    padding: '18px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 16,
+                }}
+            >
+                <Cover imageUrl={b.imageUrl} resourceType={b.resourceType} color={b.color} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                        style={{
+                            fontSize: 15,
+                            fontWeight: 700,
+                            color: '#1a1b2e',
+                            marginBottom: 3,
+                        }}
+                    >
+                        {b.title}
+                    </div>
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: '#7c7e93',
+                            marginBottom: 8,
+                            textTransform: 'capitalize',
+                        }}
+                    >
+                        {b.type}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#5a5c74' }}>
+                        {fmt(b.startAt)} → {fmt(b.endAt)}
+                    </div>
+                </div>
+                {qrLabel && (
+                    <button
+                        onClick={() => showQR(b)}
+                        style={{
+                            background: accent || '#0c2a1a',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: 9,
+                            padding: '10px 18px',
+                            fontSize: 13,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {qrLabel}
+                    </button>
+                )}
+                <button
+                    onClick={() => doCancel(b)}
+                    style={{
+                        background: '#f4f4f8',
+                        color: '#ef4444',
+                        border: 'none',
+                        borderRadius: 9,
+                        padding: '10px 14px',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                    }}
+                >
+                    Cancel
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div
             style={{
@@ -98,10 +178,55 @@ export default function MyBookings() {
                     My Bookings
                 </h1>
                 <p style={{ color: '#7c7e93', fontSize: 13, margin: 0 }}>
-                    Active loans, pending requests and history
+                    Pending checkouts, active loans, requests and history
                 </p>
             </div>
 
+            {/* Pending checkout — APPROVED bookings waiting for pickup */}
+            <section style={{ marginBottom: 36 }}>
+                <h2
+                    style={{
+                        fontFamily: "'Spectral', serif",
+                        fontSize: 17,
+                        fontWeight: 600,
+                        color: '#1a1b2e',
+                        margin: '0 0 6px',
+                    }}
+                >
+                    Pending checkout
+                    <span
+                        style={{
+                            fontFamily: "'IBM Plex Mono', monospace",
+                            fontSize: 13,
+                            fontWeight: 400,
+                            color: '#9b9db2',
+                            marginLeft: 8,
+                        }}
+                    >
+                        {pendingCheckout.length} ready
+                    </span>
+                </h2>
+                <p style={{ fontSize: 12, color: '#7c7e93', margin: '0 0 14px' }}>
+                    Books: scan the QR via Self Checkout. Devices & rooms: bring the QR to the front
+                    desk.
+                </p>
+                {pendingCheckout.length === 0 ? (
+                    <Empty label="Nothing waiting for checkout." />
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {pendingCheckout.map((b) => (
+                            <BookingRow
+                                key={b.id}
+                                b={b}
+                                qrLabel="Show checkout QR"
+                                accent="#16a34a"
+                            />
+                        ))}
+                    </div>
+                )}
+            </section>
+
+            {/* Active loans — CHECKED_OUT only */}
             <section style={{ marginBottom: 36 }}>
                 <h2
                     style={{
@@ -122,85 +247,15 @@ export default function MyBookings() {
                             marginLeft: 8,
                         }}
                     >
-                        {active.length} active
+                        {activeLoans.length} active
                     </span>
                 </h2>
-                {active.length === 0 ? (
+                {activeLoans.length === 0 ? (
                     <Empty label="No active loans." />
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {active.map((b) => (
-                            <div
-                                key={b.id}
-                                className="pg-card-list"
-                                style={{
-                                    background: '#fff',
-                                    border: '1px solid #e7e7ef',
-                                    borderRadius: 13,
-                                    padding: '18px 20px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 16,
-                                }}
-                            >
-                                <Cover resourceType={b.resourceType} color={b.color} />
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div
-                                        style={{
-                                            fontSize: 15,
-                                            fontWeight: 700,
-                                            color: '#1a1b2e',
-                                            marginBottom: 3,
-                                        }}
-                                    >
-                                        {b.title}
-                                    </div>
-                                    <div
-                                        style={{
-                                            fontSize: 12,
-                                            color: '#7c7e93',
-                                            marginBottom: 8,
-                                            textTransform: 'capitalize',
-                                        }}
-                                    >
-                                        {b.type}
-                                    </div>
-                                    <div style={{ fontSize: 12, color: '#5a5c74' }}>
-                                        {fmt(b.startAt)} → {fmt(b.endAt)}
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => showQR(b)}
-                                    style={{
-                                        background: '#0c2a1a',
-                                        color: '#fff',
-                                        border: 'none',
-                                        borderRadius: 9,
-                                        padding: '10px 18px',
-                                        fontSize: 13,
-                                        fontWeight: 700,
-                                        cursor: 'pointer',
-                                        whiteSpace: 'nowrap',
-                                    }}
-                                >
-                                    Show QR
-                                </button>
-                                <button
-                                    onClick={() => doCancel(b)}
-                                    style={{
-                                        background: '#f4f4f8',
-                                        color: '#ef4444',
-                                        border: 'none',
-                                        borderRadius: 9,
-                                        padding: '10px 14px',
-                                        fontSize: 13,
-                                        fontWeight: 700,
-                                        cursor: 'pointer',
-                                    }}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
+                        {activeLoans.map((b) => (
+                            <BookingRow key={b.id} b={b} qrLabel="Show QR" />
                         ))}
                     </div>
                 )}
@@ -216,18 +271,12 @@ export default function MyBookings() {
                         margin: '0 0 16px',
                     }}
                 >
-                    Pending & waitlisted
+                    Pending &amp; waitlisted
                 </h2>
                 {upcoming.length === 0 ? (
                     <Empty label="Nothing pending." />
                 ) : (
-                    <div
-                        style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr 1fr',
-                            gap: 12,
-                        }}
-                    >
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                         {upcoming.map((b) => (
                             <div
                                 key={b.id}
@@ -243,6 +292,7 @@ export default function MyBookings() {
                                 }}
                             >
                                 <Cover
+                                    imageUrl={b.imageUrl}
                                     resourceType={b.resourceType}
                                     color={b.color}
                                     w={42}
@@ -316,13 +366,7 @@ export default function MyBookings() {
                 {history.length === 0 ? (
                     <Empty label="No past bookings yet." />
                 ) : (
-                    <div
-                        style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr 1fr',
-                            gap: 12,
-                        }}
-                    >
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                         {history.map((b) => (
                             <div
                                 key={b.id}
@@ -338,6 +382,7 @@ export default function MyBookings() {
                                 }}
                             >
                                 <Cover
+                                    imageUrl={b.imageUrl}
                                     resourceType={b.resourceType}
                                     color={b.color}
                                     w={38}

@@ -670,9 +670,8 @@ export default function BookingModal() {
                         Show this QR at the collection desk
                     </div>
 
-                    {/* Booking QR — encodes the qrToken UUID. Staff scan this at
-              the collection desk, then separately scan the physical item's
-              asset tag to complete checkout. */}
+                    {/* Real scannable QR encoding the asset tag (booking.qrToken
+              now equals the assigned copy's asset tag). */}
                     <RealQRCode value={loanToken} size={200} />
                     <div style={{ marginBottom: 20 }} />
 
@@ -910,11 +909,24 @@ export default function BookingModal() {
             </Overlay>
         );
 
-    /* ── Stage: loanQR ── */
-    if (stage === 'loanQR')
+    /* ── Stage: loanQR ──
+       Same modal serves two lifecycle stages — copy switches on status:
+        - APPROVED   → in Pending checkout, this is a CHECKOUT QR
+        - CHECKED_OUT → patron has the item, this is a RETURN QR
+       (Anything else falls back to the return wording.) */
+    if (stage === 'loanQR') {
+        const isCheckout = resource?.status === 'APPROVED';
+        const isBook = (resource?.type || '').toLowerCase() === 'book';
+        const modalTitle = isCheckout ? 'Your checkout QR' : 'Your loan QR';
+        const helperText = isCheckout
+            ? isBook
+                ? 'Scan via Self Checkout, or show this QR at the front desk to check out'
+                : 'Show this QR at the front desk to check out this item'
+            : 'Show this QR at the desk to return this item';
+
         return (
             <Overlay onClose={close}>
-                <ModalHeader title="Your loan QR" />
+                <ModalHeader title={modalTitle} />
                 <div
                     style={{
                         padding: '18px 24px',
@@ -954,7 +966,7 @@ export default function BookingModal() {
                             marginBottom: 4,
                         }}
                     >
-                        Show this QR at the desk to return this item
+                        {helperText}
                     </div>
                 </div>
                 <BtnRow>
@@ -977,6 +989,7 @@ export default function BookingModal() {
                 </BtnRow>
             </Overlay>
         );
+    }
 
     return null;
 }
