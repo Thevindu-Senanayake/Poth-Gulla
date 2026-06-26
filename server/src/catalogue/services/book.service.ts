@@ -89,6 +89,8 @@ export class BookService {
     if (cached) return cached;
     const term = search?.trim().slice(0, 100);
     const where = {
+      archivedAt: null, // hide archived (soft-deleted) titles
+      copies: { some: { status: { not: ItemStatus.RETIRED } } }, // hide all-retired titles
       ...(categoryId ? { categoryId } : {}),
       ...(term
         ? {
@@ -212,9 +214,12 @@ export class BookService {
       where: { id: copyId },
     });
     if (!copy) throw new NotFoundException('Book copy not found');
-    if (copy.status === ItemStatus.BORROWED) {
+    if (
+      copy.status === ItemStatus.BORROWED ||
+      copy.status === ItemStatus.RESERVED
+    ) {
       throw new BadRequestException(
-        'Cannot retire a copy that is currently borrowed',
+        `Cannot retire a copy that is ${copy.status.toLowerCase()} — return or cancel the booking first`,
       );
     }
     const result = await this.prisma.bookCopy.update({
@@ -239,6 +244,26 @@ export class BookService {
     await this.redis.delByPattern('catalogue:books:*');
     return result;
   }
+  async archive(id: string): Promise<BookTitle> {
+    await this.findOrThrow(id);
+    const result = await this.prisma.bookTitle.update({
+      where: { id },
+      data: { archivedAt: new Date() },
+    });
+    await this.redis.delByPattern('catalogue:books:*');
+    return result;
+  }
+
+  async unarchive(id: string): Promise<BookTitle> {
+    await this.findOrThrow(id);
+    const result = await this.prisma.bookTitle.update({
+      where: { id },
+      data: { archivedAt: null },
+    });
+    await this.redis.delByPattern('catalogue:books:*');
+    return result;
+  }
+
   private async findOrThrow(id: string): Promise<BookTitle> {
     const title = await this.prisma.bookTitle.findUnique({ where: { id } });
     if (!title) throw new NotFoundException('Book title not found');

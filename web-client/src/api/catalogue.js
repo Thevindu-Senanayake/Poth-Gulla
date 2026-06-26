@@ -24,6 +24,9 @@ export const createBook = (body) => api.post('/catalogue/books', body).then((r) 
 export const updateBook = (id, body) =>
     api.patch(`/catalogue/books/${id}`, body).then((r) => r.data);
 export const deleteBook = (id) => api.delete(`/catalogue/books/${id}`).then((r) => r.data);
+export const archiveBook = (id) => api.patch(`/catalogue/books/${id}/archive`).then((r) => r.data);
+export const unarchiveBook = (id) =>
+    api.patch(`/catalogue/books/${id}/unarchive`).then((r) => r.data);
 export const addCopy = (id, assetTag) =>
     api.post(`/catalogue/books/${id}/copies`, { assetTag }).then((r) => r.data);
 export const retireCopy = (copyId) => api.delete(`/catalogue/copies/${copyId}`).then((r) => r.data);

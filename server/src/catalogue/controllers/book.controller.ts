@@ -62,6 +62,25 @@ export class BookController {
   }
   @ApiOperation({
     summary:
+      'Archive (soft-delete) a book title — hides it from students (Admin/Staff)',
+  })
+  @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
+  @Patch('books/:id/archive')
+  archive(@Param('id') id: string) {
+    return this.books.archive(id);
+  }
+
+  @ApiOperation({
+    summary: 'Unarchive a previously archived book title (Admin/Staff)',
+  })
+  @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
+  @Patch('books/:id/unarchive')
+  unarchive(@Param('id') id: string) {
+    return this.books.unarchive(id);
+  }
+
+  @ApiOperation({
+    summary:
       'Delete a book title - only if no copies, bookings, or reviews (Admin/Staff)',
   })
   @Roles(Role.ADMIN, Role.LIBRARY_STAFF)

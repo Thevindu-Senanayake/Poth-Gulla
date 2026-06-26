@@ -42,6 +42,7 @@ enum WaitlistStatus {
 
 enum ItemStatus {
     AVAILABLE
+    RESERVED
     BORROWED
     UNDER_MAINTENANCE
     RETIRED
@@ -109,6 +110,7 @@ model BookTitle {
     copies      BookCopy[]
     reviews     Review[]
     bookings    Booking[]
+    archivedAt  DateTime?
     createdAt   DateTime   @default(now())
     updatedAt   DateTime   @updatedAt
 

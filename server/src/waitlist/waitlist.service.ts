@@ -105,6 +105,24 @@ export class WaitlistService {
     return this.prisma.waitlistEntry.findMany({
       where: { resourceType, resourceKey, status: WaitlistStatus.PENDING },
       orderBy: [{ hasMessage: 'desc' }, { priorityScore: 'desc' }],
+      include: {
+        booking: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                tier: true,
+              },
+            },
+            bookTitle: { select: { title: true } },
+            device: { select: { name: true } },
+            studyRoom: { select: { name: true } },
+          },
+        },
+      },
     });
   }
 
@@ -171,7 +189,7 @@ export class WaitlistService {
         if (!candidate) return null;
         const { count } = await tx.bookCopy.updateMany({
           where: { id: candidate.id, status: ItemStatus.AVAILABLE },
-          data: { status: ItemStatus.BORROWED },
+          data: { status: ItemStatus.RESERVED },
         });
         return count > 0 ? candidate : null;
       });

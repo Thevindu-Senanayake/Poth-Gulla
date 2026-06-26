@@ -99,6 +99,29 @@ export class BookingService {
       }
     }
 
+    // (2b) prevent a user from booking a book they already have active or waitlisted
+    if (resourceType === ResourceType.BOOK) {
+      const existing = await this.prisma.booking.findFirst({
+        where: {
+          userId,
+          bookTitleId: resourceId,
+          status: {
+            in: [
+              BookingStatus.APPROVED,
+              BookingStatus.PENDING,
+              BookingStatus.WAITLIST,
+              BookingStatus.CHECKED_OUT,
+            ],
+          },
+        },
+      });
+      if (existing) {
+        throw new BadRequestException(
+          'You already have an active booking or waitlist entry for this book',
+        );
+      }
+    }
+
     // (3) route to booking status; for books, atomically reserve a copy at the same time
     let status: BookingStatus;
     let bookCopyId: string | null = null;
@@ -115,19 +138,32 @@ export class BookingService {
         if (!candidate) return null;
         const { count } = await tx.bookCopy.updateMany({
           where: { id: candidate.id, status: ItemStatus.AVAILABLE },
-          data: { status: ItemStatus.BORROWED },
+          // RESERVED = assigned to a booking, awaiting physical pickup by the student.
+          // Transitions to BORROWED only when staff scan confirms the handover.
+          data: { status: ItemStatus.RESERVED },
         });
         return count > 0 ? candidate : null;
       });
 
       status = reserved ? BookingStatus.APPROVED : BookingStatus.WAITLIST;
       bookCopyId = reserved?.id ?? null;
-      // qrToken for an approved book booking encodes the physical asset tag so the
-      // student's QR is scannable by staff without a separate item scan.
+      // qrToken encodes the physical asset tag so the student's QR is immediately
+      // scannable by staff at the collection desk without a separate item scan.
       qrToken = reserved?.assetTag ?? null;
     } else {
       status = await this.route(resourceType, resourceId, startAt, endAt);
-      qrToken = status === BookingStatus.APPROVED ? randomUUID() : null;
+      if (status === BookingStatus.APPROVED) {
+        if (resourceType === ResourceType.DEVICE) {
+          // Device qrToken = device.assetTag for QR consistency with books.
+          const device = await this.prisma.device.findUnique({
+            where: { id: resourceId },
+            select: { assetTag: true },
+          });
+          qrToken = device?.assetTag ?? randomUUID();
+        } else {
+          qrToken = randomUUID(); // ROOM — door QR is used at check-in, not booking QR
+        }
+      }
     }
 
     // (4) persist booking
@@ -247,9 +283,19 @@ export class BookingService {
     if (booking.status !== BookingStatus.PENDING) {
       throw new BadRequestException('Only PENDING bookings can be approved');
     }
+    // Use device assetTag as qrToken for QR consistency (same as direct-approved devices).
+    const device = booking.deviceId
+      ? await this.prisma.device.findUnique({
+          where: { id: booking.deviceId },
+          select: { assetTag: true },
+        })
+      : null;
     const updated = await this.prisma.booking.update({
       where: { id: bookingId },
-      data: { status: BookingStatus.APPROVED, qrToken: randomUUID() },
+      data: {
+        status: BookingStatus.APPROVED,
+        qrToken: device?.assetTag ?? randomUUID(),
+      },
       include: {
         user: { select: { name: true, email: true } },
         bookTitle: { select: { title: true } },

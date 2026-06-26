@@ -189,11 +189,18 @@ export default function BookingModal() {
                     : booking.status === 'PENDING'
                       ? 'pending'
                       : 'done';
+            // For rooms: the booking QR should encode the door's permanent roomQr so
+            // the student can scan into the room. For books/devices: qrToken is the
+            // physical asset tag (set by the backend at approval time).
+            const loanToken =
+                resource?.type === 'room'
+                    ? resource.raw?.roomQr || booking.qrToken
+                    : booking.qrToken;
             setBookingModal((prev) => ({
                 ...prev,
                 busy: false,
                 stage: next,
-                loanToken: booking.qrToken || prev.loanToken,
+                loanToken,
             }));
         } catch (e) {
             setBookingModal((prev) => ({ ...prev, busy: false }));
