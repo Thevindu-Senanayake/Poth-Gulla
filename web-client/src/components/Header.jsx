@@ -82,6 +82,11 @@ const PAGE_META = {
         search: true,
         searchPh: 'Search books, devices, rooms…',
     },
+    '/staff/room-checkin': {
+        title: 'Room Check-in',
+        sub: 'Scan a study-room QR to claim it for a walk-up session',
+        search: false,
+    },
     '/admin/dashboard': {
         title: 'System Overview',
         sub: 'Platform-wide health and activity',

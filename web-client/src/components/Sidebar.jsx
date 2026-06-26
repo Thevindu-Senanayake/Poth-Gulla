@@ -58,6 +58,7 @@ const NAV_CONFIG = {
     staff: [
         { path: '/staff/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/staff/checkout', label: 'Checkout / Return', icon: CheckSquare },
+        { path: '/staff/room-checkin', label: 'Room Check-in', icon: DoorOpen },
         { path: '/staff/waitlist-review', label: 'Waitlist Review', icon: ClipboardList },
         { path: '/staff/approvals', label: 'Device Approvals', icon: ShieldAlert },
         { path: '/staff/overdue', label: 'Overdue', icon: Clock },
