@@ -47,13 +47,26 @@ export class PointsService {
     return updated;
   }
 
-  /** Convenience wrapper: looks up the fixed delta from POINT_DELTA. */
+  /** Convenience wrapper: looks up the fixed delta from POINT_DELTA. For system events not in config. */
   applyFixed(
     userId: string,
     action: Exclude<PointAction, 'BOOK_LATE_2_7D'>,
     metadata?: Prisma.InputJsonObject,
   ): Promise<User> {
     return this.apply(userId, action, POINT_DELTA[action], metadata);
+  }
+
+  /** Apply delta read from SystemConfig penalties (by key). Falls back to POINT_DELTA if key absent. */
+  async applyFromConfig(
+    userId: string,
+    action: PointAction,
+    metadata?: Prisma.InputJsonObject,
+  ): Promise<User> {
+    const config = await this.systemConfig.get();
+    const rule = config.penalties.find((p) => p.key === action);
+    const delta =
+      rule?.amount ?? (POINT_DELTA as Record<string, number>)[action] ?? 0;
+    return this.apply(userId, action, delta, metadata);
   }
 
   async history(

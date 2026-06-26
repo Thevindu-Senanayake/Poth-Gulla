@@ -399,7 +399,11 @@ export class BookingService {
         await this.points.applyFixed(booking.userId, 'ROOM_CANCEL_LATE', meta);
       }
     } else {
-      await this.points.applyFixed(booking.userId, 'BOOKING_CANCELLED', meta);
+      await this.points.applyFromConfig(
+        booking.userId,
+        'BOOKING_CANCELLED',
+        meta,
+      );
     }
   }
 

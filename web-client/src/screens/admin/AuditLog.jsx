@@ -74,7 +74,8 @@ function getEventDescription(log) {
                 }
                 if (diffs.penalties?.length > 0) {
                     diffs.penalties.forEach((p) => {
-                        parts.push(`penalty rule "${p.rule}" from "${p.from}" to "${p.to}"`);
+                        const name = p.label ?? p.rule ?? p.key ?? 'rule';
+                        parts.push(`penalty "${name}" from ${p.from} to ${p.to}`);
                     });
                 }
                 if (diffs.toggles?.length > 0) {

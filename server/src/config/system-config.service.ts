@@ -10,10 +10,6 @@ import { tierFromPointsWithConfig } from '../users/tier.utils.js';
 
 const SINGLETON_ID = 'singleton';
 
-// Admin-editable runtime rules. Defaults mirror the canonical numbers in
-// DEVELOPMENT.md §7B / domain.constants.ts. Persisted in the SystemConfig singleton so
-// the System Config screen survives reloads (see issue #23).
-
 export interface TierConfig {
   tier: string;
   label: string;
@@ -25,8 +21,9 @@ export interface TierConfig {
 }
 
 export interface PenaltyConfig {
-  rule: string;
-  value: string;
+  key: string; // PointAction key (or RECALL_DAYS / ESCALATE_DAYS for threshold entries)
+  label: string; // admin-facing display label
+  amount: number; // machine-readable numeric value used in calculations
 }
 
 export interface ToggleConfig {
@@ -89,16 +86,61 @@ export const DEFAULT_SYSTEM_CONFIG: SystemConfigData = {
     },
   ],
   penalties: [
-    { rule: 'Book returned on time', value: '+25' },
-    { rule: 'Book returned early (3+ days)', value: '+50' },
-    { rule: 'Book late (per day, days 2–7)', value: '−20/day' },
-    { rule: 'Device returned on time / early', value: '+30 / +40' },
-    { rule: 'Device returned damaged', value: '−300' },
-    { rule: 'Room attended (QR check-in)', value: '+20' },
-    { rule: 'Room no-show', value: '−150' },
-    { rule: 'Approved booking cancelled', value: '−25' },
-    { rule: 'Recall flag set (days overdue)', value: '2' },
-    { rule: 'Escalate to admin (days overdue)', value: '7' },
+    {
+      key: 'BOOK_RETURNED_ON_TIME',
+      label: 'Book returned on time',
+      amount: 25,
+    },
+    {
+      key: 'BOOK_RETURNED_EARLY',
+      label: 'Book returned early (3+ days)',
+      amount: 50,
+    },
+    { key: 'BOOK_LATE_1D', label: 'Book late (1 day)', amount: -10 },
+    {
+      key: 'BOOK_LATE_PER_DAY',
+      label: 'Book late (per day, days 2–7)',
+      amount: -20,
+    },
+    {
+      key: 'BOOK_LATE_7D_PLUS',
+      label: 'Book late (7+ days, flat penalty)',
+      amount: -220,
+    },
+    {
+      key: 'DEVICE_RETURNED_ON_TIME',
+      label: 'Device returned on time',
+      amount: 30,
+    },
+    {
+      key: 'DEVICE_RETURNED_EARLY',
+      label: 'Device returned early',
+      amount: 40,
+    },
+    { key: 'DEVICE_LATE_1_3D', label: 'Device late (1–3 days)', amount: -80 },
+    {
+      key: 'DEVICE_LATE_3D_PLUS',
+      label: 'Device late (3+ days, flat penalty)',
+      amount: -160,
+    },
+    { key: 'DEVICE_DAMAGED', label: 'Device returned damaged', amount: -300 },
+    { key: 'ROOM_ATTENDED', label: 'Room attended (QR check-in)', amount: 20 },
+    { key: 'ROOM_NO_SHOW', label: 'Room no-show', amount: -150 },
+    {
+      key: 'BOOKING_CANCELLED',
+      label: 'Approved booking cancelled',
+      amount: -25,
+    },
+    {
+      key: 'RECALL_DAYS',
+      label: 'Recall flag after (days overdue)',
+      amount: 2,
+    },
+    {
+      key: 'ESCALATE_DAYS',
+      label: 'Escalate to admin (days overdue)',
+      amount: 7,
+    },
   ],
   toggles: [
     { label: 'Waitlist justification messages', on: true },
@@ -110,6 +152,15 @@ export const DEFAULT_SYSTEM_CONFIG: SystemConfigData = {
   ],
 };
 
+/** Lookup a penalty amount from config, falling back to a provided default. */
+export function penaltyAmount(
+  config: SystemConfigData,
+  key: string,
+  fallback: number,
+): number {
+  return config.penalties.find((p) => p.key === key)?.amount ?? fallback;
+}
+
 @Injectable()
 export class SystemConfigService {
   constructor(
@@ -117,12 +168,12 @@ export class SystemConfigService {
     private audit: AuditService,
   ) {}
 
-  /** Returns the stored config, lazily creating it with defaults on first read. */
   async get(): Promise<SystemConfigData> {
     const row = await this.prisma.systemConfig.findUnique({
       where: { id: SINGLETON_ID },
     });
-    const data = row
+
+    let data = row
       ? (row.data as unknown as SystemConfigData)
       : ((
           await this.prisma.systemConfig.create({
@@ -133,27 +184,36 @@ export class SystemConfigService {
           })
         ).data as unknown as SystemConfigData);
 
-    if (data && data.tiers) {
+    // Migrate from old format { rule, value } → { key, label, amount } in-memory.
+    // The new format is persisted the next time the admin saves config.
+    if (
+      data.penalties?.length > 0 &&
+      'rule' in (data.penalties[0] as any) &&
+      !('key' in (data.penalties[0] as any))
+    ) {
+      data = { ...data, penalties: DEFAULT_SYSTEM_CONFIG.penalties };
+    }
+
+    if (data?.tiers) {
       data.tiers = data.tiers.map((t) => ({
         ...t,
-        threshold:
-          t.threshold !== undefined && t.threshold !== null
-            ? Number(t.threshold)
-            : t.threshold,
-        books:
-          t.books !== undefined && t.books !== null ? Number(t.books) : t.books,
-        devices:
-          t.devices !== undefined && t.devices !== null
-            ? Number(t.devices)
-            : t.devices,
-        rooms:
-          t.rooms !== undefined && t.rooms !== null ? Number(t.rooms) : t.rooms,
+        threshold: t.threshold != null ? Number(t.threshold) : t.threshold,
+        books: t.books != null ? Number(t.books) : t.books,
+        devices: t.devices != null ? Number(t.devices) : t.devices,
+        rooms: t.rooms != null ? Number(t.rooms) : t.rooms,
       }));
     }
+
+    if (data?.penalties) {
+      data.penalties = data.penalties.map((p: any) => ({
+        ...p,
+        amount: p.amount != null ? Number(p.amount) : 0,
+      }));
+    }
+
     return data;
   }
 
-  /** Merge the provided sections over the current config and persist (upsert). Logs to audit trail. */
   async update(
     patch: Partial<SystemConfigData>,
     actorId?: string | null,
@@ -162,25 +222,23 @@ export class SystemConfigService {
 
     const updatedTiers = patch.tiers?.map((t) => ({
       ...t,
-      threshold:
-        t.threshold !== undefined && t.threshold !== null
-          ? Number(t.threshold)
-          : t.threshold,
-      books:
-        t.books !== undefined && t.books !== null ? Number(t.books) : t.books,
-      devices:
-        t.devices !== undefined && t.devices !== null
-          ? Number(t.devices)
-          : t.devices,
-      rooms:
-        t.rooms !== undefined && t.rooms !== null ? Number(t.rooms) : t.rooms,
+      threshold: t.threshold != null ? Number(t.threshold) : t.threshold,
+      books: t.books != null ? Number(t.books) : t.books,
+      devices: t.devices != null ? Number(t.devices) : t.devices,
+      rooms: t.rooms != null ? Number(t.rooms) : t.rooms,
+    }));
+
+    const updatedPenalties = patch.penalties?.map((p) => ({
+      ...p,
+      amount: p.amount != null ? Number(p.amount) : 0,
     }));
 
     const next: SystemConfigData = {
       tiers: updatedTiers ?? current.tiers,
-      penalties: patch.penalties ?? current.penalties,
+      penalties: updatedPenalties ?? current.penalties,
       toggles: patch.toggles ?? current.toggles,
     };
+
     const row = await this.prisma.systemConfig.upsert({
       where: { id: SINGLETON_ID },
       create: {
@@ -195,7 +253,12 @@ export class SystemConfigService {
         tier: string;
         changes: Record<string, { from: any; to: any }>;
       }>;
-      penalties?: Array<{ rule: string; from: string; to: string }>;
+      penalties?: Array<{
+        key: string;
+        label: string;
+        from: number;
+        to: number;
+      }>;
       toggles?: Array<{ label: string; from: boolean; to: boolean }>;
     } = {};
 
@@ -221,35 +284,33 @@ export class SystemConfigService {
               changes[field] = { from: currTier[field], to: nextTier[field] };
             }
           }
-          if (Object.keys(changes).length > 0) {
+          if (Object.keys(changes).length > 0)
             tierDiffs.push({ tier: nextTier.tier, changes });
-          }
         }
       }
-      if (tierDiffs.length > 0) {
-        differences.tiers = tierDiffs;
-      }
+      if (tierDiffs.length > 0) differences.tiers = tierDiffs;
     }
 
-    // 2. Compare Penalties
+    // 2. Compare Penalties (keyed by `key`, diffing `amount`)
     if (patch.penalties) {
-      const penaltyDiffs: Array<{ rule: string; from: string; to: string }> =
-        [];
+      const penaltyDiffs: Array<{
+        key: string;
+        label: string;
+        from: number;
+        to: number;
+      }> = [];
       for (const nextPen of next.penalties) {
-        const currPen = current.penalties.find((p) => p.rule === nextPen.rule);
-        if (currPen) {
-          if (currPen.value !== nextPen.value) {
-            penaltyDiffs.push({
-              rule: nextPen.rule,
-              from: currPen.value,
-              to: nextPen.value,
-            });
-          }
+        const currPen = current.penalties.find((p) => p.key === nextPen.key);
+        if (currPen && currPen.amount !== nextPen.amount) {
+          penaltyDiffs.push({
+            key: nextPen.key,
+            label: nextPen.label,
+            from: currPen.amount,
+            to: nextPen.amount,
+          });
         }
       }
-      if (penaltyDiffs.length > 0) {
-        differences.penalties = penaltyDiffs;
-      }
+      if (penaltyDiffs.length > 0) differences.penalties = penaltyDiffs;
     }
 
     // 3. Compare Toggles
@@ -258,22 +319,17 @@ export class SystemConfigService {
         [];
       for (const nextTog of next.toggles) {
         const currTog = current.toggles.find((t) => t.label === nextTog.label);
-        if (currTog) {
-          if (currTog.on !== nextTog.on) {
-            toggleDiffs.push({
-              label: nextTog.label,
-              from: currTog.on,
-              to: nextTog.on,
-            });
-          }
+        if (currTog && currTog.on !== nextTog.on) {
+          toggleDiffs.push({
+            label: nextTog.label,
+            from: currTog.on,
+            to: nextTog.on,
+          });
         }
       }
-      if (toggleDiffs.length > 0) {
-        differences.toggles = toggleDiffs;
-      }
+      if (toggleDiffs.length > 0) differences.toggles = toggleDiffs;
     }
 
-    // Log the configuration update
     await this.audit.log(
       actorId ?? null,
       AuditAction.CONFIG_UPDATED,

@@ -19,6 +19,10 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { WaitlistService } from '../waitlist/waitlist.service.js';
 import { PointAction } from '../points/point-events.js';
 import { AuditService } from '../audit/audit.service.js';
+import {
+  SystemConfigService,
+  SystemConfigData,
+} from '../config/system-config.service.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -47,6 +51,7 @@ export class ScanService {
     private points: PointsService,
     private waitlist: WaitlistService,
     private audit: AuditService,
+    private systemConfig: SystemConfigService,
   ) {}
 
   // ── Checkout (book or device) ─────────────────────────────────────────
@@ -322,7 +327,7 @@ export class ScanService {
       },
     });
 
-    await this.points.applyFixed(userId, 'ROOM_ATTENDED', {
+    await this.points.applyFromConfig(userId, 'ROOM_ATTENDED', {
       bookingId: booking.id,
     });
 
@@ -345,6 +350,8 @@ export class ScanService {
   // ── Return ────────────────────────────────────────────────────────────
 
   async returnItem(dto: ReturnItemDto, actorId?: string) {
+    const config = await this.systemConfig.get();
+
     // Find an active borrowing by assetTag on either a book copy or device
     const borrowing = await this.prisma.borrowing.findFirst({
       where: {
@@ -373,7 +380,12 @@ export class ScanService {
     );
     const isBook = borrowing.bookCopy != null;
 
-    const { action, delta } = this.scoreReturn(isBook, daysLate, dto.condition);
+    const { action, delta } = this.scoreReturn(
+      isBook,
+      daysLate,
+      dto.condition,
+      config,
+    );
 
     // Persist return: update borrowing + free the item
     await this.prisma.$transaction([
@@ -408,7 +420,7 @@ export class ScanService {
 
     // Devices: damaged penalty is on top of timing result
     if (!isBook && dto.condition === ItemCondition.DAMAGED) {
-      await this.points.applyFixed(borrowing.userId, 'DEVICE_DAMAGED', {
+      await this.points.applyFromConfig(borrowing.userId, 'DEVICE_DAMAGED', {
         borrowingId: borrowing.id,
       });
     }
@@ -445,26 +457,56 @@ export class ScanService {
     isBook: boolean,
     daysLate: number,
     condition: ItemCondition,
+    config: SystemConfigData,
   ): { action: PointAction; delta: number } {
+    // Helper: read from config penalties by key, fall back to a hardcoded default
+    const p = (key: string, fallback: number) =>
+      config.penalties.find((r) => r.key === key)?.amount ?? fallback;
+
     if (isBook) {
-      if (daysLate < -2) return { action: 'BOOK_RETURNED_EARLY', delta: 50 };
-      if (daysLate <= 0) return { action: 'BOOK_RETURNED_ON_TIME', delta: 25 };
-      if (daysLate === 1) return { action: 'BOOK_LATE_1D', delta: -10 };
+      if (daysLate < -2)
+        return {
+          action: 'BOOK_RETURNED_EARLY',
+          delta: p('BOOK_RETURNED_EARLY', 50),
+        };
+      if (daysLate <= 0)
+        return {
+          action: 'BOOK_RETURNED_ON_TIME',
+          delta: p('BOOK_RETURNED_ON_TIME', 25),
+        };
+      if (daysLate === 1)
+        return { action: 'BOOK_LATE_1D', delta: p('BOOK_LATE_1D', -10) };
       if (daysLate <= 7)
-        return { action: 'BOOK_LATE_2_7D', delta: -20 * daysLate };
-      return { action: 'BOOK_LATE_7D_PLUS', delta: -220 };
+        return {
+          action: 'BOOK_LATE_2_7D',
+          delta: p('BOOK_LATE_PER_DAY', -20) * daysLate,
+        };
+      return {
+        action: 'BOOK_LATE_7D_PLUS',
+        delta: p('BOOK_LATE_7D_PLUS', -220),
+      };
     }
-    // Device - positive rewards only apply for GOOD condition.
+    // Device — positive rewards only apply for GOOD condition.
     // For early/on-time DAMAGED returns the timing delta is 0; DEVICE_DAMAGED is charged separately.
     if (daysLate < 0)
       return condition === ItemCondition.GOOD
-        ? { action: 'DEVICE_RETURNED_EARLY', delta: 40 }
+        ? {
+            action: 'DEVICE_RETURNED_EARLY',
+            delta: p('DEVICE_RETURNED_EARLY', 40),
+          }
         : { action: 'DEVICE_RETURNED_EARLY', delta: 0 };
     if (daysLate <= 0)
       return condition === ItemCondition.GOOD
-        ? { action: 'DEVICE_RETURNED_ON_TIME', delta: 30 }
+        ? {
+            action: 'DEVICE_RETURNED_ON_TIME',
+            delta: p('DEVICE_RETURNED_ON_TIME', 30),
+          }
         : { action: 'DEVICE_RETURNED_ON_TIME', delta: 0 };
-    if (daysLate <= 3) return { action: 'DEVICE_LATE_1_3D', delta: -80 };
-    return { action: 'DEVICE_LATE_3D_PLUS', delta: -160 };
+    if (daysLate <= 3)
+      return { action: 'DEVICE_LATE_1_3D', delta: p('DEVICE_LATE_1_3D', -80) };
+    return {
+      action: 'DEVICE_LATE_3D_PLUS',
+      delta: p('DEVICE_LATE_3D_PLUS', -160),
+    };
   }
 }

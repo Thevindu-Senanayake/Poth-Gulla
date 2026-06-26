@@ -7,6 +7,7 @@ import {
 } from '../../generated/prisma/client.js';
 import { PointsService } from '../points/points.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SystemConfigService } from '../config/system-config.service.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -17,9 +18,9 @@ export class OverdueService {
   constructor(
     private prisma: PrismaService,
     private points: PointsService,
+    private systemConfig: SystemConfigService,
   ) {}
 
-  /** Run the full overdue sweep. Safe to call multiple times per day. */
   async runSweep(): Promise<{
     borrowingsProcessed: number;
     noShowsProcessed: number;
@@ -34,9 +35,13 @@ export class OverdueService {
     return { borrowingsProcessed, noShowsProcessed };
   }
 
-  // ── Borrowing sweep ───────────────────────────────────────────────────
-
   private async sweepBorrowings(): Promise<number> {
+    const config = await this.systemConfig.get();
+    const recallDays =
+      config.penalties.find((p) => p.key === 'RECALL_DAYS')?.amount ?? 2;
+    const escalateDays =
+      config.penalties.find((p) => p.key === 'ESCALATE_DAYS')?.amount ?? 7;
+
     const now = new Date();
     const activeBorrowings = await this.prisma.borrowing.findMany({
       where: {
@@ -54,8 +59,7 @@ export class OverdueService {
       const daysLate = Math.ceil((now.getTime() - b.dueAt.getTime()) / DAY_MS);
       const itemLabel = b.bookCopy?.assetTag ?? b.device?.name ?? b.id;
 
-      if (daysLate > 7 && b.status === BorrowingStatus.ACTIVE) {
-        // Escalate to OVERDUE and notify admin
+      if (daysLate > escalateDays && b.status === BorrowingStatus.ACTIVE) {
         await this.prisma.borrowing.update({
           where: { id: b.id },
           data: { status: BorrowingStatus.OVERDUE },
@@ -70,8 +74,7 @@ export class OverdueService {
           'OVERDUE_ADMIN_ALERT',
           `Borrowing ${b.id} (${itemLabel}) is ${daysLate} days overdue and escalated to OVERDUE.`,
         );
-      } else if (daysLate >= 2 && !b.recallFlag) {
-        // Set recall flag and notify staff
+      } else if (daysLate >= recallDays && !b.recallFlag) {
         await this.prisma.borrowing.update({
           where: { id: b.id },
           data: { recallFlag: true },
@@ -87,23 +90,24 @@ export class OverdueService {
           `Borrowing ${b.id} (${itemLabel}) is ${daysLate} days overdue. Recall flag set - please follow up with the borrower.`,
         );
       } else if (daysLate === 1) {
-        // First-day reminder to borrower only
         await this.notifyUser(
           b.userId,
           'OVERDUE_REMINDER',
           `Your item (${itemLabel}) is 1 day overdue. Please return it as soon as possible to avoid penalties.`,
         );
       }
-
       processed++;
     }
 
     return processed;
   }
 
-  // ── Room no-show sweep ────────────────────────────────────────────────
-
   private async sweepRoomNoShows(): Promise<number> {
+    const config = await this.systemConfig.get();
+    const noShowAmount = Math.abs(
+      config.penalties.find((p) => p.key === 'ROOM_NO_SHOW')?.amount ?? 150,
+    );
+
     const now = new Date();
     const missed = await this.prisma.booking.findMany({
       where: {
@@ -119,21 +123,19 @@ export class OverdueService {
         where: { id: booking.id },
         data: { status: BookingStatus.CANCELLED },
       });
-      await this.points.applyFixed(booking.userId, 'ROOM_NO_SHOW', {
+      await this.points.applyFromConfig(booking.userId, 'ROOM_NO_SHOW', {
         bookingId: booking.id,
       });
       await this.notifyUser(
         booking.userId,
         'ROOM_NO_SHOW',
-        `You did not check in for your room booking (${booking.id}). A no-show penalty of 150 points has been applied.`,
+        `You did not check in for your room booking. A no-show penalty of ${noShowAmount} points has been applied.`,
       );
       processed++;
     }
 
     return processed;
   }
-
-  // ── Notification helpers ──────────────────────────────────────────────
 
   private notifyUser(
     userId: string,

@@ -78,14 +78,35 @@ export default function Points() {
         curBorder: i === tierNum - 1 ? t.col + '55' : '#f0f0f6',
     }));
 
+    // Keys that are day-thresholds (not point deltas) — skip from the points table
+    const THRESHOLD_KEYS = new Set(['RECALL_DAYS', 'ESCALATE_DAYS']);
+
+    function fmtDelta(amount, key) {
+        const n = Number(amount);
+        if (key === 'BOOK_LATE_PER_DAY') return `${n > 0 ? '+' : '−'}${Math.abs(n)}/day`;
+        return n >= 0 ? `+${n}` : `−${Math.abs(n)}`;
+    }
+
     // Reference table of how points move: use config penalties if loaded, fallback otherwise
     const pointEvents =
-        configPenalties.length > 0 &&
-        configPenalties.map((p) => ({
-            action: p.rule,
-            delta: p.value,
-            positive: String(p.value).startsWith('+'),
-        }));
+        configPenalties.length > 0
+            ? configPenalties
+                  .filter((p) => !THRESHOLD_KEYS.has(p.key))
+                  .map((p) => ({
+                      action: p.label,
+                      delta: fmtDelta(p.amount, p.key),
+                      positive: Number(p.amount) >= 0,
+                  }))
+            : [
+                  { action: 'Book returned early (3+ days)', delta: '+50', positive: true },
+                  { action: 'Book returned on time', delta: '+25', positive: true },
+                  { action: 'Device returned early / on time', delta: '+40 / +30', positive: true },
+                  { action: 'Room attended (QR check-in)', delta: '+20', positive: true },
+                  { action: 'Review submitted', delta: '+15', positive: true },
+                  { action: 'Book late (per day)', delta: '−20/day', positive: false },
+                  { action: 'Room no-show', delta: '−150', positive: false },
+                  { action: 'Device returned damaged', delta: '−300', positive: false },
+              ];
 
     if (loading) return <Loading label="Loading your points…" />;
     if (error) return <ErrorState error={error} onRetry={reload} />;

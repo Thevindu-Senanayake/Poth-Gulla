@@ -31,14 +31,40 @@ describe('ScanService.returnItem (return scoring)', () => {
         typeof arg === 'function' ? arg(prisma) : arg,
       ),
     };
-    points = { apply: jest.fn(), applyFixed: jest.fn() };
+    points = {
+      apply: jest.fn(),
+      applyFixed: jest.fn(),
+      applyFromConfig: jest.fn(),
+    };
     waitlist = { onResourceFreed: jest.fn() };
     const audit = { log: jest.fn() };
+    const systemConfig = {
+      get: jest.fn().mockResolvedValue({
+        tiers: [],
+        penalties: [
+          { key: 'BOOK_RETURNED_ON_TIME', label: '', amount: 25 },
+          { key: 'BOOK_RETURNED_EARLY', label: '', amount: 50 },
+          { key: 'BOOK_LATE_1D', label: '', amount: -10 },
+          { key: 'BOOK_LATE_PER_DAY', label: '', amount: -20 },
+          { key: 'BOOK_LATE_7D_PLUS', label: '', amount: -220 },
+          { key: 'DEVICE_RETURNED_ON_TIME', label: '', amount: 30 },
+          { key: 'DEVICE_RETURNED_EARLY', label: '', amount: 40 },
+          { key: 'DEVICE_LATE_1_3D', label: '', amount: -80 },
+          { key: 'DEVICE_LATE_3D_PLUS', label: '', amount: -160 },
+          { key: 'DEVICE_DAMAGED', label: '', amount: -300 },
+          { key: 'ROOM_ATTENDED', label: '', amount: 20 },
+          { key: 'ROOM_NO_SHOW', label: '', amount: -150 },
+          { key: 'BOOKING_CANCELLED', label: '', amount: -25 },
+        ],
+        toggles: [],
+      }),
+    };
     service = new ScanService(
       prisma as any,
       points as any,
       waitlist as any,
       audit as any,
+      systemConfig as any,
     );
   });
 
@@ -137,7 +163,7 @@ describe('ScanService.returnItem (return scoring)', () => {
       0,
       expect.anything(),
     );
-    expect(points.applyFixed).toHaveBeenCalledWith(
+    expect(points.applyFromConfig).toHaveBeenCalledWith(
       'u1',
       'DEVICE_DAMAGED',
       expect.anything(),
@@ -179,14 +205,40 @@ describe('ScanService.checkout', () => {
         typeof arg === 'function' ? arg(prisma) : arg,
       ),
     };
-    points = { apply: jest.fn(), applyFixed: jest.fn() };
+    points = {
+      apply: jest.fn(),
+      applyFixed: jest.fn(),
+      applyFromConfig: jest.fn(),
+    };
     waitlist = { onResourceFreed: jest.fn() };
     const audit = { log: jest.fn() };
+    const systemConfig = {
+      get: jest.fn().mockResolvedValue({
+        tiers: [],
+        penalties: [
+          { key: 'BOOK_RETURNED_ON_TIME', label: '', amount: 25 },
+          { key: 'BOOK_RETURNED_EARLY', label: '', amount: 50 },
+          { key: 'BOOK_LATE_1D', label: '', amount: -10 },
+          { key: 'BOOK_LATE_PER_DAY', label: '', amount: -20 },
+          { key: 'BOOK_LATE_7D_PLUS', label: '', amount: -220 },
+          { key: 'DEVICE_RETURNED_ON_TIME', label: '', amount: 30 },
+          { key: 'DEVICE_RETURNED_EARLY', label: '', amount: 40 },
+          { key: 'DEVICE_LATE_1_3D', label: '', amount: -80 },
+          { key: 'DEVICE_LATE_3D_PLUS', label: '', amount: -160 },
+          { key: 'DEVICE_DAMAGED', label: '', amount: -300 },
+          { key: 'ROOM_ATTENDED', label: '', amount: 20 },
+          { key: 'ROOM_NO_SHOW', label: '', amount: -150 },
+          { key: 'BOOKING_CANCELLED', label: '', amount: -25 },
+        ],
+        toggles: [],
+      }),
+    };
     service = new ScanService(
       prisma as any,
       points as any,
       waitlist as any,
       audit as any,
+      systemConfig as any,
     );
   });
 

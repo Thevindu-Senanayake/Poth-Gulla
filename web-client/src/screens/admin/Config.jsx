@@ -26,8 +26,11 @@ export default function Config() {
         setTiers((prev) => prev.map((t, idx) => (idx === i ? { ...t, [field]: val } : t)));
     }
 
-    function updatePenaltyValue(i, val) {
-        setPenalties((prev) => prev.map((p, idx) => (idx === i ? { ...p, value: val } : p)));
+    function updatePenaltyAmount(i, val) {
+        const parsed = parseFloat(val);
+        setPenalties((prev) =>
+            prev.map((p, idx) => (idx === i ? { ...p, amount: isNaN(parsed) ? 0 : parsed } : p))
+        );
     }
 
     function toggleFeature(i) {
@@ -302,10 +305,10 @@ export default function Config() {
                     </div>
                     <div style={{ padding: '6px 0' }}>
                         {penalties.map((p, i) => {
-                            const isNeg = typeof p.value === 'string' && p.value.startsWith('−');
+                            const isNeg = typeof p.amount === 'number' && p.amount < 0;
                             return (
                                 <div
-                                    key={i}
+                                    key={p.key ?? i}
                                     style={{
                                         display: 'flex',
                                         justifyContent: 'space-between',
@@ -317,14 +320,14 @@ export default function Config() {
                                     }}
                                 >
                                     <span style={{ fontSize: 13, color: '#3a3b4e', flex: 1 }}>
-                                        {p.rule}
+                                        {p.label}
                                     </span>
                                     <input
-                                        type="text"
-                                        value={p.value}
-                                        onChange={(e) => updatePenaltyValue(i, e.target.value)}
+                                        type="number"
+                                        value={p.amount ?? 0}
+                                        onChange={(e) => updatePenaltyAmount(i, e.target.value)}
                                         style={{
-                                            width: '70px',
+                                            width: '80px',
                                             border: '1px solid #e7e7ef',
                                             borderRadius: 7,
                                             padding: '6px 10px',

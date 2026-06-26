@@ -53,8 +53,24 @@ describe('SystemConfigService', () => {
 
   it('merges a partial patch over the current config and upserts', async () => {
     const current = {
-      tiers: [{ tier: 'old' }],
-      penalties: [{ rule: 'p', value: '+1' }],
+      tiers: [
+        {
+          tier: 'old',
+          threshold: 0,
+          label: '',
+          col: '',
+          books: 1,
+          devices: 1,
+          rooms: 1,
+        },
+      ],
+      penalties: [
+        {
+          key: 'BOOK_RETURNED_ON_TIME',
+          label: 'Book returned on time',
+          amount: 25,
+        },
+      ],
       toggles: [{ label: 't', on: true }],
     };
     prisma.systemConfig.findUnique.mockResolvedValue({ data: current });
@@ -63,7 +79,17 @@ describe('SystemConfigService', () => {
     }));
     audit.log.mockResolvedValue(null);
 
-    const newTiers = [{ tier: 'new', threshold: 250 }];
+    const newTiers = [
+      {
+        tier: 'new',
+        threshold: 250,
+        label: '',
+        col: '',
+        books: 1,
+        devices: 1,
+        rooms: 1,
+      },
+    ];
     const result = await service.update({ tiers: newTiers });
 
     // tiers replaced; penalties/toggles carried over unchanged
