@@ -1,6 +1,6 @@
-# Poth Gulla — Web Client
+# Poth Gulla - Web Client
 
-React 19 + Vite admin/student web interface for the Poth Gulla smart library system. Fully wired to the NestJS backend — no mock data.
+React 19 + Vite admin/student web interface for the Poth Gulla smart library system. Fully wired to the NestJS backend - no mock data.
 
 ---
 
@@ -39,11 +39,11 @@ VITE_API_URL=http://localhost:3000/api
 
 ## Key features
 
-- **Booking flow** — `openBooking(resource)` routes to instant booking, staff-approval request (Tier 4+ devices), or waitlist based on the backend response
-- **QR display** — `RealQRCode` renders scannable QR codes; for APPROVED book/device bookings the QR encodes the physical asset tag, not a UUID
-- **Notification bell** — SSE push via `EventSource`; badge increments on new events; panel auto-marks as read after 1.5 s
-- **Audit log** — server-side filtering by category (dropdown), date range (preset or custom), log ID search, and sort direction toggle on the Timestamp column
-- **Points & Tier** — tier ladder and penalty table fetched live from `/api/config`; shows current values set by admin
+- **Booking flow** - `openBooking(resource)` routes to instant booking, staff-approval request (Tier 4+ devices), or waitlist based on the backend response
+- **QR display** - `RealQRCode` renders scannable QR codes; for APPROVED book/device bookings the QR encodes the physical asset tag, not a UUID
+- **Notification bell** - SSE push via `EventSource`; badge increments on new events; panel auto-marks as read after 1.5 s
+- **Audit log** - server-side filtering by category (dropdown), date range (preset or custom), log ID search, and sort direction toggle on the Timestamp column
+- **Points & Tier** - tier ladder and penalty table fetched live from `/api/config`; shows current values set by admin
 
 ---
 

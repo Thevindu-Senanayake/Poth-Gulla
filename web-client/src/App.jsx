@@ -151,7 +151,7 @@ export default function App() {
     // Live sidebar badge counts; refetches on refresh and polls every 60s.
     const badges = useBadgeCounts(user ? currentRole : null, refreshKey);
 
-    // Notification unread count — refreshed by the panel after mark-all-read.
+    // Notification unread count - refreshed by the panel after mark-all-read.
     const refreshNotifCount = useCallback(async () => {
         if (!user) return;
         try {
@@ -162,7 +162,7 @@ export default function App() {
         }
     }, [user]);
 
-    // SSE push — server emits an event each time a notification is created for
+    // SSE push - server emits an event each time a notification is created for
     // this user. No polling; reconnects automatically on connection drop.
     useEffect(() => {
         if (!user) {
@@ -209,7 +209,7 @@ export default function App() {
         const handler = () => {
             setUser(null);
             navigate('/login', { replace: true });
-            showToast('Session expired — please sign in again');
+            showToast('Session expired - please sign in again');
         };
         window.addEventListener('auth:force-logout', handler);
         return () => window.removeEventListener('auth:force-logout', handler);

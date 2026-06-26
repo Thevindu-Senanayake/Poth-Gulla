@@ -333,7 +333,7 @@ export default function Resources() {
                         Resources
                     </h1>
                     <p style={{ fontSize: 13, color: '#7c7e93', margin: 0 }}>
-                        Books, devices and study rooms — copy-level management.
+                        Books, devices and study rooms - copy-level management.
                         {q && (
                             <span style={{ marginLeft: 8 }}>
                                 · {items.length} match "{searchQuery}"

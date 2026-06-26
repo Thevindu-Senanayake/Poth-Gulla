@@ -6,7 +6,7 @@ import { api } from './client';
 // to CHECKED_OUT.
 //
 // BACKEND REQUIREMENT: add POST /scan/self-checkout (STUDENT, LECTURER) with
-// body { assetTag } — see issue #N. Until that endpoint exists, calls will
+// body { assetTag } - see issue #N. Until that endpoint exists, calls will
 // return 404 and the UI surfaces "Asset tag not recognised".
 export const selfCheckoutBook = (assetTag) =>
     api.post('/scan/self-checkout', { assetTag }).then((r) => r.data);

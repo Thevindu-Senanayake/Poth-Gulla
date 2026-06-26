@@ -310,7 +310,7 @@ export default function StaffModal() {
                 </div>
 
                 <div style={{ padding: '20px 24px' }}>
-                    {/* Type toggle — locked while editing because changing it would
+                    {/* Type toggle - locked while editing because changing it would
               cross to a different backend resource entity. */}
                     <Field label="Resource type">
                         <div style={{ display: 'flex', gap: 8 }}>
@@ -426,7 +426,7 @@ export default function StaffModal() {
                     )}
 
                     {type === 'Device' && (
-                        <Field label="Device tier (1–5)">
+                        <Field label="Device tier (1-5)">
                             <div style={{ display: 'flex', gap: 8 }}>
                                 {[1, 2, 3, 4, 5].map((n) => (
                                     <button

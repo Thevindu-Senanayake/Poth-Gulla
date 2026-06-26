@@ -1,6 +1,6 @@
 #!/bin/sh
 # Production entrypoint for the API container.
-#   1. run pending migrations (prisma migrate deploy — safe / forward-only)
+#   1. run pending migrations (prisma migrate deploy - safe / forward-only)
 #   2. run the idempotent seed (all upserts; safe on every deploy)
 #   3. start the compiled server
 # DATABASE_URL must point at the in-network Postgres (set by the deploy compose).

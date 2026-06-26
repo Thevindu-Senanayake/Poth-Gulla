@@ -308,7 +308,7 @@ export default function Approvals() {
                             marginBottom: 4,
                         }}
                     >
-                        Tier 4–5 device approval required
+                        Tier 4-5 device approval required
                     </div>
                     <div style={{ fontSize: 12, color: '#92400e', lineHeight: 1.6 }}>
                         High-value devices require explicit staff approval before pickup. Approving

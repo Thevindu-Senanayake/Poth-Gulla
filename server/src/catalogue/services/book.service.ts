@@ -227,7 +227,7 @@ export class BookService {
       copy.status === ItemStatus.RESERVED
     ) {
       throw new BadRequestException(
-        `Cannot retire a copy that is ${copy.status.toLowerCase()} — return or cancel the booking first`,
+        `Cannot retire a copy that is ${copy.status.toLowerCase()} - return or cancel the booking first`,
       );
     }
     const result = await this.prisma.bookCopy.update({

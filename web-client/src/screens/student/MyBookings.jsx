@@ -12,7 +12,7 @@ const TYPE_META = {
 
 function typeChip(b) {
     const key = (b.resourceType || b.type || '').toUpperCase();
-    const meta = TYPE_META[key] || { label: key || '—', col: '#3a3b4e', bg: '#f0f0f6' };
+    const meta = TYPE_META[key] || { label: key || '-', col: '#3a3b4e', bg: '#f0f0f6' };
     return (
         <span
             style={{

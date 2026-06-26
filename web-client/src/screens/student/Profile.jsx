@@ -95,9 +95,9 @@ export default function Profile() {
     const { data } = useFetch(() => loadProfileSummary(role), [role, refreshKey]);
 
     const profileStats = data?.stats || [
-        { label: '—', value: 0 },
-        { label: '—', value: 0 },
-        { label: '—', value: 0 },
+        { label: '-', value: 0 },
+        { label: '-', value: 0 },
+        { label: '-', value: 0 },
     ];
 
     return (
@@ -176,7 +176,7 @@ export default function Profile() {
                                 fontWeight: 600,
                             }}
                         >
-                            {user?.roleLabel || '—'}
+                            {user?.roleLabel || '-'}
                         </div>
                     </div>
                 </div>
@@ -323,7 +323,7 @@ export default function Profile() {
                             margin: '0 0 20px',
                         }}
                     >
-                        Profile details — your name, email, role and tier — are managed by library
+                        Profile details - your name, email, role and tier - are managed by library
                         staff. To request a change, please contact an administrator at{' '}
                         <a
                             href="mailto:admin@iit.ac.lk"

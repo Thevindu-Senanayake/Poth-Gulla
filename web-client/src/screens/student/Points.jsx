@@ -48,7 +48,7 @@ export default function Points() {
     const tiersWithRange = tierMeta.map((t, i) => {
         const next = tierMeta[i + 1];
         const range = next
-            ? `${t.floor.toLocaleString()}–${(next.floor - 1).toLocaleString()}`
+            ? `${t.floor.toLocaleString()}-${(next.floor - 1).toLocaleString()}`
             : `${t.floor.toLocaleString()}+`;
         return { ...t, range };
     });
@@ -78,7 +78,7 @@ export default function Points() {
         curBorder: i === tierNum - 1 ? t.col + '55' : '#f0f0f6',
     }));
 
-    // Keys that are day-thresholds (not point deltas) — skip from the points table
+    // Keys that are day-thresholds (not point deltas) - skip from the points table
     const THRESHOLD_KEYS = new Set(['RECALL_DAYS', 'ESCALATE_DAYS']);
 
     function fmtDelta(amount, key) {

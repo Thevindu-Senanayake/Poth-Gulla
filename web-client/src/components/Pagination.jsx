@@ -80,7 +80,7 @@ export default function Pagination({
                     ))}
                 </select>
                 <span style={{ marginLeft: 8 }}>
-                    {from}–{to} of {total}
+                    {from}-{to} of {total}
                 </span>
             </div>
 

@@ -64,7 +64,7 @@ export default function Checkout() {
             const tag = (rawTag ?? assetTag).trim();
             if (!tag) throw new Error('Scan or enter the asset tag');
             if (isCheckout) {
-                // Backend resolves the booking from the asset tag — same value is
+                // Backend resolves the booking from the asset tag - same value is
                 // sent in both body fields for compatibility with the existing route.
                 const b = await scanCheckout(tag, tag);
                 setResult({
@@ -166,7 +166,7 @@ export default function Checkout() {
                         ))}
                     </div>
 
-                    {/* Real camera scanner — uses BarcodeDetector when available
+                    {/* Real camera scanner - uses BarcodeDetector when available
               (Chrome / Edge / Android). On Safari / Firefox the component
               falls back to the manual entry field below. */}
                     <div style={{ marginBottom: 22 }}>
@@ -231,7 +231,7 @@ export default function Checkout() {
                         )}
                     </div>
 
-                    {/* Manual entry — used when the camera isn't available or a USB
+                    {/* Manual entry - used when the camera isn't available or a USB
               barcode scanner is wired up (it types into the focused input). */}
                     {isCheckout ? (
                         <>
@@ -263,7 +263,7 @@ export default function Checkout() {
                                     marginBottom: 18,
                                 }}
                             >
-                                One scan is enough — the QR encodes the asset tag and the system
+                                One scan is enough - the QR encodes the asset tag and the system
                                 finds the member's approved booking from it.
                             </div>
                         </>
@@ -439,7 +439,7 @@ export default function Checkout() {
                             is auto-promoted.
                         </li>
                         <li>
-                            Tier 4–5 device requests must be approved under{' '}
+                            Tier 4-5 device requests must be approved under{' '}
                             <strong>Device approvals</strong> before they can be checked out.
                         </li>
                     </ol>

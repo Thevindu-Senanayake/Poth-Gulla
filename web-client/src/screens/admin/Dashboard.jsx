@@ -131,7 +131,7 @@ export default function Dashboard() {
         };
     });
 
-    // Catalogue mix — proportional bars.
+    // Catalogue mix - proportional bars.
     const resourceMix = [
         { label: 'Books', n: booksTotal, col: '#16a34a' },
         { label: 'Devices', n: devicesTotal, col: '#3b82f6' },
@@ -262,7 +262,7 @@ export default function Dashboard() {
                             margin: '0 0 20px',
                         }}
                     >
-                        Bookings — last 7 days
+                        Bookings - last 7 days
                     </h2>
                     <div
                         style={{

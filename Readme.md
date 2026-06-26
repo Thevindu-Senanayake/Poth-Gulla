@@ -1,4 +1,4 @@
-# Poth Gulla — Smart Library Resource Management System
+# Poth Gulla - Smart Library Resource Management System
 
 > Team: SegFault | CIPHER 2.0 Hackathon | Scenario 04
 >
@@ -18,7 +18,7 @@
 | **Audit Log**           | Append-only event trail; server-side filter by category, date range, sort direction, log ID search                                           |
 | **System Config**       | Admin-editable tier thresholds + point penalty values (all config-driven, no hardcoded constants); changes take effect immediately           |
 | **Resource Management** | Books (per-copy tracking, archive/soft-delete, retire), devices (tier-based staff approval), study rooms (time-overlap detection)            |
-| **Self-Checkout**       | Students scan book QR sticker at the shelf — no staff needed                                                                                 |
+| **Self-Checkout**       | Students scan book QR sticker at the shelf - no staff needed                                                                                 |
 | **RBAC**                | Admin, Library Staff, Lecturer, Student with granular endpoint permissions                                                                   |
 
 ---
@@ -31,7 +31,7 @@
 | `web-client`  | React 19, Vite, react-router-dom, axios                                                                                  |
 | `client`      | Expo SDK 54, expo-router, expo-secure-store, axios                                                                       |
 | Observability | Prometheus + Grafana (Docker)                                                                                            |
-| Testing       | Jest 30 (ESM), Supertest — 125 unit tests + 12 e2e smoke tests                                                           |
+| Testing       | Jest 30 (ESM), Supertest - 125 unit tests + 12 e2e smoke tests                                                           |
 | CI/CD         | GitHub Actions: lint gate, test gate, change-detection, signed releases (cosign)                                         |
 | Code quality  | Prettier (4-space indent, single quotes), ESLint, lint-staged, Husky pre-commit (format → lint → unit tests → e2e tests) |
 
@@ -43,7 +43,7 @@
 Poth Gulla/
 ├── server/                  # NestJS API (Node 22+, PostgreSQL + Prisma 7)
 │   ├── src/
-│   │   ├── auth/           # JWT, RBAC, login/register/logout — logs USER_LOGGED_IN
+│   │   ├── auth/           # JWT, RBAC, login/register/logout - logs USER_LOGGED_IN
 │   │   ├── booking/        # Router, copy auto-assignment, duplicate prevention
 │   │   ├── waitlist/       # Priority scoring, auto-promotion with copy reservation
 │   │   ├── points/         # Config-driven point mutations, tier derivation
@@ -53,7 +53,7 @@ Poth Gulla/
 │   │   ├── users/          # CRUD, tier-points coupling
 │   │   ├── config/         # Admin-editable system config (tiers/penalties); auto-recomputes tiers
 │   │   ├── audit/          # Server-side filterable, sortable event log
-│   │   ├── overdue/        # Daily cron — recall flag, escalation, room no-show
+│   │   ├── overdue/        # Daily cron - recall flag, escalation, room no-show
 │   │   ├── review/         # Book reviews, one-per-book guard
 │   │   └── recommendation/ # Personalised book recommendations
 │   ├── prisma/
@@ -163,34 +163,34 @@ Base URL: `http://localhost:3000/api`
 
 ### Auth
 
-- `POST /auth/login` — returns `{ accessToken, user }`
-- `POST /auth/register` — Admin only; new accounts start at 500 pts (Tier 3)
-- `GET /auth/me` — validate token + get user
+- `POST /auth/login` - returns `{ accessToken, user }`
+- `POST /auth/register` - Admin only; new accounts start at 500 pts (Tier 3)
+- `GET /auth/me` - validate token + get user
 
 ### Bookings
 
-- `POST /bookings` — route to APPROVED / PENDING / WAITLIST
-- `GET /bookings/me` — own bookings (`qrToken` = asset tag for APPROVED books/devices)
-- `GET /bookings` — all bookings (Admin/Staff)
-- `PATCH /bookings/:id/approve` — approve PENDING device booking
-- `POST /bookings/:id/cancel` — cancel own booking
+- `POST /bookings` - route to APPROVED / PENDING / WAITLIST
+- `GET /bookings/me` - own bookings (`qrToken` = asset tag for APPROVED books/devices)
+- `GET /bookings` - all bookings (Admin/Staff)
+- `PATCH /bookings/:id/approve` - approve PENDING device booking
+- `POST /bookings/:id/cancel` - cancel own booking
 
 ### Scan (QR Workflow)
 
-- `POST /scan/checkout` — staff: `{ bookingQr, assetTag }`; auto-detects student from asset tag
-- `POST /scan/self-checkout` — student: `{ assetTag }`; no staff needed
-- `POST /scan/room-checkin` — `{ roomQr }`; students self-scan; Admin/Staff auto-find booking holder
-- `POST /scan/return` — staff: `{ assetTag, condition }`
+- `POST /scan/checkout` - staff: `{ bookingQr, assetTag }`; auto-detects student from asset tag
+- `POST /scan/self-checkout` - student: `{ assetTag }`; no staff needed
+- `POST /scan/room-checkin` - `{ roomQr }`; students self-scan; Admin/Staff auto-find booking holder
+- `POST /scan/return` - staff: `{ assetTag, condition }`
 
 ### Catalogue
 
-- `GET /catalogue/books` — students: active only; Admin/Staff: all including archived/retired
+- `GET /catalogue/books` - students: active only; Admin/Staff: all including archived/retired
 - `GET /catalogue/books/:id`
 - `POST /catalogue/books`, `PATCH /catalogue/books/:id`, `DELETE /catalogue/books/:id`
-- `PATCH /catalogue/books/:id/archive` — soft-delete (hidden from students)
+- `PATCH /catalogue/books/:id/archive` - soft-delete (hidden from students)
 - `PATCH /catalogue/books/:id/unarchive`
-- `POST /catalogue/books/:id/copies` — add physical copy
-- `DELETE /catalogue/copies/:id` — retire copy
+- `POST /catalogue/books/:id/copies` - add physical copy
+- `DELETE /catalogue/copies/:id` - retire copy
 - `PATCH /catalogue/copies/:id/restore`
 - `GET /catalogue/devices`, `POST`, `PATCH`, `DELETE`
 - `GET /catalogue/rooms`, `POST`, `PATCH`, `DELETE`
@@ -198,23 +198,23 @@ Base URL: `http://localhost:3000/api`
 
 ### Waitlist
 
-- `GET /waitlist/me` — own entries
-- `GET /waitlist/:resourceType/:resourceKey` — ordered queue with user details (Admin/Staff)
+- `GET /waitlist/me` - own entries
+- `GET /waitlist/:resourceType/:resourceKey` - ordered queue with user details (Admin/Staff)
 - `POST /waitlist/:id/promote`, `POST /waitlist/:id/dismiss`
 
 ### Notifications (SSE push)
 
-- `GET /notifications/stream` — SSE; auth via `?token=<jwt>`
-- `GET /notifications/me` — paginated inbox
+- `GET /notifications/stream` - SSE; auth via `?token=<jwt>`
+- `GET /notifications/me` - paginated inbox
 - `POST /notifications/read-all`
 - `PATCH /notifications/:id/read`
 
 ### Points & System Config
 
 - `GET /points/me`, `GET /points/:userId`
-- `GET /config` — tier thresholds + penalty values + feature toggles
-- `PUT /config` — update config; tier change auto-recomputes all user tiers
-- `GET /audit/logs` — filterable by category, date range, actor, sort direction
+- `GET /config` - tier thresholds + penalty values + feature toggles
+- `PUT /config` - update config; tier change auto-recomputes all user tiers
+- `GET /audit/logs` - filterable by category, date range, actor, sort direction
 
 ---
 
@@ -222,7 +222,7 @@ Base URL: `http://localhost:3000/api`
 
 | Stage            | QR encodes                         | Who uses it              | Endpoint                                                |
 | ---------------- | ---------------------------------- | ------------------------ | ------------------------------------------------------- |
-| Book APPROVED    | `copy.assetTag` (e.g. `BK-CC-001`) | Staff at collection desk | `POST /scan/checkout` — auto-finds booking by asset tag |
+| Book APPROVED    | `copy.assetTag` (e.g. `BK-CC-001`) | Staff at collection desk | `POST /scan/checkout` - auto-finds booking by asset tag |
 | Book CHECKED_OUT | `copy.assetTag`                    | Staff at return desk     | `POST /scan/return`                                     |
 | Device APPROVED  | `device.assetTag`                  | Staff at collection desk | same                                                    |
 | Room APPROVED    | `studyRoom.roomQr` (door sticker)  | Student scans door       | `POST /scan/room-checkin`                               |
@@ -274,8 +274,8 @@ Config (`.prettierrc.json`): 4-space indent, single quotes, `trailingComma: es5`
 
 ## Continuous Integration
 
-- **`ci.yml`** — runs on every PR and push to `main`: install → lint → unit tests → e2e tests → web build.
-- **`release-deploy.yml`** — triggered on version tags (`v*`): runs tests as a gate, builds/signs changed Docker images (cosign), deploys to DigitalOcean via SSH + `docker compose`.
+- **`ci.yml`** - runs on every PR and push to `main`: install → lint → unit tests → e2e tests → web build.
+- **`release-deploy.yml`** - triggered on version tags (`v*`): runs tests as a gate, builds/signs changed Docker images (cosign), deploys to DigitalOcean via SSH + `docker compose`.
 
 Change detection skips rebuilding unchanged services; the previous image digest is carried forward.
 

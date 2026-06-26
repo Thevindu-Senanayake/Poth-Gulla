@@ -161,7 +161,7 @@ export class BookingService {
           });
           qrToken = device?.assetTag ?? randomUUID();
         } else {
-          qrToken = randomUUID(); // ROOM — door QR is used at check-in, not booking QR
+          qrToken = randomUUID(); // ROOM - door QR is used at check-in, not booking QR
         }
       }
     }

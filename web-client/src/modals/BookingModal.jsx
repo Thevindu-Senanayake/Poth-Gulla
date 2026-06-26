@@ -153,7 +153,7 @@ export default function BookingModal() {
     }
 
     // Build a valid ISO window, clamped to the backend's per-type duration caps
-    // (BOOK ≤ 14d, DEVICE ≤ 7d, ROOM ≤ 4h — see server domain.constants.ts).
+    // (BOOK ≤ 14d, DEVICE ≤ 7d, ROOM ≤ 4h - see server domain.constants.ts).
     function buildWindow() {
         const start = new Date(`${bookDate}T09:00:00`);
         const type = resource?.type;
@@ -169,7 +169,7 @@ export default function BookingModal() {
         return { startAt: start.toISOString(), endAt: end.toISOString() };
     }
 
-    // Single submit — backend decides APPROVED | PENDING | WAITLIST and we branch on the result.
+    // Single submit - backend decides APPROVED | PENDING | WAITLIST and we branch on the result.
     async function submitBooking() {
         if (busy) return;
         setBookingModal((prev) => ({ ...prev, busy: true }));
@@ -554,7 +554,7 @@ export default function BookingModal() {
                             </div>
                             <div style={{ fontSize: 12, color: '#be185d', lineHeight: 1.5 }}>
                                 You can join the waitlist. Add a justification message to improve
-                                your priority score — staff may promote you ahead of the queue.
+                                your priority score - staff may promote you ahead of the queue.
                             </div>
                         </div>
                     </div>
@@ -917,7 +917,7 @@ export default function BookingModal() {
         );
 
     /* ── Stage: loanQR ──
-       Same modal serves two lifecycle stages — copy switches on status:
+       Same modal serves two lifecycle stages - copy switches on status:
         - APPROVED   → in Pending checkout, this is a CHECKOUT QR
         - CHECKED_OUT → patron has the item, this is a RETURN QR
        (Anything else falls back to the return wording.) */

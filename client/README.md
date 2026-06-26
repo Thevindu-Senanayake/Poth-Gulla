@@ -1,4 +1,4 @@
-# Poth Gulla — Mobile Client
+# Poth Gulla - Mobile Client
 
 Expo SDK 54 / React Native student-facing mobile app for the Poth Gulla library system.
 

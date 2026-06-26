@@ -279,7 +279,7 @@ export default function StaffRoomCheckin() {
                         <code style={{ color: '#86efac', margin: '0 4px' }}>
                             /scan/room-checkin
                         </code>
-                        endpoint check-ins under the caller's account — so this attaches the room to{' '}
+                        endpoint check-ins under the caller's account - so this attaches the room to{' '}
                         <em>you</em>. To scan a student in at the desk, the backend needs a{' '}
                         <code style={{ color: '#86efac' }}>forUserId</code> parameter on this route.
                     </div>

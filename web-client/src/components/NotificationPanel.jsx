@@ -43,7 +43,7 @@ export default function NotificationPanel({ onClose, onRead }) {
 
     // Auto-mark all as read 1.5s after opening so the badge clears once the
     // user has had a chance to see the unread state. Notifications remain in
-    // the list — they're never deleted, just lose their highlight.
+    // the list - they're never deleted, just lose their highlight.
     useEffect(() => {
         if (!hasUnread) return;
         const timer = setTimeout(async () => {

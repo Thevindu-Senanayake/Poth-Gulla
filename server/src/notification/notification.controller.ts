@@ -41,7 +41,7 @@ export class NotificationController {
 
   @ApiOperation({
     summary:
-      'SSE stream — emits a "notification" event on each new notification',
+      'SSE stream - emits a "notification" event on each new notification',
   })
   @Sse('stream')
   stream(@Request() req: any): Observable<MessageEvent> {

@@ -211,7 +211,7 @@ export class ScanService {
 
       if (!booking)
         throw new BadRequestException(
-          `No approved booking for "${copy.bookTitle?.title}" — reserve it first`,
+          `No approved booking for "${copy.bookTitle?.title}" - reserve it first`,
         );
       return this.checkoutBook(booking, assetTag, actorId);
     }
@@ -235,7 +235,7 @@ export class ScanService {
       });
       if (!booking)
         throw new BadRequestException(
-          `No approved booking for device "${device.name}" — reserve it first`,
+          `No approved booking for device "${device.name}" - reserve it first`,
         );
       return this.checkoutDevice(booking, assetTag, actorId);
     }
@@ -326,7 +326,7 @@ export class ScanService {
       copy.status !== ItemStatus.RESERVED
     ) {
       throw new BadRequestException(
-        `Copy ${assetTag} is ${copy.status} — not available for checkout`,
+        `Copy ${assetTag} is ${copy.status} - not available for checkout`,
       );
     }
 
@@ -643,7 +643,7 @@ export class ScanService {
         delta: p('BOOK_LATE_7D_PLUS', -220),
       };
     }
-    // Device — positive rewards only apply for GOOD condition.
+    // Device - positive rewards only apply for GOOD condition.
     // For early/on-time DAMAGED returns the timing delta is 0; DEVICE_DAMAGED is charged separately.
     if (daysLate < 0)
       return condition === ItemCondition.GOOD

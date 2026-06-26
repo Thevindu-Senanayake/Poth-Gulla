@@ -68,7 +68,7 @@ const PAGE_META = {
     },
     '/staff/approvals': {
         title: 'Device Approvals',
-        sub: 'High-value Tier 4–5 device requests',
+        sub: 'High-value Tier 4-5 device requests',
         search: false,
     },
     '/staff/overdue': {
@@ -110,7 +110,7 @@ const PAGE_META = {
     },
     '/admin/resources': {
         title: 'Resource Catalogue',
-        sub: 'Books, devices and rooms — copy-level management',
+        sub: 'Books, devices and rooms - copy-level management',
         search: true,
         searchPh: 'Search resources…',
     },
@@ -271,7 +271,7 @@ export default function Header() {
             {/* Bell + panel live inside the same `position: relative`
                 wrapper so the panel anchors to the bell and pops up as an
                 overlay (the panel previously rendered as a sibling of the
-                Header bar — without a positioned ancestor it flowed with
+                Header bar - without a positioned ancestor it flowed with
                 the page and appeared on scroll). */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
                 <button

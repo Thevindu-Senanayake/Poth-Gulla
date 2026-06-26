@@ -99,7 +99,7 @@ export const DEFAULT_SYSTEM_CONFIG: SystemConfigData = {
     { key: 'BOOK_LATE_1D', label: 'Book late (1 day)', amount: -10 },
     {
       key: 'BOOK_LATE_PER_DAY',
-      label: 'Book late (per day, days 2–7)',
+      label: 'Book late (per day, days 2-7)',
       amount: -20,
     },
     {
@@ -117,7 +117,7 @@ export const DEFAULT_SYSTEM_CONFIG: SystemConfigData = {
       label: 'Device returned early',
       amount: 40,
     },
-    { key: 'DEVICE_LATE_1_3D', label: 'Device late (1–3 days)', amount: -80 },
+    { key: 'DEVICE_LATE_1_3D', label: 'Device late (1-3 days)', amount: -80 },
     {
       key: 'DEVICE_LATE_3D_PLUS',
       label: 'Device late (3+ days, flat penalty)',
@@ -147,7 +147,7 @@ export const DEFAULT_SYSTEM_CONFIG: SystemConfigData = {
     { label: 'Collaborative recommendations (Redis-cached)', on: true },
     { label: 'QR-based checkout / return', on: true },
     { label: 'Overdue sweep job', on: true },
-    { label: 'Tier 4–5 device approval required', on: true },
+    { label: 'Tier 4-5 device approval required', on: true },
     { label: 'Faculty (lecturer) priority weighting', on: true },
   ],
 };

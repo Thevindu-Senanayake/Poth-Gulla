@@ -143,7 +143,7 @@ export function adaptBooking(b) {
     // should encode. For an APPROVED/CHECKED_OUT book it's the assigned
     // BookCopy.assetTag; for a device booking it's the device's own assetTag;
     // for a room it's the door QR. Backend responses can shape these a few
-    // different ways depending on the route — try every known path.
+    // different ways depending on the route - try every known path.
     const assetTag =
         b.borrowing?.bookCopy?.assetTag ??
         b.bookCopy?.assetTag ??

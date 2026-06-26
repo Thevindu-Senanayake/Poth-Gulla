@@ -43,7 +43,7 @@ export default function Users() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(30);
 
-    // Build base list with all filters applied — hooks must stay above guards.
+    // Build base list with all filters applied - hooks must stay above guards.
     const usersList = data?.items || [];
     const tierMap = {
         T1: 'Tier 1',
@@ -56,7 +56,7 @@ export default function Users() {
 
     let filtered = usersList;
     if (userFilter && userFilter !== 'All') {
-        // Filter by stable internal role key, not the display label — fixes
+        // Filter by stable internal role key, not the display label - fixes
         // "Staff"/"Admin"/"Lecturer" returning zero results.
         filtered = filtered.filter((u) => u.roleKey === userFilter);
     }

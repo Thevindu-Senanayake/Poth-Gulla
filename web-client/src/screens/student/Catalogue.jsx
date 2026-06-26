@@ -128,7 +128,7 @@ export default function Catalogue() {
                                 e.currentTarget.style.transform = 'translateY(0)';
                             }}
                         >
-                            {/* Card header — shows the real cover image when available
+                            {/* Card header - shows the real cover image when available
                   and falls back to the vector glyph (#24). */}
                             <div
                                 style={{

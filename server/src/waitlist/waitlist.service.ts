@@ -238,7 +238,7 @@ export class WaitlistService {
       .create(
         entry.booking.userId ?? '',
         'WAITLIST_PROMOTED',
-        `You've been promoted from the waitlist for "${resourceName}" — your booking is now approved`,
+        `You've been promoted from the waitlist for "${resourceName}" - your booking is now approved`,
       )
       .catch(() => {});
 

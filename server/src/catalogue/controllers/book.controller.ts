@@ -68,7 +68,7 @@ export class BookController {
   }
   @ApiOperation({
     summary:
-      'Archive (soft-delete) a book title — hides it from students (Admin/Staff)',
+      'Archive (soft-delete) a book title - hides it from students (Admin/Staff)',
   })
   @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
   @Patch('books/:id/archive')

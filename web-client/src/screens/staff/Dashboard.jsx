@@ -476,7 +476,7 @@ export default function StaffDashboard() {
                             Device approvals
                         </div>
                         <div style={{ fontSize: 12, color: '#7c7e93' }}>
-                            Tier 4–5 pickup requests
+                            Tier 4-5 pickup requests
                         </div>
                     </div>
                 </div>

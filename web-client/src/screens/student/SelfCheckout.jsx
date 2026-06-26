@@ -22,7 +22,7 @@ function selfCheckoutError(e) {
         return "Your account isn't authorised for self-checkout. Please use the front desk.";
     }
     if (status === 400 && /asset|tag|copy/i.test(String(raw || ''))) {
-        return `Asset tag not recognised — ${raw}`;
+        return `Asset tag not recognised - ${raw}`;
     }
     return raw ? `${raw}${status ? ` (HTTP ${status})` : ''}` : 'Could not complete checkout.';
 }

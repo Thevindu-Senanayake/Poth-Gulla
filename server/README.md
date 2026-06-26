@@ -173,10 +173,10 @@ The **Poth Gulla - API Overview** dashboard is auto-provisioned on first start. 
 | --------------- | --------------------------------------- | -------------------------- |
 | Book            | ≥1 AVAILABLE copy; no duplicate booking | `APPROVED` + copy RESERVED |
 | Book            | all copies out (or duplicate booking)   | `WAITLIST`                 |
-| Device tier 1–3 | available                               | `APPROVED`                 |
-| Device tier 1–3 | unavailable                             | `WAITLIST`                 |
-| Device tier 4–5 | available                               | `PENDING` (staff review)   |
-| Device tier 4–5 | unavailable                             | `WAITLIST`                 |
+| Device tier 1-3 | available                               | `APPROVED`                 |
+| Device tier 1-3 | unavailable                             | `WAITLIST`                 |
+| Device tier 4-5 | available                               | `PENDING` (staff review)   |
+| Device tier 4-5 | unavailable                             | `WAITLIST`                 |
 | Room            | slot free (no time overlap)             | `APPROVED`                 |
 | Room            | slot taken                              | `WAITLIST`                 |
 | Any             | over tier concurrency limit             | rejected (400)             |
@@ -194,12 +194,12 @@ All delta values are **admin-configurable** via `PUT /api/config` (penalties sec
 | Book returned >2 days early             | +50        |
 | Book returned on time                   | +25        |
 | Book 1 day late                         | −10        |
-| Book 2–7 days late                      | −20 × days |
+| Book 2-7 days late                      | −20 × days |
 | Book >7 days late                       | −220       |
 | Book review (once per book)             | +15        |
 | Device returned early, good condition   | +40        |
 | Device returned on time, good condition | +30        |
-| Device 1–3 days late                    | −80        |
+| Device 1-3 days late                    | −80        |
 | Device >3 days late                     | −160       |
 | Device returned damaged                 | −300       |
 | Room attended (QR check-in)             | +20        |
@@ -213,10 +213,10 @@ All delta values are **admin-configurable** via `PUT /api/config` (penalties sec
 
 | Tier | Label      | Points      | Books | Devices | Rooms |
 | ---- | ---------- | ----------- | ----- | ------- | ----- |
-| 1    | Restricted | 0–199       | 1     | 1       | 1     |
-| 2    | Basic      | 200–499     | 2     | 1       | 1     |
-| 3    | Regular    | 500–999     | 3     | 2       | 1     |
-| 4    | Trusted    | 1,000–1,999 | 4     | 3       | 2     |
+| 1    | Restricted | 0-199       | 1     | 1       | 1     |
+| 2    | Basic      | 200-499     | 2     | 1       | 1     |
+| 3    | Regular    | 500-999     | 3     | 2       | 1     |
+| 4    | Trusted    | 1,000-1,999 | 4     | 3       | 2     |
 | 5    | Elite      | 2,000+      | 5     | 3       | 2     |
 
 ---
@@ -225,7 +225,7 @@ All delta values are **admin-configurable** via `PUT /api/config` (penalties sec
 
 | QR / value            | Generated when        | Encodes                                  | Endpoint                                                |
 | --------------------- | --------------------- | ---------------------------------------- | ------------------------------------------------------- |
-| Book booking QR       | Booking APPROVED      | `bookCopy.assetTag` (e.g. `BK-CC-001`)   | `POST /api/scan/checkout` — auto-finds booking by copy  |
+| Book booking QR       | Booking APPROVED      | `bookCopy.assetTag` (e.g. `BK-CC-001`)   | `POST /api/scan/checkout` - auto-finds booking by copy  |
 | Device booking QR     | Booking APPROVED      | `device.assetTag`                        | same                                                    |
 | Room booking QR       | Room booking APPROVED | `studyRoom.roomQr` (permanent door code) | `POST /api/scan/room-checkin`                           |
 | Physical copy sticker | Printed on item       | `assetTag`                               | `POST /api/scan/return`, `POST /api/scan/self-checkout` |

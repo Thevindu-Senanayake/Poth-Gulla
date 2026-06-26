@@ -349,7 +349,7 @@ export default function WaitlistReview() {
                 </div>
             </div>
 
-            {/* Empty-everything hero — only render when both queues are empty */}
+            {/* Empty-everything hero - only render when both queues are empty */}
             {flagged.length === 0 && autoQueue.length === 0 && (
                 <div
                     style={{
@@ -373,13 +373,13 @@ export default function WaitlistReview() {
                         No waitlist entries
                     </div>
                     <div style={{ fontSize: 13 }}>
-                        Nothing is queued right now — flagged entries and the automatic queue will
+                        Nothing is queued right now - flagged entries and the automatic queue will
                         appear here once members opt in.
                     </div>
                 </div>
             )}
 
-            {/* Flagged — only render the section when there's something to show */}
+            {/* Flagged - only render the section when there's something to show */}
             {flagged.length > 0 && (
                 <div style={{ marginBottom: 32 }}>
                     <div
@@ -602,7 +602,7 @@ export default function WaitlistReview() {
                 </div>
             )}
 
-            {/* Auto queue — only render when there's something to show */}
+            {/* Auto queue - only render when there's something to show */}
             {autoQueue.length > 0 && (
                 <div>
                     <h2

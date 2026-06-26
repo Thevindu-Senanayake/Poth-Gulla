@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 // Renders children through a portal attached to document.body so the overlay
-// always covers the full viewport — independent of any ancestor that creates
+// always covers the full viewport - independent of any ancestor that creates
 // a containing block via transform / filter / will-change / animation.
 //
 // Use this for any modal that needs the dim + blur backdrop to cover the
