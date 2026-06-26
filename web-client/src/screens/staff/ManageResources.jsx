@@ -11,7 +11,6 @@ import {
     restoreCopy,
     setDeviceMaintenance,
     setRoomMaintenance,
-    deleteBook,
     deleteDevice,
     deleteRoom,
     archiveBook,
@@ -283,46 +282,6 @@ export default function ManageResources() {
     async function doArchiveBook(book) {
         try {
             await archiveBook(book.id);
-            showToast(`Archived "${book.title}" — hidden from students`);
-            refresh();
-            reload();
-        } catch (e) {
-            showToast(backendError(e, 'Could not archive book'));
-        }
-    }
-    async function doUnarchiveBook(book) {
-        try {
-            await unarchiveBook(book.id);
-            showToast(`Unarchived "${book.title}"`);
-            refresh();
-            reload();
-        } catch (e) {
-            showToast(backendError(e, 'Could not unarchive book'));
-        }
-    }
-
-    // ---- Delete helpers (used by all three tabs) ----
-    async function doDeleteBook(book) {
-        try {
-            const fresh = await getBook(book.id);
-            const copies = fresh.raw?.copies || [];
-            const live = copies.filter((c) => c.status !== 'RETIRED');
-            const onLoan = live.filter((c) => c.status === 'BORROWED');
-            if (onLoan.length > 0) {
-                showToast(
-                    `Cannot delete — ${onLoan.length} copy${onLoan.length > 1 ? 'ies are' : ' is'} currently on loan.`
-                );
-                return;
-            }
-            for (const c of live) {
-                try {
-                    await retireCopy(c.id);
-                } catch (re) {
-                    showToast(backendError(re, `Could not retire copy ${c.assetTag}`));
-                    return;
-                }
-            }
-            await deleteBook(book.id);
             showToast(`Deleted "${book.title}"`);
             refresh();
             reload();
@@ -330,6 +289,18 @@ export default function ManageResources() {
             showToast(backendError(e, 'Could not delete book'));
         }
     }
+    async function doUnarchiveBook(book) {
+        try {
+            await unarchiveBook(book.id);
+            showToast(`Restored "${book.title}"`);
+            refresh();
+            reload();
+        } catch (e) {
+            showToast(backendError(e, 'Could not restore book'));
+        }
+    }
+
+    // ---- Delete helpers (used by devices and rooms) ----
     async function doDeleteDevice(device) {
         try {
             await deleteDevice(device.id);
@@ -849,17 +820,17 @@ export default function ManageResources() {
                                                 book.raw?.archivedAt
                                                     ? doUnarchiveBook(book)
                                                     : askConfirm({
-                                                          title: 'Archive this book?',
-                                                          message: `"${book.title}" will be hidden from students. You can unarchive it later.`,
-                                                          confirmLabel: 'Archive',
-                                                          confirmColor: '#7c3aed',
+                                                          title: 'Delete this book?',
+                                                          message: `"${book.title}" will be hidden from students. You can restore it later.`,
+                                                          confirmLabel: 'Delete',
+                                                          confirmColor: '#ef4444',
                                                           onConfirm: () => doArchiveBook(book),
                                                       })
                                             }
                                             style={{
                                                 background: '#fff',
-                                                color: book.raw?.archivedAt ? '#16a34a' : '#7c3aed',
-                                                border: `1px solid ${book.raw?.archivedAt ? '#bbf7d0' : '#ddd6fe'}`,
+                                                color: book.raw?.archivedAt ? '#16a34a' : '#ef4444',
+                                                border: `1px solid ${book.raw?.archivedAt ? '#bbf7d0' : '#fecaca'}`,
                                                 borderRadius: 8,
                                                 padding: '7px 12px',
                                                 fontSize: 12,
@@ -869,32 +840,7 @@ export default function ManageResources() {
                                                 marginLeft: 6,
                                             }}
                                         >
-                                            {book.raw?.archivedAt ? 'Unarchive' : 'Archive'}
-                                        </button>
-                                        <button
-                                            onClick={() =>
-                                                askConfirm({
-                                                    title: 'Delete this book?',
-                                                    message: `"${book.title}" and all of its copies will be permanently removed. Any non-retired copies will be retired first. This cannot be undone.`,
-                                                    confirmLabel: 'Delete',
-                                                    confirmColor: '#ef4444',
-                                                    onConfirm: () => doDeleteBook(book),
-                                                })
-                                            }
-                                            style={{
-                                                background: '#fff',
-                                                color: '#ef4444',
-                                                border: '1px solid #fecaca',
-                                                borderRadius: 8,
-                                                padding: '7px 12px',
-                                                fontSize: 12,
-                                                fontWeight: 700,
-                                                cursor: 'pointer',
-                                                whiteSpace: 'nowrap',
-                                                marginLeft: 6,
-                                            }}
-                                        >
-                                            Delete
+                                            {book.raw?.archivedAt ? 'Restore' : 'Delete'}
                                         </button>
                                     </div>
 
