@@ -40,7 +40,7 @@ export default function Catalogue() {
         <div
             style={{
                 padding: '30px 30px 40px',
-                fontFamily: "'Public Sans', sans-serif",
+                fontFamily: "'Poppins', sans-serif",
                 minHeight: '100%',
             }}
         >
@@ -48,7 +48,7 @@ export default function Catalogue() {
             <div style={{ marginBottom: 24 }}>
                 <h1
                     style={{
-                        fontFamily: "'Spectral', serif",
+                        fontFamily: "'Poppins', sans-serif",
                         fontSize: 24,
                         fontWeight: 600,
                         color: '#1a1b2e',
@@ -78,7 +78,7 @@ export default function Catalogue() {
                             fontSize: 13,
                             fontWeight: typeFilter === f.key ? 700 : 400,
                             cursor: 'pointer',
-                            fontFamily: "'Public Sans', sans-serif",
+                            fontFamily: "'Poppins', sans-serif",
                             transition: 'all 0.15s ease',
                         }}
                     >
