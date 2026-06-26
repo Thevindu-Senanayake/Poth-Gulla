@@ -28,11 +28,11 @@ const TYPE_ICON = {
 
 export default function NotificationPanel({ onClose, onRead }) {
     const panelRef = useRef(null);
-    const { data, loading, reload } = useFetch(() => myNotifications({ limit: 30 }), []);
+    const { data, loading, reload } = useFetch(() => myNotifications({ limit: 50 }), []);
     const notifications = data?.items || [];
     const hasUnread = notifications.some((n) => !n.read);
 
-    // Close on outside click
+    // Close on outside click (mousedown so the panel's own clicks don't propagate)
     useEffect(() => {
         function handler(e) {
             if (panelRef.current && !panelRef.current.contains(e.target)) onClose();
@@ -41,11 +41,19 @@ export default function NotificationPanel({ onClose, onRead }) {
         return () => document.removeEventListener('mousedown', handler);
     }, [onClose]);
 
-    async function handleMarkAll() {
-        await markAllNotificationsRead();
-        reload();
-        onRead();
-    }
+    // Auto-mark all as read 1.5s after opening so the badge clears once the
+    // user has had a chance to see the unread state. Notifications remain in
+    // the list — they're never deleted, just lose their highlight.
+    useEffect(() => {
+        if (!hasUnread) return;
+        const timer = setTimeout(async () => {
+            await markAllNotificationsRead();
+            reload();
+            onRead();
+        }, 1500);
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasUnread]);
 
     async function handleMarkOne(id) {
         await markNotificationRead(id);
@@ -54,13 +62,15 @@ export default function NotificationPanel({ onClose, onRead }) {
     }
 
     return (
+        // Positioned absolutely so it opens directly below the bell button in
+        // the header. The parent wrapper in Header.jsx has position:relative.
         <div
             ref={panelRef}
             style={{
-                position: 'fixed',
-                bottom: 64,
-                left: 14,
-                width: 320,
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                width: 340,
                 background: '#fff',
                 border: '1px solid #e7e7ef',
                 borderRadius: 14,
@@ -83,26 +93,11 @@ export default function NotificationPanel({ onClose, onRead }) {
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#16231b' }}>
                     Notifications
                 </span>
-                {hasUnread && (
-                    <button
-                        onClick={handleMarkAll}
-                        style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            color: '#16a34a',
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: 0,
-                        }}
-                    >
-                        Mark all read
-                    </button>
-                )}
+                <span style={{ fontSize: 11, color: '#9b9db2' }}>{notifications.length} total</span>
             </div>
 
             {/* Body */}
-            <div style={{ maxHeight: 380, overflowY: 'auto' }}>
+            <div style={{ maxHeight: 400, overflowY: 'auto' }}>
                 {loading && (
                     <div
                         style={{
@@ -118,7 +113,7 @@ export default function NotificationPanel({ onClose, onRead }) {
                 {!loading && notifications.length === 0 && (
                     <div
                         style={{
-                            padding: '30px 16px',
+                            padding: '36px 16px',
                             textAlign: 'center',
                             color: '#9b9db2',
                             fontSize: 13,
@@ -137,16 +132,17 @@ export default function NotificationPanel({ onClose, onRead }) {
                                 display: 'flex',
                                 gap: 12,
                                 padding: '12px 16px',
-                                borderBottom: '1px solid #f0f0f8',
-                                background: n.read ? '#fff' : '#f8fff8',
+                                borderBottom: '1px solid #f4f4f8',
+                                background: n.read ? '#fff' : '#f6fff6',
                                 cursor: n.read ? 'default' : 'pointer',
                                 alignItems: 'flex-start',
+                                transition: 'background 0.3s ease',
                             }}
                         >
                             <div
                                 style={{
-                                    width: 30,
-                                    height: 30,
+                                    width: 32,
+                                    height: 32,
                                     borderRadius: 8,
                                     background: meta.bg,
                                     color: meta.col,
@@ -165,7 +161,7 @@ export default function NotificationPanel({ onClose, onRead }) {
                                     style={{
                                         fontSize: 12,
                                         color: '#16231b',
-                                        lineHeight: 1.4,
+                                        lineHeight: 1.45,
                                         marginBottom: 3,
                                         fontWeight: n.read ? 400 : 600,
                                     }}
@@ -184,7 +180,7 @@ export default function NotificationPanel({ onClose, onRead }) {
                                         borderRadius: '50%',
                                         background: '#16a34a',
                                         flexShrink: 0,
-                                        marginTop: 4,
+                                        marginTop: 5,
                                     }}
                                 />
                             )}

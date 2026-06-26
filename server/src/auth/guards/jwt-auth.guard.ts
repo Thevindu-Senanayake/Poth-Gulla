@@ -50,15 +50,21 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     }
 
-    const header: string | undefined = request.headers.authorization;
-    if (!header || !header.startsWith('Bearer ')) {
+    const rawHeader: string | undefined = request.headers.authorization;
+    // SSE endpoints use EventSource which cannot set custom headers, so we
+    // also accept the JWT via ?token= query param as a fallback.
+    const token = rawHeader?.startsWith('Bearer ')
+      ? rawHeader.slice(7)
+      : (request.query?.token as string | undefined);
+
+    if (!token) {
       throw new UnauthorizedException(
         'Missing or invalid Authorization header',
       );
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync(header.slice(7), {
+      const payload = await this.jwtService.verifyAsync(token, {
         secret: this.config.get<string>('JWT_SECRET'),
       });
       const user = await this.users.findById(payload.sub);

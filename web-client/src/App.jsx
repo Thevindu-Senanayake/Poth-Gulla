@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, createContext, useContext, useCallback } from 'react';
+import { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Login from './components/Login';
 import DesktopApp from './components/DesktopApp';
@@ -13,6 +13,8 @@ import * as authApi from './api/auth';
 import { ROLE_MAP, ROLE_LABEL } from './api/auth';
 import { useBadgeCounts } from './hooks/useBadgeCounts';
 import { myNotifications } from './api/misc';
+import { getToken } from './api/auth';
+import { API_BASE_URL } from './api/client';
 
 // Lazy-load all screens
 import StudentDashboard from './screens/student/Dashboard';
@@ -148,8 +150,7 @@ export default function App() {
     // Live sidebar badge counts; refetches on refresh and polls every 60s.
     const badges = useBadgeCounts(user ? currentRole : null, refreshKey);
 
-    // Notification unread count — polled every 30s when logged in.
-    const notifIntervalRef = useRef(null);
+    // Notification unread count — refreshed by the panel after mark-all-read.
     const refreshNotifCount = useCallback(async () => {
         if (!user) return;
         try {
@@ -160,14 +161,29 @@ export default function App() {
         }
     }, [user]);
 
+    // SSE push — server emits an event each time a notification is created for
+    // this user. No polling; reconnects automatically on connection drop.
     useEffect(() => {
         if (!user) {
             setNotifCount(0);
             return;
         }
+        // Fetch the initial count once on login.
         refreshNotifCount();
-        notifIntervalRef.current = setInterval(refreshNotifCount, 30_000);
-        return () => clearInterval(notifIntervalRef.current);
+
+        const token = getToken();
+        if (!token) return;
+
+        const sseUrl = `${API_BASE_URL}/notifications/stream?token=${encodeURIComponent(token)}`;
+        const es = new EventSource(sseUrl);
+
+        // Each SSE event means a new notification arrived for this user.
+        es.onmessage = () => setNotifCount((c) => c + 1);
+
+        // On auth error or permanent failure stop reconnecting.
+        es.onerror = () => es.close();
+
+        return () => es.close();
     }, [user, refreshNotifCount]);
 
     // --- Auth bootstrap: validate an existing token on load ---
