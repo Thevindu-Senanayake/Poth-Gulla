@@ -790,6 +790,37 @@ export default function ManageResources() {
                                         </button>
                                         <button
                                             onClick={() =>
+                                                setStaffModal({
+                                                    open: true,
+                                                    type: 'book',
+                                                    editItem: book,
+                                                    rf: {
+                                                        rtitle: book.title || '',
+                                                        rauthor: book.author || '',
+                                                        rcat: book.cat || '',
+                                                        rcopies: 1,
+                                                        rtier: 1,
+                                                        rstatus: 'available',
+                                                    },
+                                                })
+                                            }
+                                            style={{
+                                                background: '#fff',
+                                                color: '#16a34a',
+                                                border: '1px solid #bbf7d0',
+                                                borderRadius: 8,
+                                                padding: '7px 12px',
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                whiteSpace: 'nowrap',
+                                                marginLeft: 6,
+                                            }}
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() =>
                                                 askConfirm({
                                                     title: 'Delete this book?',
                                                     message: `"${book.title}" and all of its copies will be permanently removed. Any non-retired copies will be retired first. This cannot be undone.`,
@@ -1262,6 +1293,36 @@ export default function ManageResources() {
                                         </button>
                                         <button
                                             onClick={() =>
+                                                setStaffModal({
+                                                    open: true,
+                                                    type: 'device',
+                                                    editItem: d,
+                                                    rf: {
+                                                        rtitle: d.title || '',
+                                                        rauthor: d.author || '',
+                                                        rcat: d.cat || '',
+                                                        rcopies: 1,
+                                                        rtier: d.tier || 1,
+                                                        rstatus: 'available',
+                                                    },
+                                                })
+                                            }
+                                            style={{
+                                                background: '#fff',
+                                                color: '#16a34a',
+                                                border: '1px solid #bbf7d0',
+                                                borderRadius: 8,
+                                                padding: '6px 10px',
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                marginLeft: 6,
+                                            }}
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() =>
                                                 askConfirm({
                                                     title: 'Delete this device?',
                                                     message: `"${d.title}" will be permanently removed. This cannot be undone.`,
@@ -1436,6 +1497,36 @@ export default function ManageResources() {
                                             }}
                                         >
                                             {under ? 'Set available' : 'Set maintenance'}
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                setStaffModal({
+                                                    open: true,
+                                                    type: 'room',
+                                                    editItem: r,
+                                                    rf: {
+                                                        rtitle: r.title || '',
+                                                        rauthor: r.author || '',
+                                                        rcat: r.cat || '',
+                                                        rcopies: r.capacity || 1,
+                                                        rtier: 1,
+                                                        rstatus: 'available',
+                                                    },
+                                                })
+                                            }
+                                            style={{
+                                                background: '#fff',
+                                                color: '#16a34a',
+                                                border: '1px solid #bbf7d0',
+                                                borderRadius: 8,
+                                                padding: '6px 10px',
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                marginLeft: 6,
+                                            }}
+                                        >
+                                            Edit
                                         </button>
                                         <button
                                             onClick={() =>
