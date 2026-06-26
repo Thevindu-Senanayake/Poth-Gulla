@@ -34,6 +34,7 @@ import WaitlistReview from './screens/staff/WaitlistReview';
 import Approvals from './screens/staff/Approvals';
 import Overdue from './screens/staff/Overdue';
 import ManageResources from './screens/staff/ManageResources';
+import StaffRoomCheckin from './screens/staff/RoomCheckin';
 import AdminDashboard from './screens/admin/Dashboard';
 import Users from './screens/admin/Users';
 import AuditLog from './screens/admin/AuditLog';
@@ -487,6 +488,14 @@ export default function App() {
                             element={
                                 <ProtectedRoute roles={['staff']}>
                                     <ManageResources />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="staff/room-checkin"
+                            element={
+                                <ProtectedRoute roles={['staff']}>
+                                    <StaffRoomCheckin />
                                 </ProtectedRoute>
                             }
                         />
