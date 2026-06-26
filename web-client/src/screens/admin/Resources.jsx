@@ -6,11 +6,10 @@ import {
     listBooks,
     listDevices,
     listRooms,
-    deleteBook,
     deleteDevice,
     deleteRoom,
-    getBook,
-    retireCopy,
+    archiveBook,
+    unarchiveBook,
 } from '../../api/catalogue';
 import { Loading, ErrorState } from '../../components/States';
 import Pagination from '../../components/Pagination';
@@ -126,13 +125,13 @@ export default function Resources() {
         });
     }
 
-    async function askDeleteBook(book) {
+    async function doRestoreBook(book) {
         try {
-            const fresh = await getBook(book.id);
-            const copies = fresh.raw?.copies || [];
-            setConfirm({ kind: 'book', id: book.id, title: book.title, copies });
-        } catch {
-            setConfirm({ kind: 'book', id: book.id, title: book.title, copies: [] });
+            await unarchiveBook(book.id);
+            showToast(`Restored "${book.title}"`);
+            reload();
+        } catch (e) {
+            showToast(backendError(e, 'Could not restore book'));
         }
     }
 
@@ -141,25 +140,7 @@ export default function Resources() {
         setDeleting(true);
         try {
             if (confirm.kind === 'book') {
-                const live = (confirm.copies || []).filter((c) => c.status !== 'RETIRED');
-                const onLoan = live.filter((c) => c.status === 'BORROWED');
-                if (onLoan.length > 0) {
-                    showToast(
-                        `Cannot delete — ${onLoan.length} copy${onLoan.length > 1 ? 'ies are' : ' is'} currently on loan.`
-                    );
-                    setDeleting(false);
-                    return;
-                }
-                for (const c of live) {
-                    try {
-                        await retireCopy(c.id);
-                    } catch (re) {
-                        showToast(backendError(re, `Could not retire copy ${c.assetTag}`));
-                        setDeleting(false);
-                        return;
-                    }
-                }
-                await deleteBook(confirm.id);
+                await archiveBook(confirm.id);
             } else if (confirm.kind === 'device') {
                 await deleteDevice(confirm.id);
             } else {
@@ -179,6 +160,7 @@ export default function Resources() {
 
     function renderRow(item, i, last) {
         const isBook = tab === 'books';
+        const isArchivedBook = isBook && item.raw?.archivedAt;
         const hasAvail = (item.available || 0) > 0;
         const availLabel = isBook
             ? `${item.available} available`
@@ -202,14 +184,11 @@ export default function Resources() {
             });
 
         const askDelete = () => {
-            if (isBook) askDeleteBook(item);
-            else
-                setConfirm({
-                    kind: tab === 'devices' ? 'device' : 'room',
-                    id: item.id,
-                    title: item.title,
-                    copies: [],
-                });
+            setConfirm({
+                kind: tab === 'devices' ? 'device' : tab === 'rooms' ? 'room' : 'book',
+                id: item.id,
+                title: item.title,
+            });
         };
 
         return (
@@ -299,11 +278,17 @@ export default function Resources() {
                     )}
                     {canDelete && (
                         <button
-                            onClick={askDelete}
+                            onClick={() => {
+                                if (isArchivedBook) {
+                                    doRestoreBook(item);
+                                } else {
+                                    askDelete();
+                                }
+                            }}
                             style={{
                                 background: '#fff',
-                                color: '#ef4444',
-                                border: '1px solid #fecaca',
+                                color: isArchivedBook ? '#16a34a' : '#ef4444',
+                                border: `1px solid ${isArchivedBook ? '#bbf7d0' : '#fecaca'}`,
                                 borderRadius: 8,
                                 padding: '7px 10px',
                                 fontSize: 12,
@@ -311,7 +296,7 @@ export default function Resources() {
                                 cursor: 'pointer',
                             }}
                         >
-                            Delete
+                            {isArchivedBook ? 'Restore' : 'Delete'}
                         </button>
                     )}
                 </div>
@@ -533,9 +518,6 @@ export default function Resources() {
 
 function ConfirmDelete({ confirm, deleting, onCancel, onConfirm }) {
     const isBook = confirm.kind === 'book';
-    const liveCopies = (confirm.copies || []).filter((c) => c.status !== 'RETIRED');
-    const onLoan = liveCopies.filter((c) => c.status === 'BORROWED');
-    const willAutoRetire = liveCopies.length - onLoan.length;
 
     return (
         <div
@@ -574,41 +556,10 @@ function ConfirmDelete({ confirm, deleting, onCancel, onConfirm }) {
                     Delete this {confirm.kind === 'room' ? 'study room' : confirm.kind}?
                 </h3>
                 <p style={{ fontSize: 13, color: '#7c7e93', margin: '0 0 14px' }}>
-                    "{confirm.title}" will be permanently removed. This cannot be undone.
+                    {isBook
+                        ? `"${confirm.title}" will be hidden from students. You can restore it later.`
+                        : `"${confirm.title}" will be permanently removed. This cannot be undone.`}
                 </p>
-
-                {isBook && onLoan.length > 0 && (
-                    <div
-                        style={{
-                            background: '#fef2f2',
-                            border: '1px solid #fecaca',
-                            color: '#b91c1c',
-                            borderRadius: 9,
-                            padding: '10px 12px',
-                            fontSize: 12,
-                            marginBottom: 14,
-                        }}
-                    >
-                        {onLoan.length} copy{onLoan.length > 1 ? 'ies are' : ' is'} currently on
-                        loan — return them first.
-                    </div>
-                )}
-                {isBook && willAutoRetire > 0 && onLoan.length === 0 && (
-                    <div
-                        style={{
-                            background: '#fef9c3',
-                            border: '1px solid #fde68a',
-                            color: '#854d0e',
-                            borderRadius: 9,
-                            padding: '10px 12px',
-                            fontSize: 12,
-                            marginBottom: 14,
-                        }}
-                    >
-                        {willAutoRetire} non-retired cop
-                        {willAutoRetire > 1 ? 'ies' : 'y'} will be retired automatically.
-                    </div>
-                )}
 
                 <div style={{ display: 'flex', gap: 10 }}>
                     <button
@@ -630,19 +581,17 @@ function ConfirmDelete({ confirm, deleting, onCancel, onConfirm }) {
                     </button>
                     <button
                         onClick={onConfirm}
-                        disabled={deleting || (isBook && onLoan.length > 0)}
+                        disabled={deleting}
                         style={{
                             flex: 1,
-                            background:
-                                deleting || (isBook && onLoan.length > 0) ? '#fca5a5' : '#ef4444',
+                            background: deleting ? '#fca5a5' : '#ef4444',
                             color: '#fff',
                             border: 'none',
                             borderRadius: 9,
                             padding: '11px',
                             fontSize: 13,
                             fontWeight: 700,
-                            cursor:
-                                deleting || (isBook && onLoan.length > 0) ? 'default' : 'pointer',
+                            cursor: deleting ? 'default' : 'pointer',
                         }}
                     >
                         {deleting ? 'Deleting…' : 'Delete'}
