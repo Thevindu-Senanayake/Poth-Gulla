@@ -75,9 +75,11 @@ describe('BookingService.create (routing, limits, caps)', () => {
     } as any);
   }
 
-  it('BOOK with a free copy -> APPROVED with assetTag as qrToken', async () => {
+  it('BOOK with a free copy -> APPROVED, RESERVED status, assetTag as qrToken', async () => {
     prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
-    // Simulate one available copy; updateMany claims it successfully.
+    // No existing duplicate booking.
+    prisma.booking.findFirst.mockResolvedValue(null);
+    // Simulate one available copy; updateMany claims it as RESERVED.
     const mockCopy = { id: 'c1', assetTag: 'BK-CC-001', bookTitleId: 'r1' };
     prisma.bookCopy.findFirst.mockResolvedValue(mockCopy);
     prisma.bookCopy.updateMany.mockResolvedValue({ count: 1 });
@@ -89,6 +91,8 @@ describe('BookingService.create (routing, limits, caps)', () => {
 
   it('BOOK with no free copy -> WAITLIST and enqueues', async () => {
     prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
+    // No existing duplicate booking.
+    prisma.booking.findFirst.mockResolvedValue(null);
     // No available copy found.
     prisma.bookCopy.findFirst.mockResolvedValue(null);
     const b = await book({ message: 'need it' });

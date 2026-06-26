@@ -613,6 +613,8 @@ export default function WaitlistReview() {
                                     </div>
                                     <span style={{ fontSize: 11, color: '#7c7e93' }}>
                                         {entry.resourceType}
+                                        {entry.userName ? ` · ${entry.userName}` : ''}
+                                        {entry.userTier ? ` · Tier ${entry.userTier}` : ''}
                                     </span>
                                 </div>
                                 <div style={{ textAlign: 'right', flexShrink: 0 }}>

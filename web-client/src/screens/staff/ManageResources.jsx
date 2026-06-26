@@ -14,6 +14,8 @@ import {
     deleteBook,
     deleteDevice,
     deleteRoom,
+    archiveBook,
+    unarchiveBook,
 } from '../../api/catalogue';
 import { allBookings } from '../../api/bookings';
 import { listUsers } from '../../api/users';
@@ -178,6 +180,7 @@ function ConfirmDialog({ open, title, message, confirmLabel, confirmColor, onCon
 // Per-copy / per-item status presentation.
 const STATUS_META = {
     AVAILABLE: { label: 'Available', col: '#16a34a', bg: '#dcfce7' },
+    RESERVED: { label: 'Reserved (awaiting pickup)', col: '#7c3aed', bg: '#ede9fe' },
     BORROWED: { label: 'On loan', col: '#2563eb', bg: '#dbeafe' },
     UNDER_MAINTENANCE: { label: 'Maintenance', col: '#d97706', bg: '#fef2e2' },
     RETIRED: { label: 'Lost / retired', col: '#ef4444', bg: '#fee2e2' },
@@ -274,6 +277,28 @@ export default function ManageResources() {
     }
     function closeConfirm() {
         setConfirm((c) => ({ ...c, open: false }));
+    }
+
+    // ---- Archive helpers ----
+    async function doArchiveBook(book) {
+        try {
+            await archiveBook(book.id);
+            showToast(`Archived "${book.title}" — hidden from students`);
+            refresh();
+            reload();
+        } catch (e) {
+            showToast(backendError(e, 'Could not archive book'));
+        }
+    }
+    async function doUnarchiveBook(book) {
+        try {
+            await unarchiveBook(book.id);
+            showToast(`Unarchived "${book.title}"`);
+            refresh();
+            reload();
+        } catch (e) {
+            showToast(backendError(e, 'Could not unarchive book'));
+        }
     }
 
     // ---- Delete helpers (used by all three tabs) ----
@@ -818,6 +843,33 @@ export default function ManageResources() {
                                             }}
                                         >
                                             Edit
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                book.raw?.archivedAt
+                                                    ? doUnarchiveBook(book)
+                                                    : askConfirm({
+                                                          title: 'Archive this book?',
+                                                          message: `"${book.title}" will be hidden from students. You can unarchive it later.`,
+                                                          confirmLabel: 'Archive',
+                                                          confirmColor: '#7c3aed',
+                                                          onConfirm: () => doArchiveBook(book),
+                                                      })
+                                            }
+                                            style={{
+                                                background: '#fff',
+                                                color: book.raw?.archivedAt ? '#16a34a' : '#7c3aed',
+                                                border: `1px solid ${book.raw?.archivedAt ? '#bbf7d0' : '#ddd6fe'}`,
+                                                borderRadius: 8,
+                                                padding: '7px 12px',
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                whiteSpace: 'nowrap',
+                                                marginLeft: 6,
+                                            }}
+                                        >
+                                            {book.raw?.archivedAt ? 'Unarchive' : 'Archive'}
                                         </button>
                                         <button
                                             onClick={() =>

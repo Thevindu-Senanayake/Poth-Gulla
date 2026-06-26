@@ -312,13 +312,21 @@ export class ScanService {
       );
     }
 
-    // After auto-assignment at approval time the copy is pre-BORROWED for this booking.
-    // Allow checkout if the copy is either still AVAILABLE (legacy / direct path) or
-    // BORROWED and pre-assigned to exactly this booking. Reject all other states.
+    // After auto-assignment the copy is RESERVED for this booking (awaiting pickup).
+    // Allow checkout if RESERVED+pre-assigned or AVAILABLE (direct/legacy path).
     const preAssigned = booking.bookCopyId === copy.id;
-    if (!preAssigned && copy.status !== ItemStatus.AVAILABLE) {
+    if (copy.status === ItemStatus.RESERVED && !preAssigned) {
       throw new BadRequestException(
-        `Copy ${assetTag} is ${copy.status} — it is not assigned to this booking`,
+        `Copy ${assetTag} is reserved for a different booking`,
+      );
+    }
+    if (
+      !preAssigned &&
+      copy.status !== ItemStatus.AVAILABLE &&
+      copy.status !== ItemStatus.RESERVED
+    ) {
+      throw new BadRequestException(
+        `Copy ${assetTag} is ${copy.status} — not available for checkout`,
       );
     }
 

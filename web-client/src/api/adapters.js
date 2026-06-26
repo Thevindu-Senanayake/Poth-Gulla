@@ -180,6 +180,11 @@ export function adaptBooking(b) {
 }
 
 export function adaptWaitlistEntry(w) {
+    const resourceName =
+        w.booking?.bookTitle?.title ??
+        w.booking?.device?.name ??
+        w.booking?.studyRoom?.name ??
+        w.resourceType;
     return {
         id: w.id,
         bookingId: w.bookingId,
@@ -188,11 +193,14 @@ export function adaptWaitlistEntry(w) {
         priorityScore: w.priorityScore,
         hasMessage: w.hasMessage,
         status: w.status,
-        title:
-            w.booking?.bookTitle?.title ??
-            w.booking?.device?.name ??
-            w.booking?.studyRoom?.name ??
-            w.resourceType,
+        // resourceName used by the WaitlistReview UI
+        resourceName,
+        title: resourceName,
+        // User details from the linked booking (populated when queue() includes them)
+        userName: w.booking?.user?.name ?? null,
+        userEmail: w.booking?.user?.email ?? null,
+        userRole: w.booking?.user?.role ?? null,
+        userTier: w.booking?.user?.tier ?? null,
         message: w.booking?.message ?? w.staffNotes ?? '',
         color: colorFor(w.resourceKey || w.id),
         raw: w,
