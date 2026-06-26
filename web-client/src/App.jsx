@@ -319,7 +319,7 @@ export default function App() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontFamily: "'Public Sans', sans-serif",
+                    fontFamily: "'Poppins', sans-serif",
                     color: '#16a34a',
                     fontWeight: 700,
                 }}
