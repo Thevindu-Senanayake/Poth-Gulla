@@ -367,7 +367,8 @@ export default function WaitlistReview() {
                         A justification message only triggers a review when the sender is not at the
                         top of the queue — if they rank #1, they auto-promote like everyone else.
                         Decline a message to move the entry to the automatic queue; the member keeps
-                        their position. Promote is only available when a copy is ready for pickup.
+                        their position. Promote is greyed out when no copies are available for
+                        pickup.
                     </div>
                 </div>
             </div>
@@ -690,10 +691,19 @@ export default function WaitlistReview() {
                                         >
                                             Remove
                                         </button>
-                                        {/* Promote — only shown when resource has available copies */}
-                                        {entry.resourceAvailable && (
+                                        {/* Promote — always visible; disabled with note when no copies available */}
+                                        <div
+                                            style={{
+                                                flex: 1,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 3,
+                                            }}
+                                        >
                                             <button
+                                                disabled={!entry.resourceAvailable}
                                                 onClick={() =>
+                                                    entry.resourceAvailable &&
                                                     askConfirm({
                                                         title: 'Promote this entry?',
                                                         message: `Promote "${entry.resourceName}" to an approved booking? A pickup QR will be issued to ${entry.userName ?? 'the member'}.`,
@@ -703,32 +713,57 @@ export default function WaitlistReview() {
                                                     })
                                                 }
                                                 style={{
-                                                    flex: 1,
+                                                    width: '100%',
                                                     padding: '9px 0',
                                                     borderRadius: 8,
                                                     border: 'none',
-                                                    background: '#16a34a',
-                                                    color: '#fff',
+                                                    background: entry.resourceAvailable
+                                                        ? '#16a34a'
+                                                        : '#e7e7ef',
+                                                    color: entry.resourceAvailable
+                                                        ? '#fff'
+                                                        : '#9b9db2',
                                                     fontSize: 12,
                                                     fontWeight: 700,
-                                                    cursor: 'pointer',
-                                                    boxShadow: '0 2px 10px rgba(22,163,74,.25)',
+                                                    cursor: entry.resourceAvailable
+                                                        ? 'pointer'
+                                                        : 'not-allowed',
+                                                    boxShadow: entry.resourceAvailable
+                                                        ? '0 2px 10px rgba(22,163,74,.25)'
+                                                        : 'none',
                                                     transition: 'all 0.15s ease',
                                                 }}
                                                 onMouseEnter={(e) => {
-                                                    e.currentTarget.style.background = '#15803d';
-                                                    e.currentTarget.style.transform =
-                                                        'translateY(-1px)';
+                                                    if (entry.resourceAvailable) {
+                                                        e.currentTarget.style.background =
+                                                            '#15803d';
+                                                        e.currentTarget.style.transform =
+                                                            'translateY(-1px)';
+                                                    }
                                                 }}
                                                 onMouseLeave={(e) => {
-                                                    e.currentTarget.style.background = '#16a34a';
+                                                    e.currentTarget.style.background =
+                                                        entry.resourceAvailable
+                                                            ? '#16a34a'
+                                                            : '#e7e7ef';
                                                     e.currentTarget.style.transform =
                                                         'translateY(0)';
                                                 }}
                                             >
                                                 Promote
                                             </button>
-                                        )}
+                                            {!entry.resourceAvailable && (
+                                                <span
+                                                    style={{
+                                                        fontSize: 10,
+                                                        color: '#9b9db2',
+                                                        textAlign: 'center',
+                                                    }}
+                                                >
+                                                    No copies available
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
