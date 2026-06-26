@@ -32,6 +32,7 @@ const ROLE_ENUM = {
 
 const COPY_META = {
     AVAILABLE: { label: 'Available', bg: '#dcfce7', col: '#16a34a' },
+    RESERVED: { label: 'Reserved (awaiting pickup)', col: '#7c3aed', bg: '#ede9fe' },
     BORROWED: { label: 'On loan', bg: '#dbeafe', col: '#1d4ed8' },
     UNDER_MAINTENANCE: { label: 'Maintenance', bg: '#fef2e2', col: '#d97706' },
     RETIRED: { label: 'Retired', bg: '#fee2e2', col: '#dc2626' },
