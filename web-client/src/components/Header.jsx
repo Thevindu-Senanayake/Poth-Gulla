@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../App';
+import NotificationPanel from './NotificationPanel';
+import { Bell } from 'lucide-react';
 
-// Route → page meta. `search` controls whether the global search input is
-// rendered. `searchTo` (optional) redirects the search to a results page —
-// used so typing on the staff dashboard funnels straight into Manage
-// Resources, etc.
 const PAGE_META = {
     '/dashboard': {
         title: 'Dashboard',
@@ -121,7 +119,15 @@ function getGreeting() {
 }
 
 export default function Header() {
-    const { searchQuery, setSearchQuery, notifOpen, setNotifOpen, user } = useApp();
+    const {
+        searchQuery,
+        setSearchQuery,
+        notifOpen,
+        notifCount,
+        setNotifOpen,
+        refreshNotifCount,
+        user,
+    } = useApp();
     const location = useLocation();
     const navigate = useNavigate();
     const [focused, setFocused] = useState(false);
@@ -257,50 +263,51 @@ export default function Header() {
                 </div>
             )}
 
-            <button
-                onClick={() => setNotifOpen((o) => !o)}
-                style={{
-                    position: 'relative',
-                    width: 38,
-                    height: 38,
-                    borderRadius: 10,
-                    border: 'none',
-                    background: notifOpen ? '#f0fdf4' : '#f4f4f8',
-                    color: notifOpen ? '#16a34a' : '#5c5e72',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                    transition: 'background .15s, color .15s',
-                }}
-            >
-                <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                >
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-                <div
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+                <button
+                    onClick={() => setNotifOpen((o) => !o)}
+                    title="Notifications"
                     style={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        width: 8,
-                        height: 8,
-                        background: '#ef4444',
-                        borderRadius: '50%',
-                        border: '1.5px solid #fff',
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        border: 'none',
+                        background: notifOpen ? '#e8f5e9' : '#f4f4f8',
+                        color: notifOpen ? '#16a34a' : '#7c7e93',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        position: 'relative',
                     }}
-                />
-            </button>
+                >
+                    <Bell size={16} />
+                    {notifCount > 0 && (
+                        <span
+                            style={{
+                                position: 'absolute',
+                                top: -3,
+                                right: -3,
+                                background: '#ef4444',
+                                color: '#fff',
+                                fontSize: 9,
+                                fontWeight: 700,
+                                padding: '1px 4px',
+                                borderRadius: 20,
+                                minWidth: 15,
+                                textAlign: 'center',
+                                lineHeight: '14px',
+                            }}
+                        >
+                            {notifCount > 99 ? '99+' : notifCount}
+                        </span>
+                    )}
+                </button>
+            </div>
+
+            {notifOpen && (
+                <NotificationPanel onClose={() => setNotifOpen(false)} onRead={refreshNotifCount} />
+            )}
         </div>
     );
 }
