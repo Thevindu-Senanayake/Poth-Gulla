@@ -32,11 +32,14 @@ export class NotificationService {
     return this.prisma.notification.count({ where: { userId, read: false } });
   }
 
-  markRead(id: string) {
-    return this.prisma.notification.update({
-      where: { id },
+  async markRead(id: string, userId: string) {
+    // updateMany with compound where enforces ownership: silently no-ops if the
+    // notification doesn't belong to this user rather than exposing existence.
+    const { count } = await this.prisma.notification.updateMany({
+      where: { id, userId },
       data: { read: true },
     });
+    return { updated: count };
   }
 
   async markAllRead(userId: string) {

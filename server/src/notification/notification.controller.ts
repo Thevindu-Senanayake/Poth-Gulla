@@ -38,8 +38,8 @@ export class NotificationController {
 
   @ApiOperation({ summary: 'Mark a notification as read' })
   @Patch(':id/read')
-  markRead(@Param('id') id: string) {
-    return this.notif.markRead(id);
+  markRead(@Param('id') id: string, @Request() req: any) {
+    return this.notif.markRead(id, req.user.sub);
   }
 
   @ApiOperation({ summary: 'Mark all notifications as read' })
