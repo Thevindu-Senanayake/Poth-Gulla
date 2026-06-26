@@ -670,8 +670,9 @@ export default function BookingModal() {
                         Show this QR at the collection desk
                     </div>
 
-                    {/* Real scannable QR encoding the asset tag (booking.qrToken
-              now equals the assigned copy's asset tag). */}
+                    {/* Booking QR — encodes the qrToken UUID. Staff scan this at
+              the collection desk, then separately scan the physical item's
+              asset tag to complete checkout. */}
                     <RealQRCode value={loanToken} size={200} />
                     <div style={{ marginBottom: 20 }} />
 

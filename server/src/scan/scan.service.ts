@@ -42,6 +42,10 @@ export class ReturnItemDto {
   @IsEnum(ItemCondition) condition!: ItemCondition;
 }
 
+export class SelfCheckoutDto {
+  @IsString() @IsNotEmpty() assetTag!: string;
+}
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 @Injectable()
@@ -76,9 +80,9 @@ export class ScanService {
       });
 
       if (!user) {
-        throw new NotFoundException(
-          'Invalid booking QR - no matching booking or user found',
-        );
+        // Third path: treat bookingQr as a physical asset tag (staff typed / scanned
+        // the item directly without scanning a student booking QR first).
+        return this.checkoutByAssetTag(dto.assetTag, actorId);
       }
       if (!user.isActive) {
         throw new BadRequestException('User account is disabled');
@@ -159,6 +163,110 @@ export class ScanService {
     throw new BadRequestException(
       'Room bookings are checked in via /scan/room-checkin',
     );
+  }
+
+  // ── Asset-tag-first checkout (staff typed the physical tag, no booking QR) ──
+
+  private async checkoutByAssetTag(
+    assetTag: string,
+    actorId?: string,
+  ): Promise<Booking> {
+    // Try books first
+    const copy = await this.prisma.bookCopy.findUnique({
+      where: { assetTag },
+      include: {
+        bookTitle: { select: { title: true } },
+      },
+    });
+
+    if (copy) {
+      if (copy.status !== ItemStatus.AVAILABLE)
+        throw new BadRequestException(
+          `Copy ${assetTag} is ${copy.status}, not AVAILABLE`,
+        );
+
+      // Oldest approved booking for this title wins (FIFO)
+      const booking = await this.prisma.booking.findFirst({
+        where: {
+          bookTitleId: copy.bookTitleId,
+          status: BookingStatus.APPROVED,
+        },
+        orderBy: { startAt: 'asc' },
+        include: {
+          waitlistEntry: true,
+          user: { select: { name: true, email: true } },
+          bookTitle: { select: { title: true } },
+        },
+      });
+      if (!booking)
+        throw new BadRequestException(
+          `No approved booking for "${copy.bookTitle?.title}" — reserve it first`,
+        );
+      return this.checkoutBook(booking, assetTag, actorId);
+    }
+
+    // Try devices
+    const device = await this.prisma.device.findUnique({ where: { assetTag } });
+    if (device) {
+      if (device.status !== ItemStatus.AVAILABLE)
+        throw new BadRequestException(
+          `Device ${assetTag} is ${device.status}, not AVAILABLE`,
+        );
+
+      const booking = await this.prisma.booking.findFirst({
+        where: { deviceId: device.id, status: BookingStatus.APPROVED },
+        orderBy: { startAt: 'asc' },
+        include: {
+          waitlistEntry: true,
+          user: { select: { name: true, email: true } },
+          device: { select: { name: true } },
+        },
+      });
+      if (!booking)
+        throw new BadRequestException(
+          `No approved booking for device "${device.name}" — reserve it first`,
+        );
+      return this.checkoutDevice(booking, assetTag, actorId);
+    }
+
+    throw new NotFoundException(
+      `No book copy or device with asset tag "${assetTag}"`,
+    );
+  }
+
+  // ── Student self-checkout ────────────────────────────────────────────────
+
+  async selfCheckout(userId: string, dto: SelfCheckoutDto): Promise<Booking> {
+    const copy = await this.prisma.bookCopy.findUnique({
+      where: { assetTag: dto.assetTag },
+      include: { bookTitle: { select: { title: true } } },
+    });
+    if (!copy)
+      throw new NotFoundException(
+        `No book copy with asset tag ${dto.assetTag}`,
+      );
+    if (copy.status !== ItemStatus.AVAILABLE)
+      throw new BadRequestException(`Copy is ${copy.status}, not AVAILABLE`);
+
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        userId,
+        bookTitleId: copy.bookTitleId,
+        status: BookingStatus.APPROVED,
+      },
+      orderBy: { startAt: 'asc' },
+      include: {
+        waitlistEntry: true,
+        user: { select: { name: true, email: true } },
+        bookTitle: { select: { title: true } },
+      },
+    });
+    if (!booking)
+      throw new BadRequestException(
+        `You don't have an approved booking for "${copy.bookTitle?.title}"`,
+      );
+
+    return this.checkoutBook(booking, dto.assetTag, userId);
   }
 
   private async checkoutBook(
@@ -324,6 +432,7 @@ export class ScanService {
       data: { status: BookingStatus.COMPLETED },
       include: {
         user: { select: { name: true, email: true } },
+        studyRoom: { select: { name: true } },
       },
     });
 

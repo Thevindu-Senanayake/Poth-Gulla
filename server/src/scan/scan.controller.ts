@@ -8,6 +8,7 @@ import {
   ReturnItemDto,
   RoomCheckinDto,
   ScanService,
+  SelfCheckoutDto,
 } from './scan.service.js';
 
 interface AuthUser {
@@ -30,6 +31,16 @@ export class ScanController {
     return user
       ? this.scan.checkout(dto, user.userId)
       : this.scan.checkout(dto);
+  }
+
+  @ApiOperation({
+    summary:
+      'Student self-checkout: scan the book asset tag to collect an approved booking (no staff needed)',
+  })
+  @Post('self-checkout')
+  @Roles(Role.STUDENT, Role.LECTURER)
+  selfCheckout(@CurrentUser() user: AuthUser, @Body() dto: SelfCheckoutDto) {
+    return this.scan.selfCheckout(user.userId, dto);
   }
 
   @ApiOperation({
