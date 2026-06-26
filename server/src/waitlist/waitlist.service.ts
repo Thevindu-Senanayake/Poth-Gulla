@@ -135,19 +135,52 @@ export class WaitlistService {
   }
 
   /**
-   * Called when an APPROVED booking is freed.
-   * Auto-promotes the highest-priority entry regardless of hasMessage because
-   * rank-#1 is always in the auto-queue by the new flagging rules.
+   * Called when a resource slot is freed (booking cancelled / returned).
+   * Holds auto-promotion if any entry ranked below #1 has a justification
+   * message (needsReview=true) — staff must resolve that review first.
+   * Also called by declineMessage() so the pending promotion can fire once
+   * the review is resolved.
    */
   async onResourceFreed(
     resourceType: ResourceType,
     resourceKey: string,
   ): Promise<void> {
-    const next = await this.prisma.waitlistEntry.findFirst({
+    const entries = await this.prisma.waitlistEntry.findMany({
       where: { resourceType, resourceKey, status: WaitlistStatus.PENDING },
-      orderBy: { priorityScore: 'desc' },
+      orderBy: [{ priorityScore: 'desc' }],
     });
-    if (next) await this.promote(next.id);
+
+    if (entries.length === 0) return;
+
+    const total = entries.length;
+    const reviewPending = entries.some(
+      (e, idx) => e.hasMessage && idx > 0 && total > 1,
+    );
+
+    if (reviewPending) {
+      // A lower-ranked member has a justification message needing staff review.
+      // Hold auto-promotion — slot stays available until the review is resolved.
+      return;
+    }
+
+    const top = entries[0];
+
+    // Verify the resource is still actually free before promoting.
+    // Matters when triggered from declineMessage() after the original slot event.
+    if (resourceType === ResourceType.BOOK) {
+      const available = await this.prisma.bookCopy.count({
+        where: { bookTitleId: resourceKey, status: ItemStatus.AVAILABLE },
+      });
+      if (available === 0) return;
+    } else if (resourceType === ResourceType.DEVICE) {
+      const device = await this.prisma.device.findUnique({
+        where: { id: resourceKey },
+        select: { status: true },
+      });
+      if (device?.status !== ItemStatus.AVAILABLE) return;
+    }
+
+    await this.promote(top.id);
   }
 
   /**
@@ -209,6 +242,10 @@ export class WaitlistService {
         `Your justification for "${resourceName}" was reviewed but not accepted. You remain in the queue at your priority position.`,
       )
       .catch(() => {});
+
+    // Declining the review unblocks auto-promotion: if the queue is now review-free
+    // and the resource is available, onResourceFreed() will promote the top entry.
+    await this.onResourceFreed(entry.resourceType, entry.resourceKey);
 
     return updated;
   }
