@@ -37,8 +37,8 @@ yarn dev
 ```bash
 # With containers already up (yarn dev started them), open a second terminal:
 cd server
-yarn prisma db push        # create tables
-yarn tsx prisma/seed.ts    # seed 4 demo accounts + sample data
+yarn prisma migrate deploy  # apply all tracked migrations
+yarn tsx prisma/seed.ts     # seed 4 demo accounts + sample data
 ```
 
 ### Individual service control
@@ -94,24 +94,24 @@ Interactive API docs at **`http://localhost:3000/api/docs`** (dev only).
 
 Click **Authorize**, paste your JWT, and try every endpoint directly from the browser. All endpoints are grouped by tag:
 
-| Tag                    | Endpoints                                                              |
-| ---------------------- | ---------------------------------------------------------------------- |
-| Auth                   | register, login, me                                                    |
-| Users                  | list, get, update, disable, enable                                     |
-| Bookings               | create, list mine, list all, get, approve, reject, cancel              |
-| Waitlist               | my entries, position, queue, promote, dismiss                          |
-| Catalogue - Books      | list, get, create, update, delete, add copy, retire copy               |
-| Catalogue - Devices    | list, get, create, update, delete, maintenance toggle                  |
-| Catalogue - Rooms      | list (+ availability), get, create, update, delete, maintenance toggle |
-| Catalogue - Categories | list, create, update, delete                                           |
-| Scan (QR Workflow)     | checkout, room-checkin, return                                         |
-| Points                 | own history, user history                                              |
-| Overdue                | run sweep                                                              |
-| Notifications          | my inbox, mark all read                                                |
-| Reviews                | list by book, create, delete                                           |
-| Recommendations        | personalised list                                                      |
-| Audit Log              | query log                                                              |
-| System Config          | get config, update config                                              |
+| Tag                    | Endpoints                                                                    |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| Auth                   | register, login, me                                                          |
+| Users                  | list, get, update, disable, enable                                           |
+| Bookings               | create, list mine, list all, get, approve, reject, cancel                    |
+| Waitlist               | my entries, position, queue, promote, dismiss                                |
+| Catalogue - Books      | list, get, create, update, archive, unarchive, delete, add copy, retire copy |
+| Catalogue - Devices    | list, get, create, update, delete, maintenance toggle                        |
+| Catalogue - Rooms      | list (+ availability), get, create, update, delete, maintenance toggle       |
+| Catalogue - Categories | list, create, update, delete                                                 |
+| Scan (QR Workflow)     | checkout, self-checkout, room-checkin, return                                |
+| Points                 | own history, user history                                                    |
+| Overdue                | run sweep                                                                    |
+| Notifications          | my inbox, mark all read                                                      |
+| Reviews                | list by book, create, delete                                                 |
+| Recommendations        | personalised list                                                            |
+| Audit Log              | query log                                                                    |
+| System Config          | get config, update config                                                    |
 
 ---
 
@@ -169,23 +169,27 @@ The **Poth Gulla - API Overview** dashboard is auto-provisioned on first start. 
 
 ### Booking routing rules
 
-| Resource        | Condition                   | Result                   |
-| --------------- | --------------------------- | ------------------------ |
-| Book            | ≥1 free copy                | `APPROVED`               |
-| Book            | all copies out              | `WAITLIST`               |
-| Device tier 1–3 | available                   | `APPROVED`               |
-| Device tier 1–3 | unavailable                 | `WAITLIST`               |
-| Device tier 4–5 | available                   | `PENDING` (staff review) |
-| Device tier 4–5 | unavailable                 | `WAITLIST`               |
-| Room            | slot free                   | `APPROVED`               |
-| Room            | slot taken                  | `WAITLIST`               |
-| Any             | over tier concurrency limit | rejected                 |
+| Resource        | Condition                               | Result                     |
+| --------------- | --------------------------------------- | -------------------------- |
+| Book            | ≥1 AVAILABLE copy; no duplicate booking | `APPROVED` + copy RESERVED |
+| Book            | all copies out (or duplicate booking)   | `WAITLIST`                 |
+| Device tier 1–3 | available                               | `APPROVED`                 |
+| Device tier 1–3 | unavailable                             | `WAITLIST`                 |
+| Device tier 4–5 | available                               | `PENDING` (staff review)   |
+| Device tier 4–5 | unavailable                             | `WAITLIST`                 |
+| Room            | slot free (no time overlap)             | `APPROVED`                 |
+| Room            | slot taken                              | `WAITLIST`                 |
+| Any             | over tier concurrency limit             | rejected (400)             |
 
 Duration caps: book 14 days, device 7 days, room 4 hours.
 
-### User Point events (applied at return / action time)
+When a book booking is APPROVED, the backend atomically reserves a `BookCopy` (`status = RESERVED`) and sets `booking.qrToken = copy.assetTag`. The copy transitions to `BORROWED` only when staff confirm the physical handover via the scan endpoint.
 
-| Event                                   | Δ Points   |
+### User Point events
+
+All delta values are **admin-configurable** via `PUT /api/config` (penalties section). The values below are the defaults. Changes take effect immediately on future events; Admin can trigger a tier recompute for existing users from the Config screen.
+
+| Event                                   | Default Δ  |
 | --------------------------------------- | ---------- |
 | Book returned >2 days early             | +50        |
 | Book returned on time                   | +25        |
@@ -219,13 +223,20 @@ Duration caps: book 14 days, device 7 days, room 4 hours.
 
 ## QR workflow
 
-Three QR types in the system:
+| QR / value            | Generated when        | Encodes                                  | Endpoint                                                |
+| --------------------- | --------------------- | ---------------------------------------- | ------------------------------------------------------- |
+| Book booking QR       | Booking APPROVED      | `bookCopy.assetTag` (e.g. `BK-CC-001`)   | `POST /api/scan/checkout` — auto-finds booking by copy  |
+| Device booking QR     | Booking APPROVED      | `device.assetTag`                        | same                                                    |
+| Room booking QR       | Room booking APPROVED | `studyRoom.roomQr` (permanent door code) | `POST /api/scan/room-checkin`                           |
+| Physical copy sticker | Printed on item       | `assetTag`                               | `POST /api/scan/return`, `POST /api/scan/self-checkout` |
 
-| QR type    | Where                                      | Used for                                                      |
-| ---------- | ------------------------------------------ | ------------------------------------------------------------- |
-| Booking QR | Generated on approval, sent to borrower    | `POST /api/scan/checkout` - staff scan to bind copy           |
-| Asset QR   | Permanent label on each book copy / device | `POST /api/scan/checkout` + `POST /api/scan/return`           |
-| Room QR    | Fixed on study room door                   | `POST /api/scan/room-checkin` - user self-scan for attendance |
+**Staff checkout (one scan):** student shows their booking QR → staff scans → backend resolves copy via `qrToken = assetTag`. No separate item scan needed.
+
+**Staff checkout (two scans / direct):** staff scans the physical item sticker → backend auto-finds the oldest APPROVED booking for that copy.
+
+**Staff room check-in:** staff scans the door QR → backend finds whoever holds the active booking for that room right now → student gets the +20 pts.
+
+**Self-checkout (student):** student scans the item sticker at the shelf → `POST /api/scan/self-checkout { assetTag }` → no staff needed.
 
 ---
 
@@ -267,8 +278,9 @@ yarn dev                          # start everything
 
 # server/
 yarn start:dev                    # backend only (hot reload)
-yarn prisma generate              # regenerate Prisma client
-yarn prisma db push               # sync schema → DB
+yarn prisma generate              # regenerate Prisma client after schema change
+yarn prisma migrate dev           # create migration + apply (dev; needs DB running)
+yarn prisma migrate deploy        # apply pending migrations (production / CI)
 yarn tsx prisma/seed.ts           # seed demo data
 yarn prisma studio                # DB browser at localhost:5555
 
