@@ -4,7 +4,7 @@ import { useFetch } from '../../hooks/useFetch';
 import { allBookings } from '../../api/bookings';
 import { listAllResources } from '../../api/catalogue';
 import { queue, promote, dismiss } from '../../api/waitlist';
-import { Loading, ErrorState, Empty } from '../../components/States';
+import { Loading, ErrorState } from '../../components/States';
 
 function SvgIcon({ path, color, size = 16 }) {
     return (
@@ -165,17 +165,43 @@ async function loadReview() {
     }
 
     const queues = await Promise.all(pairs.map((p) => queue(p.type, p.key).catch(() => [])));
+
+    // Map bookingId → original WAITLIST booking so we can recover user + window
+    // even when the /waitlist/:type/:key response doesn't yet include them.
+    const bookingById = new Map(waitBookings.items.map((b) => [b.id, b]));
+
     const entries = [];
     queues.forEach((q, i) => {
-        q.forEach((e) =>
+        q.forEach((e) => {
+            const b = bookingById.get(e.bookingId);
             entries.push({
                 ...e,
                 resourceName: nameById.get(pairs[i].key) || e.resourceType,
                 message: msgByBooking.get(e.bookingId) || e.message || '',
-            })
-        );
+                userId: e.userId ?? b?.userId ?? null,
+                userName: e.userName ?? b?.userName ?? null,
+                userEmail: e.userEmail ?? null,
+                startAt: e.startAt ?? b?.startAt ?? null,
+                endAt: e.endAt ?? b?.endAt ?? null,
+                createdAt: e.createdAt ?? b?.createdAt ?? null,
+            });
+        });
     });
     return entries;
+}
+
+function fmtWhen(iso) {
+    if (!iso) return null;
+    try {
+        return new Date(iso).toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    } catch {
+        return null;
+    }
 }
 
 export default function WaitlistReview() {
@@ -323,101 +349,379 @@ export default function WaitlistReview() {
                 </div>
             </div>
 
-            {/* Flagged */}
-            <div style={{ marginBottom: 32 }}>
+            {/* Empty-everything hero — only render when both queues are empty */}
+            {flagged.length === 0 && autoQueue.length === 0 && (
                 <div
                     style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        marginBottom: 16,
+                        background: '#fff',
+                        border: '1px solid #e7e7ef',
+                        borderRadius: 14,
+                        padding: '40px 22px',
+                        textAlign: 'center',
+                        color: '#7c7e93',
                     }}
                 >
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>📭</div>
+                    <div
+                        style={{
+                            fontSize: 15,
+                            fontWeight: 700,
+                            color: '#1a1b2e',
+                            marginBottom: 4,
+                        }}
+                    >
+                        No waitlist entries
+                    </div>
+                    <div style={{ fontSize: 13 }}>
+                        Nothing is queued right now — flagged entries and the automatic queue will
+                        appear here once members opt in.
+                    </div>
+                </div>
+            )}
+
+            {/* Flagged — only render the section when there's something to show */}
+            {flagged.length > 0 && (
+                <div style={{ marginBottom: 32 }}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            marginBottom: 16,
+                        }}
+                    >
+                        <h2
+                            style={{
+                                fontFamily: "'Spectral', serif",
+                                fontSize: 17,
+                                fontWeight: 600,
+                                color: '#1a1b2e',
+                                margin: 0,
+                            }}
+                        >
+                            Flagged for review
+                        </h2>
+                        <span
+                            style={{
+                                background: '#fef2e2',
+                                color: '#d97706',
+                                fontSize: 11,
+                                fontWeight: 700,
+                                padding: '2px 9px',
+                                borderRadius: 20,
+                                border: '1px solid #fcd34d',
+                            }}
+                        >
+                            {flagged.length} pending
+                        </span>
+                    </div>
+                    {
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                            {flagged.map((entry) => (
+                                <div
+                                    key={entry.id}
+                                    style={{
+                                        background: '#fff',
+                                        border: '1.5px solid #fcd34d',
+                                        borderRadius: 13,
+                                        padding: '20px 22px',
+                                        transition: 'box-shadow 0.15s ease, transform 0.15s ease',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.boxShadow =
+                                            '0 4px 16px rgba(0,0,0,0.07)';
+                                        e.currentTarget.style.transform = 'translateY(-1px)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'flex-start',
+                                            marginBottom: 14,
+                                        }}
+                                    >
+                                        <div>
+                                            <div
+                                                style={{
+                                                    fontSize: 14,
+                                                    fontWeight: 700,
+                                                    color: '#1a1b2e',
+                                                    marginBottom: 4,
+                                                }}
+                                            >
+                                                {entry.resourceName}
+                                            </div>
+                                            <span
+                                                style={{
+                                                    fontSize: 11,
+                                                    color: '#7c7e93',
+                                                    background: '#f3f3f8',
+                                                    borderRadius: 20,
+                                                    padding: '2px 8px',
+                                                }}
+                                            >
+                                                {entry.resourceType}
+                                            </span>
+                                        </div>
+                                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                            <div
+                                                style={{
+                                                    fontSize: 10,
+                                                    color: '#9b9db2',
+                                                    marginBottom: 3,
+                                                }}
+                                            >
+                                                Priority
+                                            </div>
+                                            <div
+                                                style={{
+                                                    fontFamily: "'IBM Plex Mono', monospace",
+                                                    fontSize: 18,
+                                                    fontWeight: 800,
+                                                    color: '#16a34a',
+                                                }}
+                                            >
+                                                {Math.round((entry.priorityScore ?? 0) * 10) / 10}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {entry.message && (
+                                        <div
+                                            style={{
+                                                background: '#fffbeb',
+                                                border: '1px solid #fde68a',
+                                                borderRadius: 8,
+                                                padding: '12px 14px',
+                                                marginBottom: 16,
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    fontSize: 10,
+                                                    color: '#d97706',
+                                                    fontWeight: 700,
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: 0.5,
+                                                    marginBottom: 6,
+                                                }}
+                                            >
+                                                Member's justification
+                                            </div>
+                                            <p
+                                                style={{
+                                                    fontSize: 13,
+                                                    color: '#78350f',
+                                                    margin: 0,
+                                                    fontStyle: 'italic',
+                                                    lineHeight: 1.6,
+                                                }}
+                                            >
+                                                "{entry.message}"
+                                            </p>
+                                        </div>
+                                    )}
+                                    <div style={{ display: 'flex', gap: 10 }}>
+                                        <button
+                                            onClick={() =>
+                                                askConfirm({
+                                                    title: 'Decline this entry?',
+                                                    message: `Dismiss "${entry.resourceName}" from the waitlist? The member will be notified that their request was declined.`,
+                                                    confirmLabel: 'Decline',
+                                                    confirmColor: '#ef4444',
+                                                    onConfirm: () => doDecline(entry.id),
+                                                })
+                                            }
+                                            style={{
+                                                flex: 1,
+                                                padding: '10px 0',
+                                                borderRadius: 8,
+                                                border: '1.5px solid #e7e7ef',
+                                                background: '#fff',
+                                                color: '#ef4444',
+                                                fontSize: 13,
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.15s ease',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = '#fef2f2';
+                                                e.currentTarget.style.borderColor = '#fecaca';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = '#fff';
+                                                e.currentTarget.style.borderColor = '#e7e7ef';
+                                            }}
+                                        >
+                                            Decline
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                askConfirm({
+                                                    title: 'Promote this entry?',
+                                                    message: `Promote "${entry.resourceName}" to an approved booking? A pickup QR will be issued to the member.`,
+                                                    confirmLabel: 'Promote',
+                                                    confirmColor: '#16a34a',
+                                                    onConfirm: () => doPromote(entry.id),
+                                                })
+                                            }
+                                            style={{
+                                                flex: 1,
+                                                padding: '10px 0',
+                                                borderRadius: 8,
+                                                border: 'none',
+                                                background: '#16a34a',
+                                                color: '#fff',
+                                                fontSize: 13,
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                boxShadow: '0 2px 10px rgba(22,163,74,.25)',
+                                                transition: 'all 0.15s ease',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = '#15803d';
+                                                e.currentTarget.style.transform =
+                                                    'translateY(-1px)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = '#16a34a';
+                                                e.currentTarget.style.transform = 'translateY(0)';
+                                            }}
+                                        >
+                                            Promote
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    }
+                </div>
+            )}
+
+            {/* Auto queue — only render when there's something to show */}
+            {autoQueue.length > 0 && (
+                <div>
                     <h2
                         style={{
                             fontFamily: "'Spectral', serif",
                             fontSize: 17,
                             fontWeight: 600,
                             color: '#1a1b2e',
-                            margin: 0,
+                            margin: '0 0 14px',
                         }}
                     >
-                        Flagged for review
+                        Automatic queue
                     </h2>
-                    <span
-                        style={{
-                            background: '#fef2e2',
-                            color: '#d97706',
-                            fontSize: 11,
-                            fontWeight: 700,
-                            padding: '2px 9px',
-                            borderRadius: 20,
-                            border: '1px solid #fcd34d',
-                        }}
-                    >
-                        {flagged.length} pending
-                    </span>
-                </div>
-                {flagged.length === 0 ? (
-                    <Empty label="No message-flagged entries." />
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        {flagged.map((entry) => (
-                            <div
-                                key={entry.id}
-                                style={{
-                                    background: '#fff',
-                                    border: '1.5px solid #fcd34d',
-                                    borderRadius: 13,
-                                    padding: '20px 22px',
-                                    transition: 'box-shadow 0.15s ease, transform 0.15s ease',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.07)';
-                                    e.currentTarget.style.transform = 'translateY(-1px)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.boxShadow = 'none';
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                }}
-                            >
+                    {
+                        <div
+                            style={{
+                                background: '#fff',
+                                border: '1px solid #e7e7ef',
+                                borderRadius: 13,
+                                overflow: 'hidden',
+                            }}
+                        >
+                            {autoQueue.map((entry, i) => (
                                 <div
+                                    key={entry.id}
                                     style={{
                                         display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'flex-start',
-                                        marginBottom: 14,
+                                        alignItems: 'center',
+                                        gap: 14,
+                                        padding: '14px 20px',
+                                        borderBottom:
+                                            i < autoQueue.length - 1 ? '1px solid #f3f3f8' : 'none',
+                                        transition: 'background 0.15s ease',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = '#f8faf9';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = 'transparent';
                                     }}
                                 >
-                                    <div>
+                                    <div
+                                        style={{
+                                            fontFamily: "'IBM Plex Mono', monospace",
+                                            fontSize: 14,
+                                            fontWeight: 800,
+                                            color: '#9b9db2',
+                                            width: 24,
+                                            textAlign: 'center',
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        #{i + 1}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
                                         <div
                                             style={{
-                                                fontSize: 14,
+                                                fontSize: 13,
                                                 fontWeight: 700,
                                                 color: '#1a1b2e',
-                                                marginBottom: 4,
+                                                marginBottom: 2,
                                             }}
                                         >
                                             {entry.resourceName}
                                         </div>
-                                        <span
+                                        <div
                                             style={{
+                                                display: 'flex',
+                                                flexWrap: 'wrap',
+                                                gap: 8,
+                                                alignItems: 'center',
                                                 fontSize: 11,
                                                 color: '#7c7e93',
-                                                background: '#f3f3f8',
-                                                borderRadius: 20,
-                                                padding: '2px 8px',
                                             }}
                                         >
-                                            {entry.resourceType}
-                                        </span>
+                                            <span>{entry.resourceType}</span>
+                                            {entry.userName && (
+                                                <>
+                                                    <span style={{ color: '#c4c5d4' }}>·</span>
+                                                    <span
+                                                        style={{
+                                                            color: '#3a3b4e',
+                                                            fontWeight: 600,
+                                                        }}
+                                                    >
+                                                        {entry.userName}
+                                                    </span>
+                                                    {entry.userEmail && (
+                                                        <span style={{ color: '#9b9db2' }}>
+                                                            {entry.userEmail}
+                                                        </span>
+                                                    )}
+                                                </>
+                                            )}
+                                            {(entry.startAt || entry.endAt) && (
+                                                <>
+                                                    <span style={{ color: '#c4c5d4' }}>·</span>
+                                                    <span
+                                                        style={{
+                                                            fontFamily:
+                                                                "'IBM Plex Mono', monospace",
+                                                            color: '#5a5c74',
+                                                        }}
+                                                    >
+                                                        {fmtWhen(entry.startAt)}
+                                                        {entry.endAt
+                                                            ? ` → ${fmtWhen(entry.endAt)}`
+                                                            : ''}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                         <div
                                             style={{
                                                 fontSize: 10,
                                                 color: '#9b9db2',
-                                                marginBottom: 3,
+                                                marginBottom: 2,
                                             }}
                                         >
                                             Priority
@@ -425,253 +729,53 @@ export default function WaitlistReview() {
                                         <div
                                             style={{
                                                 fontFamily: "'IBM Plex Mono', monospace",
-                                                fontSize: 18,
-                                                fontWeight: 800,
-                                                color: '#16a34a',
+                                                fontSize: 14,
+                                                fontWeight: 700,
+                                                color: '#7c7e93',
                                             }}
                                         >
                                             {Math.round((entry.priorityScore ?? 0) * 10) / 10}
                                         </div>
                                     </div>
-                                </div>
-                                {entry.message && (
-                                    <div
-                                        style={{
-                                            background: '#fffbeb',
-                                            border: '1px solid #fde68a',
-                                            borderRadius: 8,
-                                            padding: '12px 14px',
-                                            marginBottom: 16,
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                fontSize: 10,
-                                                color: '#d97706',
-                                                fontWeight: 700,
-                                                textTransform: 'uppercase',
-                                                letterSpacing: 0.5,
-                                                marginBottom: 6,
-                                            }}
-                                        >
-                                            Member's justification
-                                        </div>
-                                        <p
-                                            style={{
-                                                fontSize: 13,
-                                                color: '#78350f',
-                                                margin: 0,
-                                                fontStyle: 'italic',
-                                                lineHeight: 1.6,
-                                            }}
-                                        >
-                                            "{entry.message}"
-                                        </p>
-                                    </div>
-                                )}
-                                <div style={{ display: 'flex', gap: 10 }}>
-                                    <button
-                                        onClick={() =>
-                                            askConfirm({
-                                                title: 'Decline this entry?',
-                                                message: `Dismiss "${entry.resourceName}" from the waitlist? The member will be notified that their request was declined.`,
-                                                confirmLabel: 'Decline',
-                                                confirmColor: '#ef4444',
-                                                onConfirm: () => doDecline(entry.id),
-                                            })
-                                        }
-                                        style={{
-                                            flex: 1,
-                                            padding: '10px 0',
-                                            borderRadius: 8,
-                                            border: '1.5px solid #e7e7ef',
-                                            background: '#fff',
-                                            color: '#ef4444',
-                                            fontSize: 13,
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
-                                            transition: 'all 0.15s ease',
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = '#fef2f2';
-                                            e.currentTarget.style.borderColor = '#fecaca';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = '#fff';
-                                            e.currentTarget.style.borderColor = '#e7e7ef';
-                                        }}
-                                    >
-                                        Decline
-                                    </button>
                                     <button
                                         onClick={() =>
                                             askConfirm({
                                                 title: 'Promote this entry?',
-                                                message: `Promote "${entry.resourceName}" to an approved booking? A pickup QR will be issued to the member.`,
+                                                message: `Manually promote "${entry.resourceName}" to an approved booking? This overrides the automatic queue order.`,
                                                 confirmLabel: 'Promote',
                                                 confirmColor: '#16a34a',
                                                 onConfirm: () => doPromote(entry.id),
                                             })
                                         }
                                         style={{
-                                            flex: 1,
-                                            padding: '10px 0',
-                                            borderRadius: 8,
-                                            border: 'none',
-                                            background: '#16a34a',
-                                            color: '#fff',
-                                            fontSize: 13,
-                                            fontWeight: 700,
+                                            fontSize: 11,
+                                            color: '#16a34a',
+                                            background: '#d7f8e9',
+                                            border: '1px solid #bbf7d0',
+                                            borderRadius: 20,
+                                            padding: '4px 12px',
+                                            flexShrink: 0,
                                             cursor: 'pointer',
-                                            boxShadow: '0 2px 10px rgba(22,163,74,.25)',
+                                            fontWeight: 700,
                                             transition: 'all 0.15s ease',
                                         }}
                                         onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = '#15803d';
-                                            e.currentTarget.style.transform = 'translateY(-1px)';
+                                            e.currentTarget.style.background = '#bbf7d0';
+                                            e.currentTarget.style.borderColor = '#86efac';
                                         }}
                                         onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = '#16a34a';
-                                            e.currentTarget.style.transform = 'translateY(0)';
+                                            e.currentTarget.style.background = '#d7f8e9';
+                                            e.currentTarget.style.borderColor = '#bbf7d0';
                                         }}
                                     >
                                         Promote
                                     </button>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Auto queue */}
-            <div>
-                <h2
-                    style={{
-                        fontFamily: "'Spectral', serif",
-                        fontSize: 17,
-                        fontWeight: 600,
-                        color: '#1a1b2e',
-                        margin: '0 0 14px',
-                    }}
-                >
-                    Automatic queue
-                </h2>
-                {autoQueue.length === 0 ? (
-                    <Empty label="No auto-promoting entries waiting." />
-                ) : (
-                    <div
-                        style={{
-                            background: '#fff',
-                            border: '1px solid #e7e7ef',
-                            borderRadius: 13,
-                            overflow: 'hidden',
-                        }}
-                    >
-                        {autoQueue.map((entry, i) => (
-                            <div
-                                key={entry.id}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 14,
-                                    padding: '14px 20px',
-                                    borderBottom:
-                                        i < autoQueue.length - 1 ? '1px solid #f3f3f8' : 'none',
-                                    transition: 'background 0.15s ease',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = '#f8faf9';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'transparent';
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        fontFamily: "'IBM Plex Mono', monospace",
-                                        fontSize: 14,
-                                        fontWeight: 800,
-                                        color: '#9b9db2',
-                                        width: 24,
-                                        textAlign: 'center',
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    #{i + 1}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div
-                                        style={{
-                                            fontSize: 13,
-                                            fontWeight: 700,
-                                            color: '#1a1b2e',
-                                            marginBottom: 2,
-                                        }}
-                                    >
-                                        {entry.resourceName}
-                                    </div>
-                                    <span style={{ fontSize: 11, color: '#7c7e93' }}>
-                                        {entry.resourceType}
-                                        {entry.userName ? ` · ${entry.userName}` : ''}
-                                        {entry.userTier ? ` · Tier ${entry.userTier}` : ''}
-                                    </span>
-                                </div>
-                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                    <div
-                                        style={{ fontSize: 10, color: '#9b9db2', marginBottom: 2 }}
-                                    >
-                                        Priority
-                                    </div>
-                                    <div
-                                        style={{
-                                            fontFamily: "'IBM Plex Mono', monospace",
-                                            fontSize: 14,
-                                            fontWeight: 700,
-                                            color: '#7c7e93',
-                                        }}
-                                    >
-                                        {Math.round((entry.priorityScore ?? 0) * 10) / 10}
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() =>
-                                        askConfirm({
-                                            title: 'Promote this entry?',
-                                            message: `Manually promote "${entry.resourceName}" to an approved booking? This overrides the automatic queue order.`,
-                                            confirmLabel: 'Promote',
-                                            confirmColor: '#16a34a',
-                                            onConfirm: () => doPromote(entry.id),
-                                        })
-                                    }
-                                    style={{
-                                        fontSize: 11,
-                                        color: '#16a34a',
-                                        background: '#d7f8e9',
-                                        border: '1px solid #bbf7d0',
-                                        borderRadius: 20,
-                                        padding: '4px 12px',
-                                        flexShrink: 0,
-                                        cursor: 'pointer',
-                                        fontWeight: 700,
-                                        transition: 'all 0.15s ease',
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = '#bbf7d0';
-                                        e.currentTarget.style.borderColor = '#86efac';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = '#d7f8e9';
-                                        e.currentTarget.style.borderColor = '#bbf7d0';
-                                    }}
-                                >
-                                    Promote
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+                            ))}
+                        </div>
+                    }
+                </div>
+            )}
         </div>
     );
 }
