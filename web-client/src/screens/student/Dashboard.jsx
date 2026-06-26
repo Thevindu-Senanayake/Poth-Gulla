@@ -8,11 +8,35 @@ import { Loading, ErrorState } from '../../components/States';
 
 const ICON = { BOOK: BOOK_ICON, DEVICE: DEVICE_ICON, ROOM: ROOM_ICON };
 
+function SvgIcon({ path, color, size = 18, strokeWidth = '2' }) {
+    return (
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            {path
+                .split('M')
+                .filter(Boolean)
+                .map((d, i) => (
+                    <path key={i} d={'M' + d} />
+                ))}
+        </svg>
+    );
+}
+
 function fmt(d) {
     try {
-        return new Date(d).toLocaleDateString(undefined, {
+        return new Date(d).toLocaleString(undefined, {
             month: 'short',
             day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
         });
     } catch {
         return d;
@@ -43,7 +67,7 @@ export default function Dashboard() {
 
     const bookings = data?.bookings || [];
     const waitlist = data?.waitlist || [];
-    const activeLoans = bookings.filter((b) => b.status === 'APPROVED');
+    const activeLoans = bookings.filter((b) => b.status === 'CHECKED_OUT');
     const pending = bookings.filter((b) => b.status === 'PENDING');
 
     const pts = user.points ?? 0;
@@ -63,6 +87,7 @@ export default function Dashboard() {
             iconPath: STAT_ICONS.loans,
             trend: `${pending.length} pending`,
             trendColor: '#7c7e93',
+            to: '/my-bookings', // Added navigation capability
         },
         {
             label: 'On waitlist',
@@ -222,11 +247,33 @@ export default function Dashboard() {
                 {stats.map((stat, i) => (
                     <div
                         key={i}
+                        onClick={() => stat.to && navigate(stat.to)}
+                        role={stat.to ? 'button' : undefined}
+                        tabIndex={stat.to ? 0 : undefined}
+                        onKeyDown={(e) => {
+                            if (stat.to && (e.key === 'Enter' || e.key === ' ')) {
+                                e.preventDefault();
+                                navigate(stat.to);
+                            }
+                        }}
                         style={{
                             background: '#fff',
                             border: '1px solid #e7e7ef',
                             borderRadius: 13,
                             padding: '18px 20px',
+                            cursor: stat.to ? 'pointer' : 'default',
+                            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                            if (stat.to || stat.value > 0) {
+                                // Slight interaction hint for non-links too
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = 'none';
                         }}
                     >
                         <div
@@ -241,23 +288,7 @@ export default function Dashboard() {
                                 marginBottom: 10,
                             }}
                         >
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke={stat.iconColor}
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                {stat.iconPath
-                                    .split('M')
-                                    .filter(Boolean)
-                                    .map((d, j) => (
-                                        <path key={j} d={'M' + d} />
-                                    ))}
-                            </svg>
+                            <SvgIcon path={stat.iconPath} color={stat.iconColor} />
                         </div>
                         <div
                             style={{
@@ -347,23 +378,12 @@ export default function Dashboard() {
                                             flexShrink: 0,
                                         }}
                                     >
-                                        <svg
-                                            width="20"
-                                            height="20"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="rgba(255,255,255,0.85)"
+                                        <SvgIcon
+                                            path={ICON[loan.resourceType] || BOOK_ICON}
+                                            color="rgba(255,255,255,0.85)"
+                                            size={20}
                                             strokeWidth="1.8"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            {(ICON[loan.resourceType] || BOOK_ICON)
-                                                .split('M')
-                                                .filter(Boolean)
-                                                .map((d, j) => (
-                                                    <path key={j} d={'M' + d} />
-                                                ))}
-                                        </svg>
+                                        />
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div

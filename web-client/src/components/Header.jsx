@@ -268,6 +268,11 @@ export default function Header() {
                 </div>
             )}
 
+            {/* Bell + panel live inside the same `position: relative`
+                wrapper so the panel anchors to the bell and pops up as an
+                overlay (the panel previously rendered as a sibling of the
+                Header bar — without a positioned ancestor it flowed with
+                the page and appeared on scroll). */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
                 <button
                     onClick={() => setNotifOpen((o) => !o)}
@@ -308,11 +313,14 @@ export default function Header() {
                         </span>
                     )}
                 </button>
-            </div>
 
-            {notifOpen && (
-                <NotificationPanel onClose={() => setNotifOpen(false)} onRead={refreshNotifCount} />
-            )}
+                {notifOpen && (
+                    <NotificationPanel
+                        onClose={() => setNotifOpen(false)}
+                        onRead={refreshNotifCount}
+                    />
+                )}
+            </div>
         </div>
     );
 }

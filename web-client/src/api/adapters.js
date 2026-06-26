@@ -180,11 +180,11 @@ export function adaptBooking(b) {
 }
 
 export function adaptWaitlistEntry(w) {
-    const resourceName =
-        w.booking?.bookTitle?.title ??
-        w.booking?.device?.name ??
-        w.booking?.studyRoom?.name ??
-        w.resourceType;
+    // Surface user + booking time so the staff queue view can show "who" and
+    // "when". Backend includes them under booking.user / booking once the
+    // include block on /waitlist/:type/:key is widened (see the
+    // WAITLIST_USER_TIME_INCLUDE patch). Falls back gracefully to top-level
+    // copies and null when nothing is present.
     return {
         id: w.id,
         bookingId: w.bookingId,
@@ -193,16 +193,19 @@ export function adaptWaitlistEntry(w) {
         priorityScore: w.priorityScore,
         hasMessage: w.hasMessage,
         status: w.status,
-        // resourceName used by the WaitlistReview UI
-        resourceName,
-        title: resourceName,
-        // User details from the linked booking (populated when queue() includes them)
-        userName: w.booking?.user?.name ?? null,
-        userEmail: w.booking?.user?.email ?? null,
-        userRole: w.booking?.user?.role ?? null,
-        userTier: w.booking?.user?.tier ?? null,
+        title:
+            w.booking?.bookTitle?.title ??
+            w.booking?.device?.name ??
+            w.booking?.studyRoom?.name ??
+            w.resourceType,
         message: w.booking?.message ?? w.staffNotes ?? '',
         color: colorFor(w.resourceKey || w.id),
+        userId: w.booking?.userId ?? w.userId ?? null,
+        userName: w.booking?.user?.name ?? w.userName ?? null,
+        userEmail: w.booking?.user?.email ?? w.userEmail ?? null,
+        startAt: w.booking?.startAt ?? w.startAt ?? null,
+        endAt: w.booking?.endAt ?? w.endAt ?? null,
+        createdAt: w.createdAt ?? w.booking?.createdAt ?? null,
         raw: w,
     };
 }
