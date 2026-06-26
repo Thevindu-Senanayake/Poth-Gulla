@@ -339,7 +339,7 @@ export default function Checkout() {
                     )}
 
                     <button
-                        onClick={submit}
+                        onClick={() => submit()}
                         disabled={busy}
                         style={{
                             width: '100%',
