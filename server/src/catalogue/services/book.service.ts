@@ -73,6 +73,8 @@ export type BookListParams = {
   limit: number;
   search?: string;
   categoryId?: string;
+  /** Admin/Staff: show archived titles and titles with all copies retired. */
+  showHidden?: boolean;
 };
 const TTL_LIST = 30;
 const TTL_DETAIL = 60;
@@ -83,14 +85,20 @@ export class BookService {
     private redis: RedisService,
   ) {}
   async findMany(params: BookListParams): Promise<[BookTitle[], number]> {
-    const { page, limit, search, categoryId } = params;
-    const cacheKey = `catalogue:books:p${page}:l${limit}:s${search ?? ''}:c${categoryId ?? ''}`;
+    const { page, limit, search, categoryId, showHidden = false } = params;
+    const cacheKey = `catalogue:books:p${page}:l${limit}:s${search ?? ''}:c${categoryId ?? ''}:h${showHidden ? '1' : '0'}`;
     const cached = await this.redis.get<[BookTitle[], number]>(cacheKey);
     if (cached) return cached;
     const term = search?.trim().slice(0, 100);
     const where = {
-      archivedAt: null, // hide archived (soft-deleted) titles
-      copies: { some: { status: { not: ItemStatus.RETIRED } } }, // hide all-retired titles
+      // Students see only non-archived, non-all-retired titles.
+      // Admin/Staff see everything so they can manage inventory and audit history.
+      ...(showHidden
+        ? {}
+        : {
+            archivedAt: null,
+            copies: { some: { status: { not: ItemStatus.RETIRED } } },
+          }),
       ...(categoryId ? { categoryId } : {}),
       ...(term
         ? {

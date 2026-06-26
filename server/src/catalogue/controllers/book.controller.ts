@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Request,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '../../../generated/prisma/client.js';
@@ -17,6 +18,8 @@ import {
   CreateBookTitleDto,
   UpdateBookTitleDto,
 } from '../services/book.service.js';
+
+const STAFF_ROLES: Role[] = [Role.ADMIN, Role.LIBRARY_STAFF];
 @ApiTags('Catalogue - Books')
 @ApiBearerAuth('JWT')
 @Controller('catalogue')
@@ -27,17 +30,20 @@ export class BookController {
   })
   @Get('books')
   findAll(
+    @Request() req: any,
     @Query('page') page = '1',
     @Query('limit') limit = '20',
     @Query('search') search?: string,
     @Query('categoryId') categoryId?: string,
   ) {
+    const showHidden = STAFF_ROLES.includes(req.user?.role);
     return this.books
       .findMany({
         page: parseInt(page, 10),
         limit: Math.min(parseInt(limit, 10), 100),
         search,
         categoryId,
+        showHidden,
       })
       .then(([data, total]) => ({ data, total, page: parseInt(page, 10) }));
   }

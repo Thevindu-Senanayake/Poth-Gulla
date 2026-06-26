@@ -439,10 +439,13 @@ export class ScanService {
 
   // ── Room check-in ─────────────────────────────────────────────────────
 
-  async roomCheckin(userId: string, dto: RoomCheckinDto): Promise<Booking> {
-    // QR scanners frequently append a trailing newline/whitespace, and a door QR
-    // may encode either the permanent `roomQr` string or the room's `id`. Accept
-    // both (trimmed) so a check-in resolves to the same room regardless.
+  async roomCheckin(
+    userId: string,
+    dto: RoomCheckinDto,
+    isStaff = false,
+  ): Promise<Booking> {
+    // QR scanners frequently append trailing whitespace; a door QR may encode
+    // either the permanent roomQr string or the room's id. Accept both.
     const code = dto.roomQr.trim();
     const room = await this.prisma.studyRoom.findFirst({
       where: { OR: [{ roomQr: code }, { id: code }] },
@@ -453,7 +456,9 @@ export class ScanService {
     const now = new Date();
     const booking = await this.prisma.booking.findFirst({
       where: {
-        userId,
+        // Students can only check themselves in; Admin/Staff scan on behalf of whoever
+        // holds the active booking for this room right now (no userId filter).
+        ...(isStaff ? {} : { userId }),
         studyRoomId: room.id,
         status: BookingStatus.APPROVED,
         startAt: { lte: now },
@@ -462,7 +467,9 @@ export class ScanService {
     });
     if (!booking) {
       throw new BadRequestException(
-        'No active approved booking for this room right now',
+        isStaff
+          ? 'No active approved booking for this room right now'
+          : 'You do not have an active approved booking for this room right now',
       );
     }
 
@@ -475,12 +482,13 @@ export class ScanService {
       },
     });
 
-    await this.points.applyFromConfig(userId, 'ROOM_ATTENDED', {
+    // Points go to the STUDENT (booking.userId), not the staff actor.
+    await this.points.applyFromConfig(booking.userId, 'ROOM_ATTENDED', {
       bookingId: booking.id,
     });
 
     await this.audit.log(
-      userId,
+      userId, // actor = who triggered the scan (could be staff)
       AuditAction.ROOM_CHECKED_IN,
       AuditTargetType.Booking,
       updated.id,

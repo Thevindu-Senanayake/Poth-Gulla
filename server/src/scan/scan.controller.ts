@@ -48,7 +48,9 @@ export class ScanController {
   })
   @Post('room-checkin')
   roomCheckin(@CurrentUser() user: AuthUser, @Body() dto: RoomCheckinDto) {
-    return this.scan.roomCheckin(user.userId, dto);
+    const isStaff =
+      user.role === Role.ADMIN || user.role === Role.LIBRARY_STAFF;
+    return this.scan.roomCheckin(user.userId, dto, isStaff);
   }
 
   @ApiOperation({

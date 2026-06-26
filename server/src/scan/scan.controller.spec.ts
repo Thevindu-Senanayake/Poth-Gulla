@@ -30,7 +30,7 @@ describe('ScanController', () => {
   it('POST /scan/room-checkin passes the current user id and dto', () => {
     const dto = { roomQr: 'ROOM-1' } as any;
     controller.roomCheckin(staff, dto);
-    expect(scan.roomCheckin).toHaveBeenCalledWith('s1', dto);
+    expect(scan.roomCheckin).toHaveBeenCalledWith('s1', dto, true); // staff.role = ADMIN → isStaff = true
   });
 
   it('POST /scan/return delegates to scan.returnItem', () => {

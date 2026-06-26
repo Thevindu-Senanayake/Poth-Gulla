@@ -208,6 +208,7 @@ describe('App (e2e smoke)', () => {
       expect(scanService.roomCheckin).toHaveBeenCalledWith(
         'student-1',
         expect.any(Object),
+        false, // isStaff = false for a student caller
       );
     });
 

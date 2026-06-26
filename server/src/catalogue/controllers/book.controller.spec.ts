@@ -29,21 +29,30 @@ describe('BookController', () => {
   describe('GET /catalogue/books', () => {
     it('parses paging and search and reshapes the tuple result', async () => {
       books.findMany.mockResolvedValue([[{ id: 't1' }], 1]);
-      const res = await controller.findAll('2', '15', 'sql', 'cat1');
+      const req = { user: { role: 'STUDENT' } };
+      const res = await controller.findAll(
+        req as any,
+        '2',
+        '15',
+        'sql',
+        'cat1',
+      );
       expect(books.findMany).toHaveBeenCalledWith({
         page: 2,
         limit: 15,
         search: 'sql',
         categoryId: 'cat1',
+        showHidden: false, // STUDENT role → no hidden books
       });
       expect(res).toEqual({ data: [{ id: 't1' }], total: 1, page: 2 });
     });
 
     it('clamps limit to 100', async () => {
       books.findMany.mockResolvedValue([[], 0]);
-      await controller.findAll('1', '250');
+      const req = { user: { role: 'ADMIN' } };
+      await controller.findAll(req as any, '1', '250');
       expect(books.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 100 }),
+        expect.objectContaining({ limit: 100, showHidden: true }), // ADMIN sees hidden
       );
     });
   });
