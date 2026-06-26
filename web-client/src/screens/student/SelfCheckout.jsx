@@ -225,7 +225,7 @@ export default function SelfCheckout() {
                                     marginBottom: 16,
                                 }}
                             >
-                                📷 Scan with camera
+                                Scan with camera
                             </button>
                             <div
                                 style={{
