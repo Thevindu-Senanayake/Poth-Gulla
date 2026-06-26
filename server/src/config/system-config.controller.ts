@@ -30,7 +30,6 @@ export class UpdateSystemConfigDto {
 
 @ApiTags('System Config')
 @ApiBearerAuth('JWT')
-@Roles(Role.ADMIN)
 @Controller('config')
 export class SystemConfigController {
   constructor(private config: SystemConfigService) {}
@@ -47,6 +46,7 @@ export class SystemConfigController {
     summary:
       'Update system config - Admin. Persists the edited rules. Logs to audit trail.',
   })
+  @Roles(Role.ADMIN)
   @Put()
   update(
     @Body() dto: UpdateSystemConfigDto,
