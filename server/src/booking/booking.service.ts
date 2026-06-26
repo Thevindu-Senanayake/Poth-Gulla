@@ -99,8 +99,36 @@ export class BookingService {
       }
     }
 
-    // (3) route to booking status
-    const status = await this.route(resourceType, resourceId, startAt, endAt);
+    // (3) route to booking status; for books, atomically reserve a copy at the same time
+    let status: BookingStatus;
+    let bookCopyId: string | null = null;
+    let qrToken: string | null = null;
+
+    if (resourceType === ResourceType.BOOK) {
+      // Try to claim an AVAILABLE copy in a single transaction to prevent double-booking.
+      // If two requests race for the last copy, only one wins; the other goes to WAITLIST.
+      const reserved = await this.prisma.$transaction(async (tx) => {
+        const candidate = await tx.bookCopy.findFirst({
+          where: { bookTitleId: resourceId, status: ItemStatus.AVAILABLE },
+          orderBy: { assetTag: 'asc' },
+        });
+        if (!candidate) return null;
+        const { count } = await tx.bookCopy.updateMany({
+          where: { id: candidate.id, status: ItemStatus.AVAILABLE },
+          data: { status: ItemStatus.BORROWED },
+        });
+        return count > 0 ? candidate : null;
+      });
+
+      status = reserved ? BookingStatus.APPROVED : BookingStatus.WAITLIST;
+      bookCopyId = reserved?.id ?? null;
+      // qrToken for an approved book booking encodes the physical asset tag so the
+      // student's QR is scannable by staff without a separate item scan.
+      qrToken = reserved?.assetTag ?? null;
+    } else {
+      status = await this.route(resourceType, resourceId, startAt, endAt);
+      qrToken = status === BookingStatus.APPROVED ? randomUUID() : null;
+    }
 
     // (4) persist booking
     const booking = await this.prisma.booking.create({
@@ -110,11 +138,12 @@ export class BookingService {
         bookTitleId: resourceType === ResourceType.BOOK ? resourceId : null,
         deviceId: resourceType === ResourceType.DEVICE ? resourceId : null,
         studyRoomId: resourceType === ResourceType.ROOM ? resourceId : null,
+        bookCopyId,
         startAt,
         endAt,
         message: message ?? null,
         status,
-        qrToken: status === BookingStatus.APPROVED ? randomUUID() : null,
+        qrToken,
       },
     });
 
@@ -338,7 +367,12 @@ export class BookingService {
 
     const updated = await this.prisma.booking.update({
       where: { id: bookingId },
-      data: { status: BookingStatus.CANCELLED },
+      data: {
+        status: BookingStatus.CANCELLED,
+        // Clear qrToken so the asset tag (for pre-assigned book copies) can be reused
+        // by a future booking without hitting the @unique constraint.
+        ...(booking.status === BookingStatus.APPROVED ? { qrToken: null } : {}),
+      },
       include: {
         user: { select: { name: true, email: true } },
         bookTitle: { select: { title: true } },
@@ -348,6 +382,13 @@ export class BookingService {
     });
 
     if (booking.status === BookingStatus.APPROVED) {
+      // Release the pre-assigned book copy so it becomes available for the next booking.
+      if (booking.resourceType === ResourceType.BOOK && booking.bookCopyId) {
+        await this.prisma.bookCopy.update({
+          where: { id: booking.bookCopyId },
+          data: { status: ItemStatus.AVAILABLE },
+        });
+      }
       await this.applyCancelPoints(booking);
       const resourceKey = (booking.bookTitleId ??
         booking.deviceId ??

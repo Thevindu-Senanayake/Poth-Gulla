@@ -109,6 +109,10 @@ export class BookService {
         orderBy: { title: 'asc' },
         include: {
           category: true,
+          copies: {
+            select: { status: true },
+            where: { status: { not: ItemStatus.RETIRED } },
+          },
           _count: {
             select: { copies: { where: { status: ItemStatus.AVAILABLE } } },
           },

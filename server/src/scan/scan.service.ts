@@ -180,24 +180,35 @@ export class ScanService {
     });
 
     if (copy) {
-      if (copy.status !== ItemStatus.AVAILABLE)
-        throw new BadRequestException(
-          `Copy ${assetTag} is ${copy.status}, not AVAILABLE`,
-        );
+      const include = {
+        waitlistEntry: true,
+        user: { select: { name: true, email: true } },
+        bookTitle: { select: { title: true } },
+      } as const;
 
-      // Oldest approved booking for this title wins (FIFO)
-      const booking = await this.prisma.booking.findFirst({
-        where: {
-          bookTitleId: copy.bookTitleId,
-          status: BookingStatus.APPROVED,
-        },
-        orderBy: { startAt: 'asc' },
-        include: {
-          waitlistEntry: true,
-          user: { select: { name: true, email: true } },
-          bookTitle: { select: { title: true } },
-        },
+      // Prefer the booking that has this exact copy pre-assigned (auto-assignment path).
+      let booking = await this.prisma.booking.findFirst({
+        where: { bookCopyId: copy.id, status: BookingStatus.APPROVED },
+        include,
       });
+
+      if (!booking) {
+        // Fallback: copy might not be pre-assigned (AVAILABLE copy, no pre-assignment).
+        if (copy.status !== ItemStatus.AVAILABLE)
+          throw new BadRequestException(
+            `Copy ${assetTag} is ${copy.status} and has no approved booking assigned to it`,
+          );
+        // Find the oldest approved booking for this title (FIFO)
+        booking = await this.prisma.booking.findFirst({
+          where: {
+            bookTitleId: copy.bookTitleId,
+            status: BookingStatus.APPROVED,
+          },
+          orderBy: { startAt: 'asc' },
+          include,
+        });
+      }
+
       if (!booking)
         throw new BadRequestException(
           `No approved booking for "${copy.bookTitle?.title}" — reserve it first`,
@@ -245,22 +256,36 @@ export class ScanService {
       throw new NotFoundException(
         `No book copy with asset tag ${dto.assetTag}`,
       );
-    if (copy.status !== ItemStatus.AVAILABLE)
-      throw new BadRequestException(`Copy is ${copy.status}, not AVAILABLE`);
 
-    const booking = await this.prisma.booking.findFirst({
-      where: {
-        userId,
-        bookTitleId: copy.bookTitleId,
-        status: BookingStatus.APPROVED,
-      },
-      orderBy: { startAt: 'asc' },
-      include: {
-        waitlistEntry: true,
-        user: { select: { name: true, email: true } },
-        bookTitle: { select: { title: true } },
-      },
+    const include = {
+      waitlistEntry: true,
+      user: { select: { name: true, email: true } },
+      bookTitle: { select: { title: true } },
+    } as const;
+
+    // Prefer the booking that has this exact copy pre-assigned (auto-assignment path).
+    let booking = await this.prisma.booking.findFirst({
+      where: { userId, bookCopyId: copy.id, status: BookingStatus.APPROVED },
+      include,
     });
+
+    if (!booking) {
+      // Fallback: no pre-assignment, copy must still be AVAILABLE.
+      if (copy.status !== ItemStatus.AVAILABLE)
+        throw new BadRequestException(
+          `This copy is not available for self-checkout`,
+        );
+      booking = await this.prisma.booking.findFirst({
+        where: {
+          userId,
+          bookTitleId: copy.bookTitleId,
+          status: BookingStatus.APPROVED,
+        },
+        orderBy: { startAt: 'asc' },
+        include,
+      });
+    }
+
     if (!booking)
       throw new BadRequestException(
         `You don't have an approved booking for "${copy.bookTitle?.title}"`,
@@ -286,17 +311,23 @@ export class ScanService {
         'Asset tag belongs to a different book title',
       );
     }
-    if (copy.status !== ItemStatus.AVAILABLE) {
-      throw new BadRequestException(`Copy is ${copy.status}, not AVAILABLE`);
+
+    // After auto-assignment at approval time the copy is pre-BORROWED for this booking.
+    // Allow checkout if the copy is either still AVAILABLE (legacy / direct path) or
+    // BORROWED and pre-assigned to exactly this booking. Reject all other states.
+    const preAssigned = booking.bookCopyId === copy.id;
+    if (!preAssigned && copy.status !== ItemStatus.AVAILABLE) {
+      throw new BadRequestException(
+        `Copy ${assetTag} is ${copy.status} — it is not assigned to this booking`,
+      );
     }
 
     const [updated] = await this.prisma.$transaction([
       this.prisma.booking.update({
         where: { id: booking.id },
-        // Checkout opens an active loan - the booking is CHECKED_OUT, not
-        // COMPLETED. It's marked COMPLETED only when the item is returned.
         data: { status: BookingStatus.CHECKED_OUT, bookCopyId: copy.id },
       }),
+      // Always set BORROWED to handle both pre-assigned (idempotent) and direct paths.
       this.prisma.bookCopy.update({
         where: { id: copy.id },
         data: { status: ItemStatus.BORROWED },
@@ -515,10 +546,11 @@ export class ScanService {
             where: { id: borrowing.deviceId! },
             data: { status: ItemStatus.AVAILABLE },
           }),
-      // The loan is now closed - complete the originating booking.
+      // Close the booking; clear qrToken so the asset tag can be reused by the
+      // next booking for this copy without hitting the @unique constraint.
       this.prisma.booking.update({
         where: { id: borrowing.bookingId },
-        data: { status: BookingStatus.COMPLETED },
+        data: { status: BookingStatus.COMPLETED, qrToken: null },
       }),
     ]);
 

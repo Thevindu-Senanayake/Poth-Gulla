@@ -23,10 +23,18 @@ describe('BookingService.create (routing, limits, caps)', () => {
         create: jest.fn(async ({ data }: any) => ({ id: 'b1', ...data })),
         findFirst: jest.fn(async () => null), // no room clash by default
       },
-      bookCopy: { count: jest.fn() },
+      bookCopy: {
+        count: jest.fn(),
+        findFirst: jest.fn(async () => null), // overridden per test
+        updateMany: jest.fn(async () => ({ count: 0 })),
+      },
       bookTitle: { findUnique: jest.fn(async () => ({ title: 'Mock Book' })) },
       device: { findUnique: jest.fn(async () => ({ name: 'Mock Device' })) },
       studyRoom: { findUnique: jest.fn(async () => ({ name: 'Mock Room' })) },
+      // Support interactive transactions (callback form) by calling with prisma as tx.
+      $transaction: jest.fn(async (arg: any) =>
+        typeof arg === 'function' ? arg(prisma) : arg,
+      ),
     };
     waitlist = { enqueue: jest.fn() };
     points = { apply: jest.fn(), applyFixed: jest.fn() };
@@ -67,17 +75,22 @@ describe('BookingService.create (routing, limits, caps)', () => {
     } as any);
   }
 
-  it('BOOK with a free copy -> APPROVED', async () => {
+  it('BOOK with a free copy -> APPROVED with assetTag as qrToken', async () => {
     prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
-    prisma.bookCopy.count.mockResolvedValue(1);
+    // Simulate one available copy; updateMany claims it successfully.
+    const mockCopy = { id: 'c1', assetTag: 'BK-CC-001', bookTitleId: 'r1' };
+    prisma.bookCopy.findFirst.mockResolvedValue(mockCopy);
+    prisma.bookCopy.updateMany.mockResolvedValue({ count: 1 });
     const b = await book();
     expect(b.status).toBe('APPROVED');
-    expect(b.qrToken).toBeTruthy();
+    expect(b.qrToken).toBe('BK-CC-001'); // asset tag, not a UUID
+    expect(b.bookCopyId).toBe('c1');
   });
 
   it('BOOK with no free copy -> WAITLIST and enqueues', async () => {
     prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
-    prisma.bookCopy.count.mockResolvedValue(0);
+    // No available copy found.
+    prisma.bookCopy.findFirst.mockResolvedValue(null);
     const b = await book({ message: 'need it' });
     expect(b.status).toBe('WAITLIST');
     expect(b.qrToken).toBeNull();

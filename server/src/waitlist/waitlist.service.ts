@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import {
   Booking,
   BookingStatus,
+  ItemStatus,
   ResourceType,
   Role,
   WaitlistEntry,
@@ -149,6 +150,37 @@ export class WaitlistService {
     if (entry.status !== WaitlistStatus.PENDING) {
       throw new BadRequestException(`Entry is already ${entry.status}`);
     }
+
+    // For book promotions: reserve a specific copy atomically (same logic as create()).
+    // qrToken for approved book bookings encodes the physical asset tag.
+    let bookCopyId: string | null = null;
+    let qrToken: string = randomUUID();
+
+    if (
+      entry.booking.resourceType === ResourceType.BOOK &&
+      entry.booking.bookTitleId
+    ) {
+      const reserved = await this.prisma.$transaction(async (tx) => {
+        const candidate = await tx.bookCopy.findFirst({
+          where: {
+            bookTitleId: entry.booking.bookTitleId!,
+            status: ItemStatus.AVAILABLE,
+          },
+          orderBy: { assetTag: 'asc' },
+        });
+        if (!candidate) return null;
+        const { count } = await tx.bookCopy.updateMany({
+          where: { id: candidate.id, status: ItemStatus.AVAILABLE },
+          data: { status: ItemStatus.BORROWED },
+        });
+        return count > 0 ? candidate : null;
+      });
+      if (reserved) {
+        bookCopyId = reserved.id;
+        qrToken = reserved.assetTag;
+      }
+    }
+
     const [updated] = await Promise.all([
       this.prisma.waitlistEntry.update({
         where: { id: entryId },
@@ -156,7 +188,11 @@ export class WaitlistService {
       }),
       this.prisma.booking.update({
         where: { id: entry.bookingId },
-        data: { status: BookingStatus.APPROVED, qrToken: randomUUID() },
+        data: {
+          status: BookingStatus.APPROVED,
+          qrToken,
+          ...(bookCopyId ? { bookCopyId } : {}),
+        },
       }),
     ]);
 
