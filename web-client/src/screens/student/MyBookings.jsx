@@ -64,7 +64,9 @@ export default function MyBookings() {
     const all = data?.items || [];
     const pendingCheckout = all.filter((b) => b.status === 'APPROVED');
     const activeLoans = all.filter((b) => b.status === 'CHECKED_OUT');
-    const upcoming = all.filter((b) => b.status === 'PENDING' || b.status === 'WAITLIST');
+    // PENDING = awaiting staff approval (high-tier devices/books). WAITLIST entries
+    // have their own dedicated Waitlist page and are not shown here.
+    const upcoming = all.filter((b) => b.status === 'PENDING');
     const history = all.filter((b) => ['COMPLETED', 'CANCELLED', 'REJECTED'].includes(b.status));
 
     async function showQR(b) {
@@ -208,7 +210,7 @@ export default function MyBookings() {
                     My Bookings
                 </h1>
                 <p style={{ color: '#7c7e93', fontSize: 13, margin: 0 }}>
-                    Pending checkouts, active loans, requests and history
+                    Pending checkouts, active loans, pending approvals and history
                 </p>
             </div>
 
@@ -319,8 +321,11 @@ export default function MyBookings() {
                             margin: '0 0 16px',
                         }}
                     >
-                        Pending &amp; waitlisted
+                        Pending approval
                     </h2>
+                    <p style={{ fontSize: 12, color: '#7c7e93', margin: '0 0 14px' }}>
+                        High-tier device or resource requests waiting for staff review.
+                    </p>
                     <div
                         style={{
                             display: 'grid',

@@ -374,10 +374,18 @@ export class WaitlistService {
         },
       },
     });
-    const updated = await this.prisma.waitlistEntry.update({
-      where: { id: entryId },
-      data: { status: WaitlistStatus.DISMISSED, staffNotes },
-    });
+    // Cancel both the waitlist entry AND its booking so the booking disappears
+    // from the student's MyBookings page immediately.
+    const [updated] = await Promise.all([
+      this.prisma.waitlistEntry.update({
+        where: { id: entryId },
+        data: { status: WaitlistStatus.DISMISSED, staffNotes },
+      }),
+      this.prisma.booking.update({
+        where: { id: entry.bookingId },
+        data: { status: BookingStatus.CANCELLED },
+      }),
+    ]);
 
     const resourceName =
       entry.booking.bookTitle?.title ??
@@ -403,11 +411,54 @@ export class WaitlistService {
       .create(
         entry.booking.userId ?? '',
         'WAITLIST_DISMISSED',
-        `Your waitlist entry for "${resourceName}" was dismissed by staff`,
+        `Your waitlist entry for "${resourceName}" was removed from the queue`,
       )
       .catch(() => {});
 
+    // Removing this entry may unblock a held auto-promotion (e.g. this entry
+    // was the one with a message flagged for review).
+    await this.onResourceFreed(entry.resourceType, entry.resourceKey);
+
     return updated;
+  }
+
+  /**
+   * Count of waitlist entries that currently need staff review
+   * (hasMessage=true AND ranked below #1 AND queue has >1 member).
+   * Used by the sidebar badge.
+   */
+  async needsReviewCount(): Promise<number> {
+    const allPending = await this.prisma.waitlistEntry.findMany({
+      where: { status: WaitlistStatus.PENDING },
+      select: {
+        resourceType: true,
+        resourceKey: true,
+        hasMessage: true,
+        priorityScore: true,
+      },
+      orderBy: [
+        { resourceType: 'asc' },
+        { resourceKey: 'asc' },
+        { priorityScore: 'desc' },
+      ],
+    });
+
+    // Group by resource and apply the same needsReview logic as queue()
+    const groups = new Map<string, typeof allPending>();
+    for (const e of allPending) {
+      const key = `${e.resourceType}:${e.resourceKey}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(e);
+    }
+
+    let count = 0;
+    for (const entries of groups.values()) {
+      const total = entries.length;
+      entries.forEach((e, idx) => {
+        if (e.hasMessage && idx > 0 && total > 1) count++;
+      });
+    }
+    return count;
   }
 
   async myEntries(userId: string) {

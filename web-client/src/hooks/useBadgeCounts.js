@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { myWaitlist } from '../api/waitlist';
+import { myWaitlist, reviewCount } from '../api/waitlist';
 import { allBookings } from '../api/bookings';
 
 const POLL_MS = 60_000;
@@ -16,7 +16,10 @@ export function useBadgeCounts(role, refreshKey) {
                     const w = await myWaitlist();
                     if (!cancelledRef.current) setCounts({ '/waitlist': (w || []).length });
                 } else if (role === 'staff') {
-                    const { items } = await allBookings({ limit: 200 });
+                    const [{ items }, reviewData] = await Promise.all([
+                        allBookings({ limit: 200 }),
+                        reviewCount().catch(() => ({ count: 0 })),
+                    ]);
                     const now = Date.now();
                     const overdue = items.filter(
                         (b) =>
@@ -24,7 +27,6 @@ export function useBadgeCounts(role, refreshKey) {
                             b.endAt &&
                             new Date(b.endAt).getTime() < now
                     ).length;
-                    const waitlistReview = items.filter((b) => b.status === 'WAITLIST').length;
                     const deviceApprovals = items.filter(
                         (b) =>
                             b.status === 'PENDING' &&
@@ -33,7 +35,8 @@ export function useBadgeCounts(role, refreshKey) {
                     if (!cancelledRef.current)
                         setCounts({
                             '/staff/overdue': overdue,
-                            '/staff/waitlist-review': waitlistReview,
+                            // Only entries that actually need staff review (hasMessage + ranked below #1)
+                            '/staff/waitlist-review': reviewData.count,
                             '/staff/approvals': deviceApprovals,
                         });
                 } else if (!cancelledRef.current) {

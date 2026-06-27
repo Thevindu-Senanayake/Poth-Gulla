@@ -38,6 +38,16 @@ export class WaitlistController {
   }
 
   @ApiOperation({
+    summary: 'Count of waitlist entries needing staff review (Admin/Staff)',
+  })
+  @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
+  @Get('review-count')
+  async reviewCount() {
+    const count = await this.waitlist.needsReviewCount();
+    return { count };
+  }
+
+  @ApiOperation({
     summary: 'View ranked waitlist queue for a resource (Admin/Staff)',
   })
   @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
