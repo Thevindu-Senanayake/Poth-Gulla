@@ -57,9 +57,11 @@ describe('BookController', () => {
     });
   });
 
-  it('GET /catalogue/books/:id delegates to findById', () => {
-    controller.findOne('t1');
-    expect(books.findById).toHaveBeenCalledWith('t1');
+  it('GET /catalogue/books/:id delegates to findById with role-based visibility', () => {
+    controller.findOne('t1', { user: { role: 'STUDENT' } } as any);
+    expect(books.findById).toHaveBeenCalledWith('t1', false);
+    controller.findOne('t1', { user: { role: 'LIBRARY_STAFF' } } as any);
+    expect(books.findById).toHaveBeenCalledWith('t1', true);
   });
 
   it('POST /catalogue/books creates', () => {

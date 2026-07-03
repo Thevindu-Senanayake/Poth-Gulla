@@ -240,19 +240,14 @@ export class BookingService {
     return booking;
   }
 
+  // Routes DEVICE and ROOM bookings. BOOK routing lives in create() where the
+  // copy reservation must happen atomically with the status decision.
   private async route(
     type: ResourceType,
     resourceId: string,
     startAt: Date,
     endAt: Date,
   ): Promise<BookingStatus> {
-    if (type === ResourceType.BOOK) {
-      const free = await this.prisma.bookCopy.count({
-        where: { bookTitleId: resourceId, status: ItemStatus.AVAILABLE },
-      });
-      return free >= 1 ? BookingStatus.APPROVED : BookingStatus.WAITLIST;
-    }
-
     if (type === ResourceType.DEVICE) {
       const device = await this.prisma.device.findUnique({
         where: { id: resourceId },
