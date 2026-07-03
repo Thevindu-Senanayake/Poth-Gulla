@@ -172,4 +172,104 @@ describe('BookingService.create (routing, limits, caps)', () => {
       BadRequestException,
     ); // > 14d book cap
   });
+
+  it('rejects a duplicate booking for the same book title', async () => {
+    prisma.user.findUniqueOrThrow.mockResolvedValue(tier3);
+    // The duplicate guard finds an existing active booking for this title.
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'existing',
+      status: 'WAITLIST',
+    });
+    await expect(book()).rejects.toThrow(/already have an active booking/i);
+  });
+});
+
+describe('BookingService.cancel (copy release)', () => {
+  let service: BookingService;
+  let prisma: any;
+  let waitlist: {
+    enqueue: jest.Mock;
+    dismiss: jest.Mock;
+    onResourceFreed: jest.Mock;
+  };
+
+  beforeEach(() => {
+    prisma = {
+      booking: {
+        findUniqueOrThrow: jest.fn(),
+        update: jest.fn(async () => ({
+          id: 'b1',
+          resourceType: 'BOOK',
+          user: { name: 'Alice', email: 'a@iit.ac.lk' },
+          bookTitle: { title: 'Clean Code' },
+          device: null,
+          studyRoom: null,
+        })),
+      },
+      bookCopy: { update: jest.fn(async () => ({})) },
+    };
+    waitlist = {
+      enqueue: jest.fn(),
+      dismiss: jest.fn(),
+      onResourceFreed: jest.fn(),
+    };
+    const points = {
+      apply: jest.fn(),
+      applyFixed: jest.fn(),
+      applyFromConfig: jest.fn(),
+    };
+    const systemConfig = { get: jest.fn() };
+    const audit = { log: jest.fn() };
+    const notif = { create: jest.fn(async () => ({})) };
+    service = new BookingService(
+      prisma as any,
+      waitlist as any,
+      points as any,
+      systemConfig as any,
+      audit as any,
+      notif as any,
+    );
+  });
+
+  it('releases the RESERVED copy and clears qrToken when cancelling an APPROVED book booking', async () => {
+    prisma.booking.findUniqueOrThrow.mockResolvedValue({
+      id: 'b1',
+      userId: 'u1',
+      status: 'APPROVED',
+      resourceType: 'BOOK',
+      bookTitleId: 't1',
+      bookCopyId: 'c1',
+      startAt: new Date(),
+      waitlistEntry: null,
+    });
+
+    await service.cancel('u1', 'b1');
+
+    // The pre-assigned copy goes back to AVAILABLE...
+    expect(prisma.bookCopy.update).toHaveBeenCalledWith({
+      where: { id: 'c1' },
+      data: { status: 'AVAILABLE' },
+    });
+    // ...the qrToken is cleared so the asset tag can be reused...
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'CANCELLED', qrToken: null }),
+      }),
+    );
+    // ...and the freed slot triggers the waitlist.
+    expect(waitlist.onResourceFreed).toHaveBeenCalledWith('BOOK', 't1');
+  });
+
+  it("refuses to cancel another user's booking without admin override", async () => {
+    prisma.booking.findUniqueOrThrow.mockResolvedValue({
+      id: 'b1',
+      userId: 'owner',
+      status: 'APPROVED',
+      resourceType: 'BOOK',
+      waitlistEntry: null,
+    });
+    await expect(service.cancel('intruder', 'b1')).rejects.toThrow(
+      /another user/i,
+    );
+  });
 });

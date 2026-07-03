@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
-import { ValidationPipe } from '@nestjs/common';
+import { NotFoundException, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
@@ -34,6 +34,10 @@ describe('App (e2e smoke)', () => {
     roomCheckin: jest.fn(async () => ({ attended: true, pointsAwarded: 20 })),
     checkout: jest.fn(),
     returnItem: jest.fn(),
+    // Route-wiring only: the real 404 path is covered by scan.service.spec.
+    selfCheckout: jest.fn(async () => {
+      throw new NotFoundException('No book copy with asset tag');
+    }),
   };
 
   beforeAll(async () => {
@@ -77,7 +81,14 @@ describe('App (e2e smoke)', () => {
       },
       // Audit and notification writes are fire-and-forget in e2e; silence them.
       log: { create: jest.fn(async () => ({})) },
-      notification: { create: jest.fn(async () => ({})) },
+      notification: {
+        create: jest.fn(async () => ({})),
+        findMany: jest.fn(async () => []),
+        count: jest.fn(async () => 0),
+        updateMany: jest.fn(async () => ({ count: 0 })),
+      },
+      bookCopy: { findUnique: jest.fn(async () => null) },
+      waitlistEntry: { findMany: jest.fn(async () => []) },
     };
 
     const redisMock = {
@@ -218,5 +229,55 @@ describe('App (e2e smoke)', () => {
         .set('Authorization', `Bearer ${studentToken}`)
         .send({ bookingQr: 'B', assetTag: 'A' })
         .expect(403));
+
+    it('POST /api/scan/self-checkout with a missing assetTag → 400 (validation)', () =>
+      request(app.getHttpServer())
+        .post('/api/scan/self-checkout')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send({})
+        .expect(400));
+
+    it('POST /api/scan/self-checkout with an unknown tag → 404', () =>
+      request(app.getHttpServer())
+        .post('/api/scan/self-checkout')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send({ assetTag: 'BK-NOPE-999' })
+        .expect(404));
+  });
+
+  describe('Waitlist review (staff-only surface)', () => {
+    it('GET /api/waitlist/review-count as a student → 403', () =>
+      request(app.getHttpServer())
+        .get('/api/waitlist/review-count')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .expect(403));
+
+    it('POST /api/waitlist/:id/decline-message as a student → 403', () =>
+      request(app.getHttpServer())
+        .post('/api/waitlist/w1/decline-message')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send({})
+        .expect(403));
+  });
+
+  describe('Notifications', () => {
+    it('GET /api/notifications/me without a token → 401', () =>
+      request(app.getHttpServer()).get('/api/notifications/me').expect(401));
+
+    it('GET /api/notifications/me with a token → 200 with paginated shape', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/notifications/me')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .expect(200);
+      expect(res.body.data).toEqual([]);
+      expect(res.body.meta).toMatchObject({ page: 1, total: 0 });
+    });
+
+    it('POST /api/notifications/read-all scopes to the caller', async () => {
+      await request(app.getHttpServer())
+        .post('/api/notifications/read-all')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .expect(201);
+    });
   });
 });
