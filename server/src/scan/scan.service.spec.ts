@@ -308,4 +308,227 @@ describe('ScanService.checkout', () => {
       }),
     );
   });
+
+  it('asset-tag-first flow: resolves the booking pre-assigned to a RESERVED copy', async () => {
+    // Neither a qrToken booking nor a user matches - falls to checkoutByAssetTag.
+    prisma.booking.findUnique.mockResolvedValue(null);
+    prisma.user.findFirst.mockResolvedValue(null);
+    const copy = {
+      id: 'c1',
+      bookTitleId: 't1',
+      status: 'RESERVED',
+      bookTitle: { title: 'Clean Code' },
+    };
+    prisma.bookCopy.findUnique.mockResolvedValue(copy);
+    prisma.booking.findFirst = jest.fn(async () => ({
+      id: 'b1',
+      status: 'APPROVED',
+      resourceType: 'BOOK',
+      bookTitleId: 't1',
+      bookCopyId: 'c1', // pre-assigned to this exact copy
+      userId: 'u1',
+      endAt: new Date(),
+      waitlistEntry: null,
+      user: { name: 'Alice', email: 'a@iit.ac.lk' },
+      bookTitle: { title: 'Clean Code' },
+    }));
+
+    await service.checkout({ bookingQr: 'BK-CC-001', assetTag: 'BK-CC-001' });
+
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { bookCopyId: 'c1', status: 'APPROVED' },
+      }),
+    );
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'CHECKED_OUT' }),
+      }),
+    );
+  });
+
+  it('rejects a RESERVED copy that belongs to a different booking', async () => {
+    const mockBooking = {
+      id: 'b-other',
+      status: 'APPROVED',
+      resourceType: 'BOOK',
+      bookTitleId: 't1',
+      bookCopyId: 'c-other', // booking holds a DIFFERENT copy
+      userId: 'u1',
+      endAt: new Date(),
+      waitlistEntry: null,
+    };
+    prisma.booking.findUnique.mockResolvedValue(mockBooking);
+    prisma.bookCopy.findUnique.mockResolvedValue({
+      id: 'c1',
+      bookTitleId: 't1',
+      status: 'RESERVED',
+    });
+
+    await expect(
+      service.checkout({ bookingQr: 'qr', assetTag: 'BK-CC-001' }),
+    ).rejects.toThrow(/reserved for a different booking/i);
+  });
+});
+
+describe('ScanService.selfCheckout', () => {
+  let service: ScanService;
+  let prisma: any;
+
+  beforeEach(() => {
+    prisma = {
+      borrowing: { create: jest.fn((a: any) => a) },
+      bookCopy: { findUnique: jest.fn(), update: jest.fn((a: any) => a) },
+      booking: {
+        findFirst: jest.fn(async () => null),
+        update: jest.fn((a: any) => a),
+      },
+      $transaction: jest.fn(async (arg: any) =>
+        typeof arg === 'function' ? arg(prisma) : arg,
+      ),
+    };
+    const points = {
+      apply: jest.fn(),
+      applyFixed: jest.fn(),
+      applyFromConfig: jest.fn(),
+    };
+    const waitlist = { onResourceFreed: jest.fn() };
+    const audit = { log: jest.fn() };
+    const systemConfig = {
+      get: jest.fn(async () => ({ tiers: [], penalties: [], toggles: [] })),
+    };
+    service = new ScanService(
+      prisma as any,
+      points as any,
+      waitlist as any,
+      audit as any,
+      systemConfig as any,
+    );
+  });
+
+  it('checks out the callers pre-assigned RESERVED copy', async () => {
+    prisma.bookCopy.findUnique.mockResolvedValue({
+      id: 'c1',
+      bookTitleId: 't1',
+      status: 'RESERVED',
+      bookTitle: { title: 'Clean Code' },
+    });
+    prisma.booking.findFirst.mockResolvedValueOnce({
+      id: 'b1',
+      status: 'APPROVED',
+      resourceType: 'BOOK',
+      bookTitleId: 't1',
+      bookCopyId: 'c1',
+      userId: 'u1',
+      endAt: new Date(),
+      waitlistEntry: null,
+      user: { name: 'Alice', email: 'a@iit.ac.lk' },
+      bookTitle: { title: 'Clean Code' },
+    });
+
+    await service.selfCheckout('u1', { assetTag: 'BK-CC-001' });
+
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: 'u1', bookCopyId: 'c1', status: 'APPROVED' },
+      }),
+    );
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'CHECKED_OUT' }),
+      }),
+    );
+  });
+
+  it('404s on an unknown asset tag', async () => {
+    prisma.bookCopy.findUnique.mockResolvedValue(null);
+    await expect(
+      service.selfCheckout('u1', { assetTag: 'NOPE' }),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('rejects when the caller has no approved booking for the title', async () => {
+    prisma.bookCopy.findUnique.mockResolvedValue({
+      id: 'c1',
+      bookTitleId: 't1',
+      status: 'AVAILABLE',
+      bookTitle: { title: 'Clean Code' },
+    });
+    prisma.booking.findFirst.mockResolvedValue(null);
+    await expect(
+      service.selfCheckout('u1', { assetTag: 'BK-CC-001' }),
+    ).rejects.toThrow(/approved booking/i);
+  });
+});
+
+describe('ScanService.roomCheckin (student vs staff)', () => {
+  let service: ScanService;
+  let prisma: any;
+  let points: any;
+
+  beforeEach(() => {
+    prisma = {
+      studyRoom: {
+        findFirst: jest.fn(async () => ({ id: 'r1', name: 'Study Room A' })),
+      },
+      booking: {
+        findFirst: jest.fn(async () => null),
+        update: jest.fn(async () => ({
+          id: 'b1',
+          user: { name: 'Alice', email: 'a@iit.ac.lk' },
+          studyRoom: { name: 'Study Room A' },
+        })),
+      },
+    };
+    points = {
+      apply: jest.fn(),
+      applyFixed: jest.fn(),
+      applyFromConfig: jest.fn(),
+    };
+    const waitlist = { onResourceFreed: jest.fn() };
+    const audit = { log: jest.fn() };
+    const systemConfig = {
+      get: jest.fn(async () => ({ tiers: [], penalties: [], toggles: [] })),
+    };
+    service = new ScanService(
+      prisma as any,
+      points as any,
+      waitlist as any,
+      audit as any,
+      systemConfig as any,
+    );
+  });
+
+  it('student: only finds their own active booking', async () => {
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'b1',
+      userId: 'student-1',
+    });
+    await service.roomCheckin('student-1', { roomQr: 'ROOM-QR-A' }, false);
+    const where = prisma.booking.findFirst.mock.calls[0][0].where;
+    expect(where.userId).toBe('student-1');
+  });
+
+  it('staff: auto-finds whoever holds the active booking (no userId filter)', async () => {
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'b1',
+      userId: 'student-9',
+    });
+    await service.roomCheckin('staff-1', { roomQr: 'ROOM-QR-A' }, true);
+    const where = prisma.booking.findFirst.mock.calls[0][0].where;
+    expect(where.userId).toBeUndefined();
+    // Points are awarded to the booking holder, not the staff actor.
+    expect(points.applyFromConfig).toHaveBeenCalledWith(
+      'student-9',
+      'ROOM_ATTENDED',
+      expect.any(Object),
+    );
+  });
+
+  it('rejects when no active booking exists for the room', async () => {
+    prisma.booking.findFirst.mockResolvedValue(null);
+    await expect(
+      service.roomCheckin('u1', { roomQr: 'ROOM-QR-A' }, false),
+    ).rejects.toThrow(/no active approved booking|do not have an active/i);
+  });
 });
