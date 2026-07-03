@@ -70,12 +70,16 @@ docker compose --profile full up --build
 
 ## Demo accounts (password: `Password123`)
 
-| Role          | Email                |
-| ------------- | -------------------- |
-| Admin         | `admin@iit.ac.lk`    |
-| Library Staff | `staff@iit.ac.lk`    |
-| Lecturer      | `lecturer@iit.ac.lk` |
-| Student       | `student@iit.ac.lk`  |
+| Role              | Email                     |
+| ----------------- | ------------------------- |
+| Admin             | `admin@iit.ac.lk`         |
+| Library Staff     | `staff@iit.ac.lk`         |
+| Lecturer (Tier 3) | `lecturer@iit.ac.lk`      |
+| Student (Tier 3)  | `student@iit.ac.lk`       |
+| Student (Tier 1)  | `tier1.student@iit.ac.lk` |
+| Student (Tier 2)  | `tier2.student@iit.ac.lk` |
+| Student (Tier 4)  | `tier4.student@iit.ac.lk` |
+| Student (Tier 5)  | `tier5.student@iit.ac.lk` |
 
 ---
 
@@ -99,7 +103,7 @@ Click **Authorize**, paste your JWT, and try every endpoint directly from the br
 | Auth                   | register, login, me                                                          |
 | Users                  | list, get, update, disable, enable                                           |
 | Bookings               | create, list mine, list all, get, approve, reject, cancel                    |
-| Waitlist               | my entries, position, queue, promote, dismiss                                |
+| Waitlist               | my entries, position, queue, review count, promote, decline message, dismiss |
 | Catalogue - Books      | list, get, create, update, archive, unarchive, delete, add copy, retire copy |
 | Catalogue - Devices    | list, get, create, update, delete, maintenance toggle                        |
 | Catalogue - Rooms      | list (+ availability), get, create, update, delete, maintenance toggle       |
