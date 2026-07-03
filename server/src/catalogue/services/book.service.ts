@@ -133,22 +133,33 @@ export class BookService {
     await this.redis.set(cacheKey, result, TTL_LIST);
     return result;
   }
-  async findById(id: string) {
+  async findById(id: string, showHidden = false) {
     const cacheKey = `catalogue:books:${id}`;
-    const cached = await this.redis.get(cacheKey);
-    if (cached) return cached;
-    const title = await this.prisma.bookTitle.findUnique({
-      where: { id },
-      include: {
-        category: true,
-        copies: { orderBy: { assetTag: 'asc' } },
-        _count: {
-          select: { copies: { where: { status: ItemStatus.AVAILABLE } } },
+    // The cached record carries archivedAt, so the role check runs post-cache.
+    const cached = await this.redis.get<{ archivedAt?: string | null }>(
+      cacheKey,
+    );
+    const title =
+      cached ??
+      (await this.prisma.bookTitle.findUnique({
+        where: { id },
+        include: {
+          category: true,
+          copies: { orderBy: { assetTag: 'asc' } },
+          _count: {
+            select: { copies: { where: { status: ItemStatus.AVAILABLE } } },
+          },
         },
-      },
-    });
+      }));
     if (!title) throw new NotFoundException('Book title not found');
-    await this.redis.set(cacheKey, title, TTL_DETAIL);
+    // Archived titles are hidden from patrons even by direct URL; staff still see them.
+    if (
+      (title as { archivedAt?: string | Date | null }).archivedAt &&
+      !showHidden
+    ) {
+      throw new NotFoundException('Book title not found');
+    }
+    if (!cached) await this.redis.set(cacheKey, title, TTL_DETAIL);
     return title;
   }
   async create(dto: CreateBookTitleDto): Promise<BookTitle> {

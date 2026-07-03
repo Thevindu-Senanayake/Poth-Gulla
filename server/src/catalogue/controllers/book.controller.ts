@@ -51,8 +51,9 @@ export class BookController {
     summary: 'Get a book title with all copies (Redis-cached 60s)',
   })
   @Get('books/:id')
-  findOne(@Param('id') id: string) {
-    return this.books.findById(id);
+  findOne(@Param('id') id: string, @Request() req: any) {
+    const showHidden = STAFF_ROLES.includes(req.user?.role);
+    return this.books.findById(id, showHidden);
   }
   @ApiOperation({ summary: 'Create a new book title (Admin/Staff)' })
   @Roles(Role.ADMIN, Role.LIBRARY_STAFF)
