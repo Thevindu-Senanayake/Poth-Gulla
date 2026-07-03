@@ -123,7 +123,7 @@ Campus libraries juggle three resource types (**books, devices, study rooms**) a
 | `web-client`  | React 19 · Vite · react-router-dom · axios · lucide-react · `qrcode` (CDN-loaded)             |
 | `client`      | Expo SDK 54 · expo-router · expo-secure-store · axios                                         |
 | Observability | Prometheus + Grafana (Docker)                                                                 |
-| Testing       | Jest 30 (ESM) · Supertest — **125 unit tests + 12 e2e smoke tests**                           |
+| Testing       | Jest 30 (ESM) · Supertest — **169 unit tests + 19 e2e smoke tests**                           |
 | CI / CD       | GitHub Actions — lint gate · test gate · change-detection · signed releases (cosign)          |
 | Code quality  | Prettier (4-space, single quotes) · ESLint · lint-staged · Husky pre-commit                   |
 
@@ -248,12 +248,18 @@ Open:
 
 All accounts use password `Password123`.
 
-| Role          | Email                |
-| ------------- | -------------------- |
-| Admin         | `admin@iit.ac.lk`    |
-| Library Staff | `staff@iit.ac.lk`    |
-| Lecturer      | `lecturer@iit.ac.lk` |
-| Student       | `student@iit.ac.lk`  |
+| Role              | Email                     |
+| ----------------- | ------------------------- |
+| Admin             | `admin@iit.ac.lk`         |
+| Library Staff     | `staff@iit.ac.lk`         |
+| Lecturer (Tier 3) | `lecturer@iit.ac.lk`      |
+| Student (Tier 3)  | `student@iit.ac.lk`       |
+| Student (Tier 1)  | `tier1.student@iit.ac.lk` |
+| Student (Tier 2)  | `tier2.student@iit.ac.lk` |
+| Student (Tier 4)  | `tier4.student@iit.ac.lk` |
+| Student (Tier 5)  | `tier5.student@iit.ac.lk` |
+
+The tiered students make waitlist priority, tier concurrency limits, and the review flow demonstrable without manual setup.
 
 ---
 
@@ -306,12 +312,14 @@ GET   /catalogue/rooms               · POST · PATCH · DELETE · PATCH …/mai
 
 ### Waitlist
 
-| Method | Path                                   | Notes                                           |
-| ------ | -------------------------------------- | ----------------------------------------------- |
-| GET    | `/waitlist/me`                         | own entries                                     |
-| GET    | `/waitlist/:resourceType/:resourceKey` | ordered queue with user details (Admin / Staff) |
-| POST   | `/waitlist/:id/promote`                | manual promote                                  |
-| POST   | `/waitlist/:id/dismiss`                | dismiss; also cancels the underlying booking    |
+| Method | Path                                   | Notes                                                           |
+| ------ | -------------------------------------- | --------------------------------------------------------------- |
+| GET    | `/waitlist/me`                         | own entries                                                     |
+| GET    | `/waitlist/review-count`               | count of entries needing staff review (Admin / Staff)           |
+| GET    | `/waitlist/:resourceType/:resourceKey` | ordered queue with user details + `needsReview` (Admin / Staff) |
+| POST   | `/waitlist/:id/promote`                | manual promote (only offered when a copy is available)          |
+| POST   | `/waitlist/:id/decline-message`        | decline the justification; member keeps their queue position    |
+| POST   | `/waitlist/:id/dismiss`                | remove from queue; also cancels the underlying booking          |
 
 ### Notifications (SSE push)
 
@@ -356,7 +364,7 @@ Thresholds are stored in `SystemConfig` and editable from the admin UI. Changing
 priority = tier × 0.6 + role × 0.4
 ```
 
-Higher score wins. Entries with a member-supplied **message** automatically float to the staff review queue and are excluded from auto-promotion until reviewed.
+Higher score wins. A member-supplied **justification message** only triggers a staff review when the sender is ranked **below #1** in a queue with more than one member - the top-ranked member always auto-promotes, message or not. While any entry needs review, auto-promotion for that resource is **held** until staff resolve it (promote, decline the message, or remove). Declining a message keeps the member in the queue at their natural priority position.
 
 ### QR flow
 
@@ -387,8 +395,8 @@ Copies in `RESERVED` or `BORROWED` cannot be retired or archived. The owning boo
 
 ```bash
 cd server
-yarn test            # 125 unit tests (controllers, services, domain logic)
-yarn test:e2e        # 12 e2e smoke tests (auth, booking, scan surface)
+yarn test            # 169 unit tests (controllers, services, domain logic)
+yarn test:e2e        # 19 e2e smoke tests (auth, booking, scan, waitlist, notifications)
 yarn test:cov        # coverage report → server/coverage/
 ```
 
